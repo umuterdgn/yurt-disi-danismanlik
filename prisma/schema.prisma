@@ -1,0 +1,457 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ORTAK MODELLER (Users & Roles)
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADVISOR
+  STUDENT
+  PARENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // İlişkiler
+  studentProfile StudentProfile?
+  advisorProfile AdvisorProfile?
+  parentProfile  ParentProfile?
+
+  // Randevu ilişkileri
+  createdAppointments     Appointment[]            @relation("AppointmentCreator")
+  participantAppointments AppointmentParticipant[]
+
+  // Veli ilişkileri
+  childrenAsParent Parent[] @relation("ParentRelations")
+
+  @@map("users")
+}
+
+// ============================================
+// EĞİTİM DANIŞMANLIĞI MODÜLÜ
+// ============================================
+
+model StudentProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Temel bilgiler
+  grade            String // 9, 10, 11, 12 sınıf
+  school           String?
+  targetUniversity String?
+  targetScore      Float? // Hedef puan (TYT/AYT)
+  currentScore     Float? // Mevcut puan
+
+  // İlişkiler
+  advisorId       String?
+  advisor         AdvisorProfile? @relation(fields: [advisorId], references: [id])
+  parentProfiles  ParentProfile[] @relation("StudentParents")
+  parentRelations Parent[]        @relation("StudentProfile")
+
+  // Eğitim verileri
+  dailyTasks      DailyTask[]
+  examResults     ExamResult[]
+  subjectAnalysis SubjectAnalysis[]
+  meetingNotes    MeetingNote[]
+  applications    Application[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("student_profiles")
+}
+
+model AdvisorProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  specialization String? // Matematik, Fen, Sosyal vb.
+  experience     Int? // Yıl sayısı
+  bio            String?
+  maxStudents    Int     @default(20)
+
+  // İlişkiler
+  students StudentProfile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("advisor_profiles")
+}
+
+model ParentProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  occupation String?
+  address    String?
+
+  // İlişkiler
+  students StudentProfile[] @relation("StudentParents")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("parent_profiles")
+}
+
+model Parent {
+  id               String         @id @default(cuid())
+  parentUserId     String
+  parent           User           @relation("ParentRelations", fields: [parentUserId], references: [id], onDelete: Cascade)
+  studentProfileId String
+  studentProfile   StudentProfile @relation("StudentProfile", fields: [studentProfileId], references: [id], onDelete: Cascade)
+  relationship     String // Anne, Baba, Vasi
+
+  createdAt DateTime @default(now())
+
+  @@unique([parentUserId, studentProfileId])
+  @@map("parents")
+}
+
+// Günlük Görevler
+model DailyTask {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  title             String
+  description       String?
+  subject           String // Matematik, Fizik vb.
+  taskType          String // Soru çözme, Video izleme, Deneme vb.
+  targetQuantity    Int // 40 soru, 2 saat vb.
+  completedQuantity Int      @default(0)
+  isCompleted       Boolean  @default(false)
+  taskDate          DateTime
+  priority          String   @default("medium") // low, medium, high
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("daily_tasks")
+}
+
+// Deneme Sonuçları
+model ExamResult {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  examName        String
+  examType        String // TYT, AYT, YKS vb.
+  examDate        DateTime
+  targetScore     Float
+  actualScore     Float?
+  scoreDifference Float? // actualScore - targetScore
+
+  // Detaylı puanlar
+  turkishScore Float?
+  mathScore    Float?
+  scienceScore Float?
+  socialScore  Float?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("exam_results")
+}
+
+// Konu Etkinliği Analizi
+model SubjectAnalysis {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  subject         String // Matematik, Fizik vb.
+  topic           String // Türev, İntegral vb.
+  proficiency     ProficiencyLevel // Zayıf, Orta, İyi
+  progressPercent Int              @default(0)
+  lastStudiedAt   DateTime?
+  totalHours      Int              @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentProfileId, subject, topic])
+  @@map("subject_analysis")
+}
+
+enum ProficiencyLevel {
+  WEAK
+  MEDIUM
+  GOOD
+  EXCELLENT
+}
+
+// Görüşme Notları
+model MeetingNote {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  meetingDate     DateTime
+  duration        Int // dakika
+  motivationLevel String // low, medium, high
+  issues          String? // Sorunlar
+  achievements    String? // Başarılar
+  actionItems     String? // Atılacak adımlar
+  nextMeetingDate DateTime?
+  notes           String    @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("meeting_notes")
+}
+
+// ============================================
+// YURT DIŞI EĞİTİM MODÜLÜ
+// ============================================
+
+model Country {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  code         String  @unique // TR, US, GB vb.
+  flag         String?
+  currency     String? // USD, EUR, GBP
+  language     String? // İngilizce, Almanca vb.
+  visaRequired Boolean @default(true)
+  averageCost  Float? // Ortalama maliyet (USD)
+
+  universities University[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("countries")
+}
+
+model University {
+  id        String  @id @default(cuid())
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  name                String
+  city                String?
+  ranking             Int?
+  type                String? // Devlet, Özel
+  tuitionFees         Float? // Yıllık ücret
+  languageRequirement String? // IELTS, TOEFL vb.
+  requiredScore       Float?
+  website             String?
+  description         String?   @db.Text
+  departments         String[] // Bölümler
+  applicationDeadline DateTime? // Son başvuru tarihi
+  requirements        String?   @db.Text // Başvuru şartları
+
+  applications Application[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("universities")
+}
+
+model Application {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  universityId     String
+  university       University     @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  program         String // Lisans, Yüksek Lisans, Doktora
+  semester        String // Fall, Spring
+  year            Int
+  status          ApplicationStatus // Ön görüşme, Evrak toplama, Başvuru, Kabul, Ödeme, Vize, Konaklama, Sonuçlandı
+  applicationDate DateTime?
+  decisionDate    DateTime?
+
+  // Bütçe bilgileri
+  estimatedBudget Float?
+  actualBudget    Float?
+
+  // Dil bilgileri
+  languageTest  String? // IELTS, TOEFL, GRE
+  languageScore Float?
+
+  // Belgeler
+  documents Document[]
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  INITIAL_INTERVIEW
+  DOCUMENT_COLLECTION
+  SUBMITTED
+  ACCEPTED
+  PAYMENT
+  VISA
+  ACCOMMODATION
+  COMPLETED
+  REJECTED
+}
+
+model Document {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  documentType String // Pasaport, Diploma, Transkript, Motivation Mektubu vb.
+  documentName String
+  filePath     String? // Supabase Storage URL
+  isUploaded   Boolean        @default(false)
+  uploadDate   DateTime?
+  expiryDate   DateTime?
+  status       DocumentStatus @default(MISSING) // MISSING, UPLOADED, APPROVED, REJECTED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}
+
+enum DocumentStatus {
+  MISSING
+  UPLOADED
+  APPROVED
+  REJECTED
+}
+
+// ============================================
+// TAKVİM VE HATIRLATICILAR
+// ============================================
+
+model Appointment {
+  id        String @id @default(cuid())
+  creatorId String
+  creator   User   @relation("AppointmentCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String?  @db.Text
+  appointmentType String // consultancy, interview, follow_up, parent_meeting
+  startTime       DateTime
+  endTime         DateTime
+  location        String? // Online, Office vb.
+
+  // Zoom entegrasyonu
+  zoomMeetingId  String?
+  zoomMeetingUrl String?
+  zoomPassword   String?
+
+  // Google Calendar entegrasyonu
+  googleEventId     String?
+  googleCalendarUrl String?
+
+  status String @default("scheduled") // scheduled, completed, cancelled, no_show
+
+  participants AppointmentParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointments")
+}
+
+model AppointmentParticipant {
+  id            String      @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status   String  @default("accepted") // accepted, declined, pending
+  attended Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([appointmentId, userId])
+  @@map("appointment_participants")
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+
+  title   String
+  message String           @db.Text
+  type    NotificationType // Vize randevusu, Eksik belge, Hatırlatıcı vb.
+  isRead  Boolean          @default(false)
+
+  // İlişkili varlık
+  relatedEntityType String? // Application, Document, Appointment vb.
+  relatedEntityId   String?
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  VISA_APPOINTMENT
+  MISSING_DOCUMENT
+  APPLICATION_UPDATE
+  MEETING_REMINDER
+  PAYMENT_REMINDER
+  GENERAL
+}
+
+// ============================================
+// SİSTEM AYARLARI VE LOG'LAR
+// ============================================
+
+model SystemSettings {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  value       String  @db.Text
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model ActivityLog {
+  id          String  @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String // User, Student, Application vb.
+  entityId    String?
+  description String? @db.Text
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt DateTime @default(now())
+
+  @@map("activity_logs")
+}

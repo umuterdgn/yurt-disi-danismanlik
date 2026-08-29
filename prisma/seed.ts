@@ -1,0 +1,482 @@
+import { PrismaClient } from '../src/generated/prisma'
+import { UserRole, ProficiencyLevel, ApplicationStatus, DocumentStatus, NotificationType } from '../src/generated/prisma'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  console.log('🌱 Seed verileri oluşturuluyor...')
+
+  // Super Admin kullanıcısı
+  const superAdmin = await prisma.user.upsert({
+    where: { email: 'superadmin@example.com' },
+    update: {},
+    create: {
+      email: 'superadmin@example.com',
+      password: 'superadmin123',
+      name: 'Super Admin',
+      role: UserRole.SUPER_ADMIN,
+    },
+  })
+  console.log('✅ Super Admin kullanıcısı oluşturuldu:', superAdmin.email)
+
+  // Advisor kullanıcısı
+  const advisor = await prisma.user.upsert({
+    where: { email: 'advisor@example.com' },
+    update: {},
+    create: {
+      email: 'advisor@example.com',
+      password: 'advisor123',
+      name: 'Ahmet Yılmaz',
+      role: UserRole.ADVISOR,
+      advisorProfile: {
+        create: {
+          specialization: 'Matematik & Fen Bilimleri',
+          experience: 8,
+          bio: '15 yıllık matematik öğretmeni, 8 yıldır eğitim danışmanlığı yapıyor',
+          maxStudents: 20,
+        }
+      }
+    },
+  })
+  console.log('✅ Advisor kullanıcısı oluşturuldu:', advisor.email)
+
+  // Öğrenci kullanıcısı
+  const student = await prisma.user.upsert({
+    where: { email: 'student@example.com' },
+    update: {},
+    create: {
+      email: 'student@example.com',
+      password: 'student123',
+      name: 'Ayşe Demir',
+      role: UserRole.STUDENT,
+      studentProfile: {
+        create: {
+          grade: '11',
+          school: 'İstanbul Lisesi',
+          targetUniversity: 'Boğaziçi Üniversitesi',
+          targetScore: 450,
+          currentScore: 380,
+          advisorId: advisor.advisorProfile?.id,
+        }
+      }
+    },
+  })
+  console.log('✅ Öğrenci kullanıcısı oluşturuldu:', student.email)
+
+  // Veli kullanıcısı
+  const parent = await prisma.user.upsert({
+    where: { email: 'parent@example.com' },
+    update: {},
+    create: {
+      email: 'parent@example.com',
+      password: 'parent123',
+      name: 'Mehmet Demir',
+      role: UserRole.PARENT,
+      parentProfile: {
+        create: {
+          occupation: 'Mühendis',
+          address: 'İstanbul, Türkiye',
+        }
+      }
+    },
+  })
+  console.log('✅ Veli kullanıcısı oluşturuldu:', parent.email)
+
+  // Öğrenci ile veli ilişkisi
+  if (student.studentProfile && parent.parentProfile) {
+    await prisma.parent.upsert({
+      where: {
+        parentUserId_studentProfileId: {
+          parentUserId: parent.id,
+          studentProfileId: student.studentProfile.id
+        }
+      },
+      update: {},
+      create: {
+        parentUserId: parent.id,
+        studentProfileId: student.studentProfile.id,
+        relationship: 'Baba',
+      }
+    })
+    console.log('✅ Veli-öğrenci ilişkisi oluşturuldu')
+  }
+
+  // Ülkeler
+  const countries = await Promise.all([
+    prisma.country.upsert({
+      where: { code: 'TR' },
+      update: {},
+      create: {
+        name: 'Türkiye',
+        code: 'TR',
+        flag: '🇹🇷',
+        currency: 'TRY',
+        language: 'Türkçe',
+        visaRequired: false,
+        averageCost: 5000,
+      }
+    }),
+    prisma.country.upsert({
+      where: { code: 'US' },
+      update: {},
+      create: {
+        name: 'Amerika Birleşik Devletleri',
+        code: 'US',
+        flag: '🇺🇸',
+        currency: 'USD',
+        language: 'İngilizce',
+        visaRequired: true,
+        averageCost: 50000,
+      }
+    }),
+    prisma.country.upsert({
+      where: { code: 'GB' },
+      update: {},
+      create: {
+        name: 'Birleşik Krallık',
+        code: 'GB',
+        flag: '🇬🇧',
+        currency: 'GBP',
+        language: 'İngilizce',
+        visaRequired: true,
+        averageCost: 35000,
+      }
+    }),
+    prisma.country.upsert({
+      where: { code: 'DE' },
+      update: {},
+      create: {
+        name: 'Almanya',
+        code: 'DE',
+        flag: '🇩🇪',
+        currency: 'EUR',
+        language: 'Almanca',
+        visaRequired: true,
+        averageCost: 15000,
+      }
+    }),
+  ])
+  console.log('✅ Ülkeler oluşturuldu:', countries.length)
+
+  // Üniversiteler
+  const universities = await Promise.all([
+    prisma.university.upsert({
+      where: { 
+        id: 'bogazici-uni'
+      },
+      update: {},
+      create: {
+        id: 'bogazici-uni',
+        countryId: countries[0].id,
+        name: 'Boğaziçi Üniversitesi',
+        city: 'İstanbul',
+        ranking: 1,
+        type: 'Devlet',
+        tuitionFees: 2000,
+        languageRequirement: 'YDS/TOEFL',
+        requiredScore: 80,
+        website: 'https://www.boun.edu.tr',
+        description: 'Türkenin en prestijli üniversitelerinden biri',
+        departments: ['Bilgisayar Mühendisliği', 'Elektrik-Elektronik Mühendisliği', 'İşletme'],
+        applicationDeadline: new Date('2024-06-30'),
+        requirements: 'TOEFL 80, YDS 80, Lise diploması',
+      }
+    }),
+    prisma.university.upsert({
+      where: { 
+        id: 'mit'
+      },
+      update: {},
+      create: {
+        id: 'mit',
+        countryId: countries[1].id,
+        name: 'Massachusetts Institute of Technology',
+        city: 'Cambridge',
+        ranking: 1,
+        type: 'Özel',
+        tuitionFees: 55000,
+        languageRequirement: 'TOEFL/IELTS',
+        requiredScore: 100,
+        website: 'https://www.mit.edu',
+        description: 'Dünyanın en iyi teknik üniversitesi',
+        departments: ['Computer Science', 'Electrical Engineering', 'Physics'],
+        applicationDeadline: new Date('2024-12-15'),
+        requirements: 'TOEFL 100, IELTS 7.5, SAT Math 750+',
+      }
+    }),
+    prisma.university.upsert({
+      where: { 
+        id: 'oxford'
+      },
+      update: {},
+      create: {
+        id: 'oxford',
+        countryId: countries[2].id,
+        name: 'University of Oxford',
+        city: 'Oxford',
+        ranking: 2,
+        type: 'Devlet',
+        tuitionFees: 38000,
+        languageRequirement: 'IELTS',
+        requiredScore: 7.5,
+        website: 'https://www.ox.ac.uk',
+        description: 'İngilterenin en eski ve prestijli üniversitesi',
+        departments: ['Computer Science', 'Economics', 'Medicine'],
+        applicationDeadline: new Date('2024-10-15'),
+        requirements: 'IELTS 7.5, A-levels AAA',
+      }
+    }),
+  ])
+  console.log('✅ Üniversiteler oluşturuldu:', universities.length)
+
+  // Örnek günlük görevler
+  if (student.studentProfile) {
+    await prisma.dailyTask.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        title: 'Matematik soru çözümü',
+        description: 'Türev konusu 40 soru',
+        subject: 'Matematik',
+        taskType: 'Soru Çözme',
+        targetQuantity: 40,
+        completedQuantity: 25,
+        isCompleted: false,
+        taskDate: new Date(),
+        priority: 'high',
+      }
+    })
+    
+    await prisma.dailyTask.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        title: 'Fizik tekrarı',
+        description: 'Kuvvet ve hareket konusu',
+        subject: 'Fizik',
+        taskType: 'Video İzleme',
+        targetQuantity: 2,
+        completedQuantity: 0,
+        isCompleted: false,
+        taskDate: new Date(),
+        priority: 'medium',
+      }
+    })
+    console.log('✅ Örnek günlük görevler oluşturuldu')
+  }
+
+  // Örnek deneme sonuçları
+  if (student.studentProfile) {
+    await prisma.examResult.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        examName: 'ÖSYM Deneme Sınavı 1',
+        examType: 'TYT',
+        examDate: new Date(),
+        targetScore: 400,
+        actualScore: 380,
+        scoreDifference: -20,
+        turkishScore: 85,
+        mathScore: 90,
+        scienceScore: 95,
+        socialScore: 110,
+        notes: 'Matematik bölümünde daha fazla çalışma gerekli',
+      }
+    })
+    
+    await prisma.examResult.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        examName: 'ÖSYM Deneme Sınavı 2',
+        examType: 'AYT',
+        examDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 hafta önce
+        targetScore: 350,
+        actualScore: 360,
+        scoreDifference: 10,
+        mathScore: 85,
+        physicsScore: 75,
+        chemistryScore: 80,
+        biologyScore: 70,
+        literatureScore: 85,
+        historyScore: 75,
+        geographyScore: 80,
+        notes: 'İyi ilerleme, fizik tekrarı gerekli',
+      }
+    })
+    console.log('✅ Örnek deneme sonuçları oluşturuldu')
+  }
+
+  // Örnek konu etkinliği analizi
+  if (student.studentProfile) {
+    await prisma.subjectAnalysis.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        subject: 'Matematik',
+        topic: 'Türev',
+        proficiency: ProficiencyLevel.MEDIUM,
+        progressPercent: 60,
+        lastStudiedAt: new Date(),
+        totalHours: 12,
+      }
+    })
+    
+    await prisma.subjectAnalysis.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        subject: 'Matematik',
+        topic: 'İntegral',
+        proficiency: ProficiencyLevel.WEAK,
+        progressPercent: 30,
+        lastStudiedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        totalHours: 5,
+      }
+    })
+    
+    await prisma.subjectAnalysis.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        subject: 'Fizik',
+        topic: 'Kuvvet ve Hareket',
+        proficiency: ProficiencyLevel.GOOD,
+        progressPercent: 75,
+        lastStudiedAt: new Date(),
+        totalHours: 18,
+      }
+    })
+    console.log('✅ Örnek konu etkinliği analizi oluşturuldu')
+  }
+
+  // Örnek görüşme notları
+  if (student.studentProfile) {
+    await prisma.meetingNote.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        meetingDate: new Date(),
+        duration: 45,
+        motivationLevel: 'high',
+        issues: 'Sınav stresi artıyor, özellikle matematikten endişeli',
+        achievements: 'Fizikte iyi ilerleme, deneme sınavlarında artış',
+        actionItems: 'Matematik türev konusu için ek çalışma programı, stres yönetimi teknikleri',
+        nextMeetingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        notes: 'Öğrenci genel olarak motive, sadece matematik konularında daha fazla desteğe ihtiyaç duyuyor. Öğrenme stratejileri üzerine çalışma önerildi.',
+      }
+    })
+    console.log('✅ Örnek görüşme notları oluşturuldu')
+  }
+
+  // Örnek başvuru
+  if (student.studentProfile) {
+    const application = await prisma.application.create({
+      data: {
+        studentProfileId: student.studentProfile.id,
+        universityId: universities[1].id, // MIT
+        program: 'Lisans',
+        semester: 'Fall',
+        year: 2025,
+        status: ApplicationStatus.DOCUMENT_COLLECTION,
+        applicationDate: new Date(),
+        estimatedBudget: 60000,
+        languageTest: 'TOEFL',
+        languageScore: 95,
+        notes: 'Öğrenci MIT için başvuru sürecinde, doküman toplama aşamasında',
+      }
+    })
+    console.log('✅ Örnek başvuru oluşturuldu')
+
+    // Örnek belgeler
+    await prisma.document.create({
+      data: {
+        applicationId: application.id,
+        documentType: 'Pasaport',
+        documentName: 'Pasaport Fotokopisi',
+        filePath: null,
+        isUploaded: false,
+        status: DocumentStatus.MISSING,
+      }
+    })
+    
+    await prisma.document.create({
+      data: {
+        applicationId: application.id,
+        documentType: 'Transkript',
+        documentName: 'Lise Transkripti',
+        filePath: 'https://storage.supabase.co/documents/transcript.pdf',
+        isUploaded: true,
+        uploadDate: new Date(),
+        status: DocumentStatus.UPLOADED,
+      }
+    })
+    
+    await prisma.document.create({
+      data: {
+        applicationId: application.id,
+        documentType: 'Motivation Letter',
+        documentName: 'Motivation Mektubu',
+        filePath: 'https://storage.supabase.co/documents/motivation_letter.pdf',
+        isUploaded: true,
+        uploadDate: new Date(),
+        status: DocumentStatus.APPROVED,
+      }
+    })
+    console.log('✅ Örnek belgeler oluşturuldu')
+  }
+
+  // Örnek randevu
+  const appointment = await prisma.appointment.create({
+    data: {
+      creatorId: advisor.id,
+      title: 'Haftalık Koçluk Görüşmesi',
+      description: 'Haftalık ilerleme değerlendirmesi ve yeni hedef belirleme',
+      appointmentType: 'consultancy',
+      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 gün sonra
+      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // 45 dakika
+      location: 'Online (Zoom)',
+      zoomMeetingUrl: 'https://zoom.us/j/123456789',
+      status: 'scheduled',
+    }
+  })
+  console.log('✅ Örnek randevu oluşturuldu')
+
+  // Randevu katılımcısı
+  await prisma.appointmentParticipant.create({
+    data: {
+      appointmentId: appointment.id,
+      userId: student.id,
+      status: 'accepted',
+    }
+  })
+  console.log('✅ Randevu katılımcısı oluşturuldu')
+
+  // Örnek bildirimler
+  await prisma.notification.create({
+    data: {
+      userId: student.id,
+      title: 'Eksik Belge Hatırlatması',
+      message: 'MIT başvurunuz için pasaport belgesi eksik. Lütfen yükleyiniz.',
+      type: NotificationType.MISSING_DOCUMENT,
+      relatedEntityType: 'Document',
+      relatedEntityId: 'doc-1',
+    }
+  })
+  
+  await prisma.notification.create({
+    data: {
+      userId: student.id,
+      title: 'Randevu Hatırlatması',
+      message: 'Haftalık koçluk görüşmeniz 2 gün sonra saat 14:00\'te.',
+      type: NotificationType.MEETING_REMINDER,
+      relatedEntityType: 'Appointment',
+      relatedEntityId: appointment.id,
+    }
+  })
+  console.log('✅ Örnek bildirimler oluşturuldu')
+
+  console.log('🎉 Seed verileri başarıyla oluşturuldu!')
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Seed hatası:', e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
