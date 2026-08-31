@@ -17,19 +17,19 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="pt-24 pb-16 bg-gradient-to-br from-blue-50 to-white">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            <div className="flex flex-col items-center text-center md:items-start md:text-left">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 mb-6">
                 Hayallerinizdeki Eğitim,
                 <span className="text-blue-600">Global Kariyer</span>
               </h1>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="mt-6 text-lg sm:text-xl text-gray-500 max-w-2xl">
                 Yurt dışı eğitim danışmanlığı ile geleceğinizi şekillendirin. 
                 Nexa ile dünyanın en iyi üniversitelerine adım atın.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto">
+              <div className="mt-8 flex flex-col sm:flex-row w-full gap-4 justify-center md:justify-start">
                 <Link href="/register" className="w-full sm:w-auto">
                   <Button size="lg" className="flex items-center space-x-2 w-full sm:w-auto">
                     <span>Ücretsiz Danışmanlık Al</span>
@@ -41,10 +41,8 @@ export default function HomePage() {
                     Hizmetlerimizi Keşfedin
                   </Button>
                 </Link>
-              </div>
-              <div className="mt-4">
-                <Link href="/iletisim">
-                  <Button className="bg-green-600 hover:bg-green-700" size="lg">
+                <Link href="/iletisim" className="w-full sm:w-auto">
+                  <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto" size="lg">
                     Hemen Bize Ulaşın
                   </Button>
                 </Link>
