@@ -24,7 +24,7 @@ export default function IletisimPage() {
 
     const message = `Merhaba, adım ${formData.name}. ${formData.service} hakkında ön görüşme talep ediyorum. Telefonum: ${formData.phone}. Mesajım: ${formData.message}`;
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/905550000000?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/905300781478?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
   };
