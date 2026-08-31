@@ -18,19 +18,51 @@ export default function IletisimPage() {
     service: "",
     message: ""
   });
+  const [errors, setErrors] = useState<{
+    name?: string;
+    phone?: string;
+    service?: string;
+  }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("Form tetiklendi", formData);
+
+    // Validation
+    const newErrors: typeof errors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = "Ad Soyad alanı zorunludur";
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Telefon numarası alanı zorunludur";
+    }
+    if (!formData.service) {
+      newErrors.service = "Hizmet seçimi zorunludur";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      console.log("Validasyon hataları:", newErrors);
+      return;
+    }
+
+    setErrors({});
 
     const message = `Merhaba, adım ${formData.name}. ${formData.service} hakkında ön görüşme talep ediyorum. Telefonum: ${formData.phone}. Mesajım: ${formData.message}`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/905300781478?text=${encodedMessage}`;
     
+    console.log("WhatsApp URL:", whatsappUrl);
     window.open(whatsappUrl, '_blank');
   };
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing/selecting
+    if (errors[field as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   return (
@@ -125,8 +157,9 @@ export default function IletisimPage() {
                     placeholder="Adınız Soyadınız"
                     value={formData.name}
                     onChange={(e) => handleChange("name", e.target.value)}
-                    required
+                    className={errors.name ? "border-red-500" : ""}
                   />
+                  {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -137,14 +170,18 @@ export default function IletisimPage() {
                     placeholder="05XX XXX XX XX"
                     value={formData.phone}
                     onChange={(e) => handleChange("phone", e.target.value)}
-                    required
+                    className={errors.phone ? "border-red-500" : ""}
                   />
+                  {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="service">İlgilenilen Hizmet *</Label>
-                  <Select value={formData.service} onValueChange={(value) => handleChange("service", value)} required>
-                    <SelectTrigger>
+                  <Select 
+                    value={formData.service} 
+                    onValueChange={(value) => handleChange("service", value)}
+                  >
+                    <SelectTrigger className={errors.service ? "border-red-500" : ""}>
                       <SelectValue placeholder="Hizmet seçiniz" />
                     </SelectTrigger>
                     <SelectContent>
@@ -153,6 +190,7 @@ export default function IletisimPage() {
                       <SelectItem value="Her İkisi">Her İkisi</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.service && <p className="text-sm text-red-500">{errors.service}</p>}
                 </div>
 
                 <div className="space-y-2">
