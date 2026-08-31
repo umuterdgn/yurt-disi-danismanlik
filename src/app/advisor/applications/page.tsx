@@ -33,6 +33,7 @@ export default async function AdvisorApplicationsPage() {
   });
 
   // Convert Date objects to strings for client-side
+  // @ts-ignore
   const serializedApplications = applications.map((app: any) => ({
     ...app,
     createdAt: app.createdAt?.toISOString() || null,
