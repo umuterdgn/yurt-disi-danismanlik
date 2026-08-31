@@ -32,5 +32,14 @@ export default async function AdvisorApplicationsPage() {
     orderBy: { updatedAt: 'desc' }
   });
 
-  return <KanbanBoard applications={applications} columns={KANBAN_COLUMNS} />;
+  // Convert Date objects to strings for client-side
+  const serializedApplications = applications.map((app: any) => ({
+    ...app,
+    createdAt: app.createdAt?.toISOString() || null,
+    updatedAt: app.updatedAt?.toISOString() || null,
+    applicationDate: app.applicationDate?.toISOString() || null,
+    deadline: app.deadline?.toISOString() || null,
+  }));
+
+  return <KanbanBoard applications={serializedApplications} columns={KANBAN_COLUMNS} />;
 }
