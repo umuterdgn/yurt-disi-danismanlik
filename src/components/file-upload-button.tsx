@@ -9,14 +9,14 @@ import { toast } from "sonner";
 
 interface FileUploadButtonProps {
   documentId: string;
-  fileUrl?: string | null;
+  filePath?: string | null;
   documentName?: string;
   onUploadComplete?: () => void;
 }
 
 export function FileUploadButton({ 
   documentId, 
-  fileUrl, 
+  filePath, 
   documentName,
   onUploadComplete 
 }: FileUploadButtonProps) {
@@ -70,12 +70,12 @@ export function FileUploadButton({
   };
 
   const handleViewFile = () => {
-    if (fileUrl) {
-      window.open(fileUrl, '_blank');
+    if (filePath) {
+      window.open(filePath, '_blank');
     }
   };
 
-  if (fileUrl) {
+  if (filePath) {
     return (
       <Button
         variant="outline"

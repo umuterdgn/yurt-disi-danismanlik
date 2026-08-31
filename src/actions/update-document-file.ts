@@ -8,7 +8,9 @@ export async function updateDocumentFile(documentId: string, fileUrl: string) {
     const updatedDocument = await prisma.document.update({
       where: { id: documentId },
       data: {
-        fileUrl: fileUrl,
+        filePath: fileUrl,
+        isUploaded: true,
+        uploadDate: new Date(),
         status: 'UPLOADED'
       }
     });

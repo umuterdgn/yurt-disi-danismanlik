@@ -242,7 +242,7 @@ export default async function DocumentsPage() {
                         <TableCell>
                           <FileUploadButton 
                             documentId={doc.id}
-                            fileUrl={doc.fileUrl}
+                            filePath={doc.filePath}
                             documentName={doc.documentType}
                           />
                         </TableCell>

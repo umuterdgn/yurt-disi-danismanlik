@@ -72,7 +72,7 @@ export default async function StudentDashboard() {
   }
 
   // Flatten documents from all applications
-  const allDocuments = studentProfile.applications?.flatMap(app => app.documents) || [];
+  const allDocuments = studentProfile.applications?.flatMap((app: any) => app.documents) || [];
 
   // Calculate progress
   const progress = studentProfile.targetScore && studentProfile.targetScore > 0 
@@ -221,7 +221,7 @@ export default async function StudentDashboard() {
                       </div>
                       <FileUploadButton 
                         documentId={doc.id}
-                        fileUrl={doc.fileUrl}
+                        filePath={doc.filePath}
                         documentName={doc.documentType || doc.type}
                       />
                     </div>
