@@ -76,7 +76,7 @@ export default function IletisimPage() {
             <p className="text-lg text-gray-600">Bizimle iletişime geçin, geleceğinizi birlikte planlayalım</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Contact Information */}
           <div className="space-y-6">
             <Card className="border-2">

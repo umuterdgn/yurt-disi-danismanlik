@@ -56,7 +56,7 @@ export default function HomePage() {
                 Yurt dışı eğitim danışmanlığı ile geleceğinizi şekillendirin. 
                 Nexa ile dünyanın en iyi üniversitelerine adım atın.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto">
                 <Link href="/register" className="w-full sm:w-auto">
                   <Button size="lg" className="flex items-center space-x-2 w-full sm:w-auto">
                     <span>Ücretsiz Danışmanlık Al</span>

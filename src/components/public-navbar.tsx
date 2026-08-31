@@ -4,18 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { GraduationCap, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 export function PublicNavbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+    <nav className="sticky top-0 z-50 w-full bg-white border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2">
@@ -51,80 +45,72 @@ export function PublicNavbar() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setIsOpen(!isOpen)}
             >
-              <Menu className="w-6 h-6" />
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Dialog */}
-      <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <GraduationCap className="w-6 h-6 text-blue-600" />
-              <span>Nexa Menü</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col space-y-4 py-4">
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden w-full flex-col bg-white p-4 shadow-md border-t">
+          <Link
+            href="/"
+            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            Ana Sayfa
+          </Link>
+          <Link
+            href="/hakkimizda"
+            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            Hakkımızda
+          </Link>
+          <Link
+            href="/hizmetlerimiz"
+            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            Hizmetlerimiz
+          </Link>
+          <Link
+            href="/ulkeler"
+            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            Ülkeler
+          </Link>
+          <Link
+            href="/iletisim"
+            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            İletişim
+          </Link>
+          <div className="flex flex-col space-y-3 pt-4">
             <Link
-              href="/"
-              className="text-lg text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
+              href="/login"
+              onClick={() => setIsOpen(false)}
             >
-              Ana Sayfa
+              <Button variant="outline" className="w-full">
+                Giriş Yap
+              </Button>
             </Link>
             <Link
-              href="/hakkimizda"
-              className="text-lg text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
+              href="/register"
+              onClick={() => setIsOpen(false)}
             >
-              Hakkımızda
+              <Button className="w-full">
+                Kayıt Ol
+              </Button>
             </Link>
-            <Link
-              href="/hizmetlerimiz"
-              className="text-lg text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Hizmetlerimiz
-            </Link>
-            <Link
-              href="/ulkeler"
-              className="text-lg text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Ülkeler
-            </Link>
-            <Link
-              href="/iletisim"
-              className="text-lg text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              İletişim
-            </Link>
-            <div className="flex flex-col space-y-3 pt-4">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Button variant="outline" className="w-full">
-                  Giriş Yap
-                </Button>
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Button className="w-full">
-                  Kayıt Ol
-                </Button>
-              </Link>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </nav>
   );
 }
