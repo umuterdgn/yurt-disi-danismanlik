@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Clock, MapPin, Send, MessageCircle } from "lucide-react";
+import { Mail, Clock, MapPin, MessageCircle } from "lucide-react";
+import { PublicNavbar } from "@/components/public-navbar";
+import { PublicFooter } from "@/components/public-footer";
 
 export default function IletisimPage() {
   const [formData, setFormData] = useState({
@@ -32,14 +34,17 @@ export default function IletisimPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">İletişim</h1>
-          <p className="text-lg text-gray-600">Bizimle iletişime geçin, geleceğinizi birlikte planlayalım</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+      <PublicNavbar />
+      
+      <main className="flex-1 pt-24 pb-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">İletişim</h1>
+            <p className="text-lg text-gray-600">Bizimle iletişime geçin, geleceğinizi birlikte planlayalım</p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Contact Information */}
           <div className="space-y-6">
             <Card className="border-2">
@@ -53,7 +58,7 @@ export default function IletisimPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">E-posta</h3>
-                    <p className="text-gray-600">info@yurtdisidanismanlik.com</p>
+                    <p className="text-gray-600">info@nxa.com.tr</p>
                   </div>
                 </div>
 
@@ -74,7 +79,7 @@ export default function IletisimPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Konum</h3>
-                    <p className="text-gray-600">İstanbul, Türkiye</p>
+                    <p className="text-gray-600">İskenderun, Hatay</p>
                   </div>
                 </div>
               </CardContent>
@@ -162,7 +167,7 @@ export default function IletisimPage() {
                 </div>
 
                 <Button 
-                  type="submit" 
+                  type="submit"
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
                   size="lg"
                 >
@@ -173,7 +178,10 @@ export default function IletisimPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+        </div>
+      </main>
+      
+      <PublicFooter />
     </div>
   );
 }
