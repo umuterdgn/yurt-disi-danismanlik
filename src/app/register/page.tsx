@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { UserRole } from '@/generated/prisma'
+import { UserRole } from '@prisma/client'
 
 export default function RegisterPage() {
   const router = useRouter()

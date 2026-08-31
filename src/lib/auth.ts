@@ -1,4 +1,6 @@
-import { UserRole } from '@/generated/prisma'
+import { UserRole } from '@prisma/client'
+
+export { UserRole }
 
 export interface AuthUser {
   id: string

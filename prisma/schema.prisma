@@ -2,12 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 // ============================================
@@ -89,6 +88,7 @@ model AdvisorProfile {
   experience     Int? // Yıl sayısı
   bio            String?
   maxStudents    Int     @default(20)
+  advisorType    String  @default("BOTH") // COACH, CONSULTANT, BOTH
 
   // İlişkiler
   students StudentProfile[]
@@ -235,11 +235,15 @@ model Country {
   id           String  @id @default(cuid())
   name         String  @unique
   code         String  @unique // TR, US, GB vb.
+  slug         String  @unique // URL-friendly slug
   flag         String?
   currency     String? // USD, EUR, GBP
   language     String? // İngilizce, Almanca vb.
   visaRequired Boolean @default(true)
   averageCost  Float? // Ortalama maliyet (USD)
+  pageContent  String? @db.Text // Zengin metin/HTML içeriği
+  coverImage   String? // Kapak fotoğrafı URL'si
+  isActive     Boolean @default(true) // Sayfa aktif mi
 
   universities University[]
 

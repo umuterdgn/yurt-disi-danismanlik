@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,19 +20,43 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      )
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
       })
 
-      const data = await response.json()
-
-      if (data.success) {
-        localStorage.setItem('auth_user', JSON.stringify(data.user))
-        router.push('/dashboard')
+      if (error) {
+        setError(error.message)
       } else {
-        setError(data.error || 'Giriş başarısız')
+        // Kullanıcının rolünü Prisma'dan al
+        const roleResponse = await fetch('/api/auth/user-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email })
+        })
+
+        const roleData = await roleResponse.json()
+
+        if (roleData.success && roleData.role) {
+          // Role göre yönlendirme
+          const redirectMap: Record<string, string> = {
+            'SUPER_ADMIN': '/admin/dashboard',
+            'ADVISOR': '/advisor/dashboard',
+            'STUDENT': '/student/dashboard',
+            'PARENT': '/parent/dashboard'
+          }
+          const redirectPath = redirectMap[roleData.role] || '/dashboard'
+          router.push(redirectPath)
+          router.refresh()
+        } else {
+          router.push('/dashboard')
+          router.refresh()
+        }
       }
     } catch (err) {
       setError('Bir hata oluştu')
