@@ -57,14 +57,14 @@ export default function HomePage() {
                 Nexa ile dünyanın en iyi üniversitelerine adım atın.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/register">
-                  <Button size="lg" className="flex items-center space-x-2">
+                <Link href="/register" className="w-full sm:w-auto">
+                  <Button size="lg" className="flex items-center space-x-2 w-full sm:w-auto">
                     <span>Ücretsiz Danışmanlık Al</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Link href="/hizmetlerimiz">
-                  <Button size="lg" variant="outline">
+                <Link href="/hizmetlerimiz" className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
                     Hizmetlerimizi Keşfedin
                   </Button>
                 </Link>
