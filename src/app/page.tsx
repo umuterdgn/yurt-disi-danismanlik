@@ -16,35 +16,8 @@ import { Button } from "@/components/ui/button";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <GraduationCap className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">Nexa</span>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className="text-gray-700 hover:text-gray-900">Ana Sayfa</Link>
-              <Link href="/hakkimizda" className="text-gray-700 hover:text-gray-900">Hakkımızda</Link>
-              <Link href="/hizmetlerimiz" className="text-gray-700 hover:text-gray-900">Hizmetlerimiz</Link>
-              <Link href="/ulkeler" className="text-gray-700 hover:text-gray-900">Ülkeler</Link>
-              <Link href="/iletisim" className="text-gray-700 hover:text-gray-900">İletişim</Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="outline">Giriş Yap</Button>
-              </Link>
-              <Link href="/register">
-                <Button>Kayıt Ol</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 to-white">
+      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -66,6 +39,13 @@ export default function HomePage() {
                 <Link href="/hizmetlerimiz" className="w-full sm:w-auto">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto">
                     Hizmetlerimizi Keşfedin
+                  </Button>
+                </Link>
+              </div>
+              <div className="mt-4">
+                <Link href="/iletisim">
+                  <Button className="bg-green-600 hover:bg-green-700" size="lg">
+                    Hemen Bize Ulaşın
                   </Button>
                 </Link>
               </div>
@@ -295,65 +275,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <GraduationCap className="w-8 h-8 text-blue-400" />
-                <span className="text-xl font-bold">Nexa</span>
-              </div>
-              <p className="text-gray-400">
-                Yurt dışı eğitim danışmanlığı ile geleceğinizi şekillendirin.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-4">Hızlı Linkler</h3>
-              <ul className="space-y-2">
-                <li><Link href="/" className="text-gray-400 hover:text-white">Ana Sayfa</Link></li>
-                <li><Link href="/hakkimizda" className="text-gray-400 hover:text-white">Hakkımızda</Link></li>
-                <li><Link href="/hizmetlerimiz" className="text-gray-400 hover:text-white">Hizmetlerimiz</Link></li>
-                <li><Link href="/ulkeler" className="text-gray-400 hover:text-white">Ülkeler</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-4">Hizmetler</h3>
-              <ul className="space-y-2">
-                <li><Link href="/hizmetlerimiz" className="text-gray-400 hover:text-white">Üniversite Seçimi</Link></li>
-                <li><Link href="/hizmetlerimiz" className="text-gray-400 hover:text-white">Başvuru Danışmanlığı</Link></li>
-                <li><Link href="/hizmetlerimiz" className="text-gray-400 hover:text-white">Vize Destek</Link></li>
-                <li><Link href="/hizmetlerimiz" className="text-gray-400 hover:text-white">Burs Danışmanlığı</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-4">İletişim</h3>
-              <ul className="space-y-2">
-                <li className="flex items-center space-x-2 text-gray-400">
-                  <Phone className="w-4 h-4" />
-                  <span>+90 212 123 45 67</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-400">
-                  <Mail className="w-4 h-4" />
-                  <span>info@nexa.com.tr</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-400">
-                  <MapPin className="w-4 h-4" />
-                  <span>İstanbul, Türkiye</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Nexa Yurt Dışı Danışmanlık. Tüm hakları saklıdır.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -55,38 +55,38 @@ export function PublicNavbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden w-full flex-col bg-white p-4 shadow-md border-t">
+        <div className="md:hidden w-full flex flex-col bg-white p-4 shadow-md border-t absolute left-0">
           <Link
             href="/"
-            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
             onClick={() => setIsOpen(false)}
           >
             Ana Sayfa
           </Link>
           <Link
             href="/hakkimizda"
-            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
             onClick={() => setIsOpen(false)}
           >
             Hakkımızda
           </Link>
           <Link
             href="/hizmetlerimiz"
-            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
             onClick={() => setIsOpen(false)}
           >
             Hizmetlerimiz
           </Link>
           <Link
             href="/ulkeler"
-            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
             onClick={() => setIsOpen(false)}
           >
             Ülkeler
           </Link>
           <Link
             href="/iletisim"
-            className="text-gray-700 hover:text-gray-900 py-2 border-b border-gray-100"
+            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
             onClick={() => setIsOpen(false)}
           >
             İletişim
