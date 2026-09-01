@@ -91,27 +91,38 @@ export default async function AdvisorStudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell className="font-medium">{student.user.name}</TableCell>
-                  <TableCell>{student.user.email}</TableCell>
-                  <TableCell>{student.grade}</TableCell>
-                  <TableCell>{student.school}</TableCell>
-                  <TableCell>{student.targetUniversity}</TableCell>
-                  <TableCell>{student.currentScore}</TableCell>
-                  <TableCell>{student.targetScore}</TableCell>
-                  <TableCell>
-                    {student.advisor ? student.advisor.user?.name : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/advisor/students/${student.id}`}>
-                      <Button variant="outline" size="sm">
-                        Detaylar
-                      </Button>
-                    </Link>
+              {students.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <p className="text-lg font-medium">Henüz size atanmış bir öğrenci bulunmamaktadır.</p>
+                      <p className="text-sm">Öğrenci eklemek için "Öğrenci Ekle" butonunu kullanabilirsiniz.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                students.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.user.name}</TableCell>
+                    <TableCell>{student.user.email}</TableCell>
+                    <TableCell>{student.grade}</TableCell>
+                    <TableCell>{student.school}</TableCell>
+                    <TableCell>{student.targetUniversity}</TableCell>
+                    <TableCell>{student.currentScore}</TableCell>
+                    <TableCell>{student.targetScore}</TableCell>
+                    <TableCell>
+                      {student.advisor ? student.advisor.user?.name : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/advisor/students/${student.id}`}>
+                        <Button variant="outline" size="sm">
+                          Detaylar
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
