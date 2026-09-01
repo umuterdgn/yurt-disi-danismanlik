@@ -39,35 +39,40 @@ export default async function AdvisorDashboard() {
   let userRole = '';
 
   if (user?.email) {
-    // Get user role and name from Prisma
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      include: {
-        advisorProfile: true
-      }
-    });
+    try {
+      // Get user role and name from Prisma
+      const dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        include: {
+          advisorProfile: true
+        }
+      });
 
-    if (dbUser) {
-      userName = dbUser.name;
-      userRole = dbUser.role;
+      if (dbUser) {
+        userName = dbUser.name;
+        userRole = dbUser.role;
 
-      // Get students based on role
-      if (dbUser.role === 'SUPER_ADMIN') {
-        students = await prisma.studentProfile.findMany({
-          include: {
-            user: true
-          },
-          orderBy: { user: { createdAt: 'desc' } }
-        });
-      } else if (dbUser.advisorProfile) {
-        students = await prisma.studentProfile.findMany({
-          where: { advisorId: dbUser.advisorProfile.id },
-          include: {
-            user: true
-          },
-          orderBy: { user: { createdAt: 'desc' } }
-        });
+        // Get students based on role
+        if (dbUser.role === 'SUPER_ADMIN') {
+          students = await prisma.studentProfile.findMany({
+            include: {
+              user: true
+            },
+            orderBy: { user: { createdAt: 'desc' } }
+          });
+        } else if (dbUser.advisorProfile) {
+          students = await prisma.studentProfile.findMany({
+            where: { advisorId: dbUser.advisorProfile.id },
+            include: {
+              user: true
+            },
+            orderBy: { user: { createdAt: 'desc' } }
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error fetching advisor data:', error);
+      students = [];
     }
   }
 
@@ -84,12 +89,16 @@ export default async function AdvisorDashboard() {
 
   // Get last meeting dates for each student
   for (const student of transformedStudents) {
-    const lastMeeting = await prisma.meetingNote.findFirst({
-      where: { studentProfileId: student.id },
-      orderBy: { meetingDate: 'desc' }
-    });
-    if (lastMeeting) {
-      student.lastMeetingDate = lastMeeting.meetingDate;
+    try {
+      const lastMeeting = await prisma.meetingNote.findFirst({
+        where: { studentProfileId: student.id },
+        orderBy: { meetingDate: 'desc' }
+      });
+      if (lastMeeting) {
+        student.lastMeetingDate = lastMeeting.meetingDate;
+      }
+    } catch (error) {
+      console.error('Error fetching meeting notes:', error);
     }
   }
 

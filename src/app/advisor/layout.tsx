@@ -9,34 +9,45 @@ export default async function AdvisorLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
         },
-      },
+      }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user?.email) {
+      redirect('/login');
     }
-  );
 
-  const { data: { user } } = await supabase.auth.getUser();
+    // Role check with Prisma
+    let dbUser = null;
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { role: true }
+      });
+    } catch (error) {
+      console.error('Prisma error in advisor layout:', error);
+      redirect('/login');
+    }
 
-  if (!user?.email) {
+    if (!dbUser || dbUser.role !== 'ADVISOR') {
+      redirect('/dashboard');
+    }
+
+    return <AdvisorLayoutClient>{children}</AdvisorLayoutClient>;
+  } catch (error) {
+    console.error('Auth error in advisor layout:', error);
     redirect('/login');
   }
-
-  // Role check with Prisma
-  const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { role: true }
-  });
-
-  if (!dbUser || dbUser.role !== 'ADVISOR') {
-    redirect('/dashboard');
-  }
-
-  return <AdvisorLayoutClient>{children}</AdvisorLayoutClient>;
 }

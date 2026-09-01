@@ -17,6 +17,9 @@ export default function ParentLayoutClient({ children }: { children: React.React
 
       {/* Mobile Header */}
       <header className="flex md:hidden h-16 items-center justify-between px-4 bg-white border-b sticky top-0 z-40 w-full">
+        <Button variant="outline" size="icon" onClick={() => setMobileMenuOpen(true)}>
+          <Menu className="w-5 h-5" />
+        </Button>
         <div className="flex items-center space-x-2">
           <GraduationCap className="w-6 h-6 text-blue-600" />
           <div>
@@ -24,9 +27,6 @@ export default function ParentLayoutClient({ children }: { children: React.React
             <p className="text-xs text-gray-500">Veli Paneli</p>
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={() => setMobileMenuOpen(true)}>
-          <Menu className="w-5 h-5" />
-        </Button>
       </header>
 
       {/* Mobile Menu Overlay */}
@@ -36,7 +36,7 @@ export default function ParentLayoutClient({ children }: { children: React.React
             className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 right-0 z-50 w-64 md:hidden flex flex-col bg-white border-r">
+          <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r">
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center space-x-2">
                 <GraduationCap className="w-6 h-6 text-blue-600" />

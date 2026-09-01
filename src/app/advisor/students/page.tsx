@@ -31,30 +31,40 @@ export default async function AdvisorStudentsPage() {
   let userName = 'Danışman';
   
   if (user?.email) {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      select: { role: true, id: true, name: true }
-    });
-    if (dbUser) {
-      userRole = dbUser.role;
-      userId = dbUser.id;
-      userName = dbUser.name;
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { role: true, id: true, name: true }
+      });
+      if (dbUser) {
+        userRole = dbUser.role;
+        userId = dbUser.id;
+        userName = dbUser.name;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
     }
   }
 
   // Role-based filtering: SUPER_ADMIN sees all, ADVISOR sees only their assigned students
-  const students = await prisma.studentProfile.findMany({
-    include: {
-      user: true,
-      advisor: {
-        include: {
-          user: true
-        }
+  let students: any[] = [];
+  try {
+    students = await prisma.studentProfile.findMany({
+      include: {
+        user: true,
+        advisor: {
+          include: {
+            user: true
+          }
+        },
       },
-    },
-    where: userRole === 'SUPER_ADMIN' ? {} : { advisorId: userId },
-    orderBy: { createdAt: 'desc' }
-  });
+      where: userRole === 'SUPER_ADMIN' ? {} : { advisorId: userId },
+      orderBy: { createdAt: 'desc' }
+    });
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    students = [];
+  }
 
   return (
     <div className="p-8">
