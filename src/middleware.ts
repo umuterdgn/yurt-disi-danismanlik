@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -48,45 +47,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Rol bazlı erişim kontrolü (RBAC)
-  if (isProtectedPath && user?.email) {
-    try {
-      // Kullanıcının rolünü doğrudan Prisma'dan al (fetch yerine)
-      const dbUser = await prisma.user.findUnique({
-        where: { email: user.email },
-        select: { role: true }
-      })
-
-      if (dbUser) {
-        const userRole = dbUser.role
-
-        // SUPER_ADMIN tüm korumalı rotalara erişebilir
-        if (userRole === 'SUPER_ADMIN') {
-          return supabaseResponse
-        }
-
-        // Diğer roller için rol bazlı kısıtlama
-        const rolePaths: Record<string, string[]> = {
-          'ADVISOR': ['/advisor'],
-          'STUDENT': ['/student'],
-          'PARENT': ['/parent'],
-        }
-
-        const allowedPaths = rolePaths[userRole] || []
-
-        // Kullanıcı kendi rolüne ait olmayan bir yola erişmeye çalışıyorsa
-        const hasAccess = allowedPaths.some(path => url.pathname.startsWith(path))
-        
-        if (!hasAccess && url.pathname !== '/dashboard') {
-          // Dashboard'a yönlendir
-          url.pathname = '/dashboard'
-          return NextResponse.redirect(url)
-        }
-      }
-    } catch (error) {
-      console.error('Role check error:', error)
-    }
-  }
+  // Rol kontrolü layout component'lerine taşındı (Edge Runtime uyumluluğu için)
+  // Middleware sadece temel oturum kontrolü yapar
 
   return supabaseResponse
 }
