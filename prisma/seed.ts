@@ -12,12 +12,12 @@ async function main() {
 
   // Super Admin kullanıcısı
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'superadmin@example.com' },
-    update: {},
+    where: { email: 'admin@test.com' },
+    update: { password: '123456' },
     create: {
-      email: 'superadmin@example.com',
-      password: 'superadmin123',
-      name: 'Super Admin',
+      email: 'admin@test.com',
+      password: '123456',
+      name: 'Test Admin',
       role: UserRole.SUPER_ADMIN,
     },
   })
@@ -25,12 +25,12 @@ async function main() {
 
   // Advisor kullanıcısı
   const advisor = await prisma.user.upsert({
-    where: { email: 'advisor@example.com' },
-    update: {},
+    where: { email: 'advisor@test.com' },
+    update: { password: '123456' },
     create: {
-      email: 'advisor@example.com',
-      password: 'advisor123',
-      name: 'Ahmet Yılmaz',
+      email: 'advisor@test.com',
+      password: '123456',
+      name: 'Test Danışman',
       role: UserRole.ADVISOR,
     },
   })
@@ -51,12 +51,12 @@ async function main() {
 
   // Öğrenci kullanıcısı
   const student = await prisma.user.upsert({
-    where: { email: 'student@example.com' },
-    update: {},
+    where: { email: 'student@test.com' },
+    update: { password: '123456' },
     create: {
-      email: 'student@example.com',
-      password: 'student123',
-      name: 'Ayşe Demir',
+      email: 'student@test.com',
+      password: '123456',
+      name: 'Test Öğrenci',
       role: UserRole.STUDENT,
     },
   })

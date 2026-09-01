@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,23 +14,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // E-posta zaten kullanılıyor mu kontrol et
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    // Supabase Admin Client oluştur
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        detectSessionInUrl: false
+      }
     })
 
-    if (existingUser) {
+    // Supabase Auth'ta kullanıcı oluştur
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        name,
+        role
+      }
+    })
+
+    if (authError) {
+      console.error('Supabase Auth error:', authError)
       return NextResponse.json(
-        { success: false, error: 'Bu e-posta zaten kullanılıyor' },
-        { status: 409 }
+        { success: false, error: authError.message },
+        { status: 400 }
       )
     }
 
-    // Kullanıcı oluştur
+    const supabaseUserId = authData.user.id
+
+    // Prisma'da kullanıcı oluştur (Supabase user ID ile)
     const user = await prisma.user.create({
       data: {
+        id: supabaseUserId,
         email,
-        password, // Gerçek uygulamada bcrypt ile hash'lenmeli
+        password, // Supabase zaten hash'ledi, ama Prisma'da da tutuyoruz
         name,
         role: role as UserRole,
       }
@@ -40,7 +60,7 @@ export async function POST(request: NextRequest) {
       await prisma.studentProfile.create({
         data: {
           userId: user.id,
-          grade: '11', // Varsayılan sınıf
+          grade: '11',
         }
       })
     } else if (role === 'ADVISOR') {
