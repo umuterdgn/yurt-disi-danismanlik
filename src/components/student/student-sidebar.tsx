@@ -3,21 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { 
   LayoutDashboard, 
   Calendar, 
   TrendingUp, 
   FileText,
-  GraduationCap,
-  Menu,
-  X
+  GraduationCap
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
-export default function StudentSidebar() {
+interface StudentSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function StudentSidebar({ isOpen = false, onClose }: StudentSidebarProps) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
@@ -46,29 +46,14 @@ export default function StudentSidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          {sidebarOpen ? <X /> : <Menu />}
-        </Button>
-      </div>
-
-      {/* Sidebar */}
-      <div
-        className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-40 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0`}
-      >
+      {/* Desktop Sidebar */}
+      <div className="fixed inset-y-0 left-0 z-50 w-64 hidden md:flex flex-col bg-white border-r border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
           <p className="text-sm text-gray-500 mt-1">Öğrenci Paneli</p>
         </div>
 
-        <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-100px)]">
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -81,7 +66,6 @@ export default function StudentSidebar() {
                     ? "bg-blue-50 text-blue-700"
                     : "text-gray-700 hover:bg-gray-100"
                 )}
-                onClick={() => setSidebarOpen(false)}
               >
                 <Icon className="w-5 h-5" />
                 <span>{item.title}</span>
@@ -91,12 +75,36 @@ export default function StudentSidebar() {
         </nav>
       </div>
 
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+      {/* Mobile Sidebar */}
+      {isOpen && (
+        <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
+            <p className="text-sm text-gray-500 mt-1">Öğrenci Paneli</p>
+          </div>
+
+          <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                    isActive(item.href)
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                  onClick={onClose}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       )}
     </>
   );
