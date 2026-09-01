@@ -11,12 +11,7 @@ import {
   LogOut
 } from "lucide-react";
 
-interface AdminSidebarProps {
-  isOpen?: boolean;
-  onClose?: () => void;
-}
-
-export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
+export default function AdminSidebar() {
   const menuItems = [
     {
       title: "Dashboard",
@@ -65,119 +60,56 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
   ];
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 hidden md:flex flex-col bg-white border-r border-gray-200">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-gray-900">Nexa Admin</h1>
-          <p className="text-sm text-gray-500 mt-1">Yönetici Paneli</p>
-        </div>
-
-        <nav className="px-4 space-y-2 flex-1 overflow-y-auto">
-          {menuItems.map((item) => (
-            <div key={item.title}>
-              {item.subItems ? (
-                <div>
-                  <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 font-medium">
-                    <item.icon className="w-5 h-5" />
-                    <span>{item.title}</span>
-                  </div>
-                  <div className="ml-8 space-y-1">
-                    {item.subItems.map((subItem) => (
-                      <Link
-                        key={subItem.href}
-                        href={subItem.href}
-                        className="flex items-center space-x-3 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Globe className="w-4 h-4" />
-                        <span>{subItem.title}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  href={item.href}
-                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
-                </Link>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-gray-200">
-          <Link
-            href="/login"
-            className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Çıkış Yap</span>
-          </Link>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="p-6 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-900">Nexa Admin</h1>
+        <p className="text-sm text-gray-500 mt-1">Yönetici Paneli</p>
       </div>
 
-      {/* Mobile Sidebar */}
-      {isOpen && (
-        <>
-          <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r border-gray-200">
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-gray-900">Nexa Admin</h1>
-              <p className="text-sm text-gray-500 mt-1">Yönetici Paneli</p>
-            </div>
-
-            <nav className="px-4 space-y-2 flex-1 overflow-y-auto">
-              {menuItems.map((item) => (
-                <div key={item.title}>
-                  {item.subItems ? (
-                    <div>
-                      <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 font-medium">
-                        <item.icon className="w-5 h-5" />
-                        <span>{item.title}</span>
-                      </div>
-                      <div className="ml-8 space-y-1">
-                        {item.subItems.map((subItem) => (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className="flex items-center space-x-3 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                            onClick={onClose}
-                          >
-                            <Globe className="w-4 h-4" />
-                            <span>{subItem.title}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      onClick={onClose}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </Link>
-                  )}
+      <nav className="px-4 space-y-2 flex-1 overflow-y-auto">
+        {menuItems.map((item) => (
+          <div key={item.title}>
+            {item.subItems ? (
+              <div>
+                <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 font-medium">
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.title}</span>
                 </div>
-              ))}
-            </nav>
-
-            <div className="p-4 border-t border-gray-200">
+                <div className="ml-8 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <Link
+                      key={subItem.href}
+                      href={subItem.href}
+                      className="flex items-center space-x-3 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Globe className="w-4 h-4" />
+                      <span>{subItem.title}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <Link
-                href="/login"
-                className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                onClick={onClose}
+                href={item.href}
+                className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <LogOut className="w-5 h-5" />
-                <span>Çıkış Yap</span>
+                <item.icon className="w-5 h-5" />
+                <span>{item.title}</span>
               </Link>
-            </div>
+            )}
           </div>
-        </>
-      )}
-    </>
+        ))}
+      </nav>
+
+      <div className="p-4 border-t border-gray-200">
+        <Link
+          href="/login"
+          className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Çıkış Yap</span>
+        </Link>
+      </div>
+    </div>
   );
 }

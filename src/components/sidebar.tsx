@@ -19,11 +19,9 @@ import { Badge } from '@/components/ui/badge';
 interface SidebarProps {
   userRole: 'SUPER_ADMIN' | 'ADVISOR' | 'COACH';
   advisorType?: 'COACH' | 'CONSULTANT' | 'BOTH';
-  isOpen?: boolean;
-  onClose?: () => void;
 }
 
-export function Sidebar({ userRole, advisorType = 'BOTH', isOpen = false, onClose }: SidebarProps) {
+export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
@@ -107,133 +105,65 @@ export function Sidebar({ userRole, advisorType = 'BOTH', isOpen = false, onClos
   };
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 hidden md:flex flex-col bg-white border-r border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {userRole === 'SUPER_ADMIN' ? 'Yönetici Paneli' : advisorType === 'COACH' ? 'Eğitim Koçluğu' : 'Danışman Paneli'}
-          </p>
-        </div>
-
-        <nav className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-140px)]">
-          {navItems.map((section) => {
-            const accessibleItems = section.items.filter(canAccessItem);
-            if (accessibleItems.length === 0) return null;
-
-            return (
-              <div key={section.category}>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                  {section.category}
-                </h3>
-                <ul className="space-y-1">
-                  {accessibleItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                            isActive(item.href)
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-gray-700 hover:bg-gray-100"
-                          )}
-                        >
-                          <Icon className="w-5 h-5" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-2">
-            <Badge className={cn(
-              "text-xs",
-              userRole === 'SUPER_ADMIN' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
-            )}>
-              {userRole}
-            </Badge>
-            {advisorType !== 'BOTH' && (
-              <Badge className="text-xs bg-green-100 text-green-700">
-                {advisorType === 'COACH' ? 'Koç' : 'Danışman'}
-              </Badge>
-            )}
-          </div>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="p-6 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {userRole === 'SUPER_ADMIN' ? 'Yönetici Paneli' : advisorType === 'COACH' ? 'Eğitim Koçluğu' : 'Danışman Paneli'}
+        </p>
       </div>
 
-      {/* Mobile Sidebar */}
-      {isOpen && (
-        <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {userRole === 'SUPER_ADMIN' ? 'Yönetici Paneli' : advisorType === 'COACH' ? 'Eğitim Koçluğu' : 'Danışman Paneli'}
-            </p>
-          </div>
+      <nav className="p-4 space-y-6 overflow-y-auto flex-1">
+        {navItems.map((section) => {
+          const accessibleItems = section.items.filter(canAccessItem);
+          if (accessibleItems.length === 0) return null;
 
-          <nav className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-140px)]">
-            {navItems.map((section) => {
-              const accessibleItems = section.items.filter(canAccessItem);
-              if (accessibleItems.length === 0) return null;
-
-              return (
-                <div key={section.category}>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    {section.category}
-                  </h3>
-                  <ul className="space-y-1">
-                    {accessibleItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                              isActive(item.href)
-                                ? "bg-blue-50 text-blue-700"
-                                : "text-gray-700 hover:bg-gray-100"
-                            )}
-                            onClick={onClose}
-                          >
-                            <Icon className="w-5 h-5" />
-                            <span>{item.title}</span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            })}
-          </nav>
-
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-2">
-              <Badge className={cn(
-                "text-xs",
-                userRole === 'SUPER_ADMIN' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
-              )}>
-                {userRole}
-              </Badge>
-              {advisorType !== 'BOTH' && (
-                <Badge className="text-xs bg-green-100 text-green-700">
-                  {advisorType === 'COACH' ? 'Koç' : 'Danışman'}
-                </Badge>
-              )}
+          return (
+            <div key={section.category}>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                {section.category}
+              </h3>
+              <ul className="space-y-1">
+                {accessibleItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                          isActive(item.href)
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-gray-700 hover:bg-gray-100"
+                        )}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          </div>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center space-x-2">
+          <Badge className={cn(
+            "text-xs",
+            userRole === 'SUPER_ADMIN' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+          )}>
+            {userRole}
+          </Badge>
+          {advisorType !== 'BOTH' && (
+            <Badge className="text-xs bg-green-100 text-green-700">
+              {advisorType === 'COACH' ? 'Koç' : 'Danışman'}
+            </Badge>
+          )}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }

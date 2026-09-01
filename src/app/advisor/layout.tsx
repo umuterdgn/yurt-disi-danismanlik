@@ -2,22 +2,21 @@
 
 import { useState } from 'react';
 import { Sidebar } from '@/components/sidebar';
-import { Menu, GraduationCap } from 'lucide-react';
+import { Menu, GraduationCap, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface AdvisorLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function AdvisorLayout({ children }: AdvisorLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function AdvisorLayout({ children }: { children: React.ReactNode }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
-      <Sidebar userRole="ADVISOR" advisorType="BOTH" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      {/* Mobile Top Bar */}
-      <div className="flex md:hidden items-center justify-between p-4 border-b bg-white w-full sticky top-0 z-40">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      {/* Desktop Sidebar - Fixed */}
+      <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-50 bg-white border-r">
+        <Sidebar userRole="ADVISOR" advisorType="BOTH" />
+      </aside>
+
+      {/* Mobile Header */}
+      <header className="flex md:hidden h-16 items-center justify-between px-4 bg-white border-b sticky top-0 z-40 w-full">
         <div className="flex items-center space-x-2">
           <GraduationCap className="w-6 h-6 text-blue-600" />
           <div>
@@ -25,20 +24,35 @@ export default function AdvisorLayout({ children }: AdvisorLayoutProps) {
             <p className="text-xs text-gray-500">Danışman Paneli</p>
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={() => setSidebarOpen(true)}>
+        <Button variant="outline" size="icon" onClick={() => setMobileMenuOpen(true)}>
           <Menu className="w-5 h-5" />
         </Button>
-      </div>
+      </header>
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="w-6 h-6 text-blue-600" />
+                <span className="text-lg font-bold text-gray-900">Nexa</span>
+              </div>
+              <Button variant="outline" size="icon" onClick={() => setMobileMenuOpen(false)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <Sidebar userRole="ADVISOR" advisorType="BOTH" />
+          </div>
+        </>
       )}
 
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 w-full max-w-full">
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col md:ml-64 w-full min-h-screen overflow-x-hidden">
         {children}
       </main>
     </div>
