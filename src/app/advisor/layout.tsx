@@ -37,7 +37,6 @@ export default async function AdvisorLayout({
     } else if (dbUser) {
       const advisorProfile = await prisma.advisorProfile.findUnique({
         where: { userId: dbUser.id },
-        select: { advisorType: true }
       });
       
       if (advisorProfile?.advisorType) {
@@ -49,7 +48,7 @@ export default async function AdvisorLayout({
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar userRole={userRole} advisorType={advisorType} />
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-64 p-4 md:p-8 w-full max-w-full">
         {children}
       </main>
     </div>

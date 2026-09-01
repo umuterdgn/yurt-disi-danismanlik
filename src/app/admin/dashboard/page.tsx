@@ -127,7 +127,7 @@ export default async function AdminDashboard() {
         <AlertBanner />
         
         {/* Özet Kartları */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">Toplam Öğrenci</CardTitle>
@@ -203,40 +203,42 @@ export default async function AdminDashboard() {
             <CardTitle className="text-xl font-semibold text-gray-900">Son Aktiviteler / Başvurular</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-gray-600">Öğrenci Adı</TableHead>
-                  <TableHead className="text-gray-600">Hedef Ülke</TableHead>
-                  <TableHead className="text-gray-600">Başvuru Durumu</TableHead>
-                  <TableHead className="text-gray-600">Tarih</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentActivities.length > 0 ? recentActivities.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell className="font-medium text-gray-900">
-                      {activity.studentProfile.user.name}
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {activity.university.country.name}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(activity.status)}
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {new Date(activity.updatedAt).toLocaleDateString('tr-TR')}
-                    </TableCell>
-                  </TableRow>
-                )) : (
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-gray-500">
-                      Henüz başvuru bulunmamaktadır.
-                    </TableCell>
+                    <TableHead className="text-gray-600">Öğrenci Adı</TableHead>
+                    <TableHead className="text-gray-600">Hedef Ülke</TableHead>
+                    <TableHead className="text-gray-600">Başvuru Durumu</TableHead>
+                    <TableHead className="text-gray-600">Tarih</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {recentActivities.length > 0 ? recentActivities.map((activity) => (
+                    <TableRow key={activity.id}>
+                      <TableCell className="font-medium text-gray-900">
+                        {activity.studentProfile.user.name}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {activity.university.country.name}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(activity.status)}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {new Date(activity.updatedAt).toLocaleDateString('tr-TR')}
+                      </TableCell>
+                    </TableRow>
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                        Henüz başvuru bulunmamaktadır.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

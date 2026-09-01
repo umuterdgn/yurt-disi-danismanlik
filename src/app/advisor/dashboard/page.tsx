@@ -113,7 +113,7 @@ export default async function AdvisorDashboard() {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">Toplam Öğrenci</CardTitle>
@@ -171,72 +171,74 @@ export default async function AdvisorDashboard() {
             <CardTitle className="text-xl font-semibold text-gray-900">Öğrenci Listesi</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-gray-600">Öğrenci Adı</TableHead>
-                  <TableHead className="text-gray-600">Sınıf</TableHead>
-                  <TableHead className="text-gray-600">Hedef Üniversite/Bölüm</TableHead>
-                  <TableHead className="text-gray-600">Mevcut Net</TableHead>
-                  <TableHead className="text-gray-600">Hedef Net</TableHead>
-                  <TableHead className="text-gray-600">İlerleme</TableHead>
-                  <TableHead className="text-gray-600">Son Görüşme</TableHead>
-                  <TableHead className="text-gray-600">İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transformedStudents.length === 0 ? (
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4 text-gray-500">
-                      Henüz öğrenci atanmamış.
-                    </TableCell>
+                    <TableHead className="text-gray-600">Öğrenci Adı</TableHead>
+                    <TableHead className="text-gray-600">Sınıf</TableHead>
+                    <TableHead className="text-gray-600">Hedef Üniversite/Bölüm</TableHead>
+                    <TableHead className="text-gray-600">Mevcut Net</TableHead>
+                    <TableHead className="text-gray-600">Hedef Net</TableHead>
+                    <TableHead className="text-gray-600">İlerleme</TableHead>
+                    <TableHead className="text-gray-600">Son Görüşme</TableHead>
+                    <TableHead className="text-gray-600">İşlemler</TableHead>
                   </TableRow>
-                ) : (
-                  transformedStudents.map((student) => {
-                    const progress = student.targetScore > 0 
-                      ? Math.round((student.currentScore / student.targetScore) * 100) 
-                      : 0;
-                    
-                    return (
-                      <TableRow 
-                        key={student.id} 
-                        className="cursor-pointer hover:bg-gray-50"
-                      >
-                        <TableCell className="font-medium text-gray-900">{student.name}</TableCell>
-                        <TableCell className="text-gray-600">{student.grade}</TableCell>
-                        <TableCell className="text-gray-600">{student.targetUniversity}</TableCell>
-                        <TableCell className="text-gray-600">{student.currentScore}</TableCell>
-                        <TableCell className="text-gray-600">{student.targetScore}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{ width: `${progress}%` }}
-                              />
+                </TableHeader>
+                <TableBody>
+                  {transformedStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-4 text-gray-500">
+                        Henüz öğrenci atanmamış.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    transformedStudents.map((student) => {
+                      const progress = student.targetScore > 0 
+                        ? Math.round((student.currentScore / student.targetScore) * 100) 
+                        : 0;
+                      
+                      return (
+                        <TableRow 
+                          key={student.id} 
+                          className="cursor-pointer hover:bg-gray-50"
+                        >
+                          <TableCell className="font-medium text-gray-900">{student.name}</TableCell>
+                          <TableCell className="text-gray-600">{student.grade}</TableCell>
+                          <TableCell className="text-gray-600">{student.targetUniversity}</TableCell>
+                          <TableCell className="text-gray-600">{student.currentScore}</TableCell>
+                          <TableCell className="text-gray-600">{student.targetScore}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-24 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full" 
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-gray-600">%{progress}</span>
                             </div>
-                            <span className="text-sm text-gray-600">%{progress}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-gray-600">
-                          {student.lastMeetingDate 
-                            ? new Date(student.lastMeetingDate).toLocaleDateString('tr-TR')
-                            : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Link 
-                            href={`/advisor/students/${student.id}`}
-                            className="text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            Detaylar
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {student.lastMeetingDate 
+                              ? new Date(student.lastMeetingDate).toLocaleDateString('tr-TR')
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Link 
+                              href={`/advisor/students/${student.id}`}
+                              className="text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Detaylar
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
