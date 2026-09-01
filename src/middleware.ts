@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -50,17 +51,14 @@ export async function middleware(request: NextRequest) {
   // Rol bazlı erişim kontrolü (RBAC)
   if (isProtectedPath && user?.email) {
     try {
-      // Kullanıcının rolünü al
-      const roleResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/api/auth/user-role`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email })
+      // Kullanıcının rolünü doğrudan Prisma'dan al (fetch yerine)
+      const dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { role: true }
       })
 
-      const roleData = await roleResponse.json()
-
-      if (roleData.success && roleData.role) {
-        const userRole = roleData.role
+      if (dbUser) {
+        const userRole = dbUser.role
 
         // SUPER_ADMIN tüm korumalı rotalara erişebilir
         if (userRole === 'SUPER_ADMIN') {

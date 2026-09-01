@@ -36,7 +36,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
             className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r">
+          <div className="fixed inset-y-0 right-0 z-50 w-64 md:hidden flex flex-col bg-white border-r">
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center space-x-2">
                 <GraduationCap className="w-6 h-6 text-blue-600" />
