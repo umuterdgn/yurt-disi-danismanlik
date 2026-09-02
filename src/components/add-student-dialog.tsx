@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -23,7 +25,9 @@ export function AddStudentDialog() {
     if (result.success) {
       toast.success("Öğrenci başarıyla eklendi!");
       setOpen(false);
-      window.location.reload();
+      setLoading(false);
+      // Refresh the page to show the new student
+      router.refresh();
     } else {
       toast.error(result.error || "Bir hata oluştu");
       setError(result.error || "Bir hata oluştu");
@@ -55,7 +59,7 @@ export function AddStudentDialog() {
               <Input
                 id="name"
                 name="name"
-                placeholder="Örn: Ahmet Yılmaz"
+                placeholder="Öğrenci adı soyadı"
                 className="col-span-1 md:col-span-3"
                 required
               />

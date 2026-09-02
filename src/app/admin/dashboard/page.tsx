@@ -28,40 +28,72 @@ export default async function AdminDashboard() {
   // Get user name from Prisma
   let userName = 'Admin';
   if (user?.email) {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      select: { name: true }
-    });
-    if (dbUser?.name) {
-      userName = dbUser.name;
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { name: true }
+      });
+      if (dbUser?.name) {
+        userName = dbUser.name;
+      }
+    } catch (error) {
+      console.error('Error fetching user name:', error);
     }
   }
 
   // 1. Özet İstatistikleri Veritabanından Çekiyoruz
-  const totalStudents = await prisma.user.count({
-    where: { role: 'STUDENT' }
-  });
-  
-  const activeApplications = await prisma.application.count({
-    where: { 
-      status: { notIn: ['COMPLETED', 'REJECTED'] } 
-    }
-  });
-  
-  const visaProcessCount = await prisma.application.count({
-    where: { status: 'VISA' }
-  });
+  let totalStudents = 0;
+  let activeApplications = 0;
+  let visaProcessCount = 0;
+  let completedConsultations = 0;
+  let allApplications: any[] = [];
+  let recentActivities: any[] = [];
 
-  const completedConsultations = await prisma.appointment.count({
-    where: { status: 'completed' }
-  });
+  try {
+    totalStudents = await prisma.user.count({
+      where: { role: 'STUDENT' }
+    });
+  } catch (error) {
+    console.error('Error counting students:', error);
+  }
+
+  try {
+    activeApplications = await prisma.application.count({
+      where: { 
+        status: { notIn: ['COMPLETED', 'REJECTED'] } 
+      }
+    });
+  } catch (error) {
+    console.error('Error counting active applications:', error);
+  }
+
+  try {
+    visaProcessCount = await prisma.application.count({
+      where: { status: 'VISA' }
+    });
+  } catch (error) {
+    console.error('Error counting visa processes:', error);
+  }
+
+  try {
+    completedConsultations = await prisma.appointment.count({
+      where: { status: 'completed' }
+    });
+  } catch (error) {
+    console.error('Error counting completed consultations:', error);
+  }
 
   const monthlyIncome = 125000; // Gelir tablosu şemada olmadığı için şimdilik sabit bırakıyoruz
 
   // 2. Ülkelere Göre Başvuru Dağılımını Hesaplıyoruz
-  const allApplications = await prisma.application.findMany({
-    include: { university: { include: { country: true } } }
-  });
+  try {
+    allApplications = await prisma.application.findMany({
+      include: { university: { include: { country: true } } }
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    allApplications = [];
+  }
 
   const countryCountMap: Record<string, number> = {};
   allApplications.forEach(app => {
@@ -77,14 +109,19 @@ export default async function AdminDashboard() {
   }));
 
   // 3. Son Aktiviteleri (Başvuruları) Çekiyoruz
-  const recentActivities = await prisma.application.findMany({
-    take: 8,
-    orderBy: { updatedAt: 'desc' },
-    include: {
-      studentProfile: { include: { user: true } },
-      university: { include: { country: true } }
-    }
-  });
+  try {
+    recentActivities = await prisma.application.findMany({
+      take: 8,
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        studentProfile: { include: { user: true } },
+        university: { include: { country: true } }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching recent activities:', error);
+    recentActivities = [];
+  }
 
   // Durum rozetleri için yardımcı fonksiyonlar
   const getStatusText = (status: ApplicationStatus) => {
