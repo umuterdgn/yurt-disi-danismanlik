@@ -8,6 +8,7 @@ import {
   Users,
   Calendar
 } from 'lucide-react';
+import { LogoutButton } from '@/components/logout-button';
 
 export default function ParentSidebar() {
   const pathname = usePathname();
@@ -59,6 +60,10 @@ export default function ParentSidebar() {
           );
         })}
       </nav>
+
+      <div className="p-4 border-t border-gray-200 mt-auto">
+        <LogoutButton />
+      </div>
     </div>
   );
 }

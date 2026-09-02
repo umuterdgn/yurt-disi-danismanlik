@@ -7,9 +7,9 @@ import {
   Calendar, 
   FileText, 
   Globe,
-  Settings,
-  LogOut
+  Settings
 } from "lucide-react";
+import { LogoutButton } from "@/components/logout-button";
 
 export default function AdminSidebar() {
   const menuItems = [
@@ -101,14 +101,8 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
-        <Link
-          href="/login"
-          className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          <span>Çıkış Yap</span>
-        </Link>
+      <div className="p-4 border-t border-gray-200 mt-auto">
+        <LogoutButton />
       </div>
     </div>
   );

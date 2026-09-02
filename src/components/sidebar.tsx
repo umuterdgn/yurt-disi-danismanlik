@@ -15,6 +15,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { LogoutButton } from '@/components/logout-button';
 
 interface SidebarProps {
   userRole: 'SUPER_ADMIN' | 'ADVISOR' | 'COACH';
@@ -149,8 +150,8 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-2">
+      <div className="p-4 border-t border-gray-200 mt-auto">
+        <div className="flex items-center space-x-2 mb-3">
           <Badge className={cn(
             "text-xs",
             userRole === 'SUPER_ADMIN' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
@@ -163,6 +164,7 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
             </Badge>
           )}
         </div>
+        <LogoutButton />
       </div>
     </div>
   );

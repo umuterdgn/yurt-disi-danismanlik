@@ -10,6 +10,7 @@ import {
   FileText,
   GraduationCap
 } from 'lucide-react';
+import { LogoutButton } from '@/components/logout-button';
 
 export default function StudentSidebar() {
   const pathname = usePathname();
@@ -66,6 +67,10 @@ export default function StudentSidebar() {
           );
         })}
       </nav>
+
+      <div className="p-4 border-t border-gray-200 mt-auto">
+        <LogoutButton />
+      </div>
     </div>
   );
 }
