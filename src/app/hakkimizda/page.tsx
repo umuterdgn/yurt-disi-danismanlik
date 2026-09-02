@@ -10,10 +10,12 @@ import {
   Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PublicNavbar } from "@/components/public-navbar";
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
+      <PublicNavbar />
       {/* Hero Section */}
       <section className="pt-24 pb-20 bg-gradient-to-br from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -159,10 +161,10 @@ export default function AboutPage() {
                 <Users className="w-20 h-20 text-white" />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Ahmet Yılmaz</h3>
-                <p className="text-blue-600 font-medium mb-3">Kurucu & CEO</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Kurucu & CEO</h3>
+                <p className="text-blue-600 font-medium mb-3">Yönetim</p>
                 <p className="text-gray-600 text-sm">
-                  15+ yıl yurt dışı eğitim deneyimi. Oxford mezunu.
+                  15+ yıl yurt dışı eğitim deneyimi. Global eğitim ağları kurucusu.
                 </p>
               </div>
             </div>

@@ -68,7 +68,13 @@ export default async function AdvisorDashboard() {
             },
             orderBy: { user: { createdAt: 'desc' } }
           });
+        } else {
+          // User has no advisor profile - show empty state
+          students = [];
         }
+      } else {
+        // User not found in Prisma - show empty state
+        students = [];
       }
     } catch (error) {
       console.error('Error fetching advisor data:', error);
@@ -197,8 +203,22 @@ export default async function AdvisorDashboard() {
                 <TableBody>
                   {transformedStudents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-4 text-gray-500">
-                        Henüz öğrenci atanmamış.
+                      <TableCell colSpan={8} className="text-center py-12">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-gray-900 font-medium mb-1">Henüz Öğrenci Yok</p>
+                            <p className="text-gray-500 text-sm">
+                              {userRole === 'SUPER_ADMIN' 
+                                ? 'Sistemde henüz kayıtlı öğrenci bulunmuyor.' 
+                                : 'Henüz size atanmış öğrenci bulunmuyor. "Yeni Öğrenci Ekle" butonunu kullanarak öğrenci ekleyebilirsiniz.'}
+                            </p>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (

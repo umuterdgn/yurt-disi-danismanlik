@@ -26,53 +26,100 @@ export default async function ParentDashboard() {
   }
 
   // Get parent profile with security check
-  const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { id: true, name: true, role: true }
-  });
-
-  if (!dbUser) {
-    return <div className="p-8">Kullanıcı bulunamadı</div>;
+  let dbUser = null;
+  try {
+    dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { id: true, name: true, role: true }
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Veri Yükleme Hatası</h2>
+          <p className="text-gray-600">Kullanıcı bilgileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
+        </div>
+      </div>
+    );
   }
 
-  const parentProfile = await prisma.parentProfile.findUnique({
-    where: { userId: dbUser.id },
-    include: {
-      user: true,
-      students: {
-        include: {
-          user: true,
-          advisor: {
-            include: {
-              user: true
-            }
-          },
-          dailyTasks: {
-            where: {
-              taskDate: {
-                gte: new Date(new Date().setDate(new Date().getDate() - 7))
+  if (!dbUser) {
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Kullanıcı Bulunamadı</h2>
+          <p className="text-gray-600">Kullanıcı bilgileriniz bulunamadı. Lütfen sistem yöneticisi ile iletişime geçin.</p>
+        </div>
+      </div>
+    );
+  }
+
+  let parentProfile = null;
+  try {
+    parentProfile = await prisma.parentProfile.findUnique({
+      where: { userId: dbUser.id },
+      include: {
+        user: true,
+        students: {
+          include: {
+            user: true,
+            advisor: {
+              include: {
+                user: true
               }
             },
-            orderBy: { taskDate: 'desc' }
-          },
-          examResults: {
-            orderBy: { examDate: 'desc' },
-            take: 5
-          },
-          subjectAnalysis: {
-            orderBy: { subject: 'asc' }
+            dailyTasks: {
+              where: {
+                taskDate: {
+                  gte: new Date(new Date().setDate(new Date().getDate() - 7))
+                }
+              },
+              orderBy: { taskDate: 'desc' }
+            },
+            examResults: {
+              orderBy: { examDate: 'desc' },
+              take: 5
+            },
+            subjectAnalysis: {
+              orderBy: { subject: 'asc' }
+            }
           }
         }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Error fetching parent profile:', error);
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Veri Yükleme Hatası</h2>
+          <p className="text-gray-600">Veli profili yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!parentProfile) {
-    return <div className="p-8">Veli profili bulunamadı</div>;
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Veli Profili Bulunamadı</h2>
+          <p className="text-gray-600">Veli profiliniz bulunamadı. Lütfen sistem yöneticisi ile iletişime geçin.</p>
+        </div>
+      </div>
+    );
   }
 
   if (parentProfile.students.length === 0) {
-    return <div className="p-8">Henüz öğrenci atanmamış</div>;
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Öğrenci Atanmamış</h2>
+          <p className="text-gray-600">Henüz size atanmış bir öğrenci bulunmuyor. Sistem yöneticisi ile iletişime geçin.</p>
+        </div>
+      </div>
+    );
   }
 
   // Get first student for summary

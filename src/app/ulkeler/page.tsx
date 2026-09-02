@@ -10,6 +10,7 @@ import {
   Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PublicNavbar } from "@/components/public-navbar";
 
 export default async function CountriesPage() {
   const countries = await prisma.country.findMany({
@@ -25,6 +26,7 @@ export default async function CountriesPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <PublicNavbar />
       {/* Hero Section */}
       <section className="pt-24 pb-20 bg-gradient-to-br from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

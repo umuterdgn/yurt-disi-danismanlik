@@ -29,10 +29,16 @@ export default async function StudentLayout({
   }
 
   // Role check with Prisma
-  const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { role: true }
-  });
+  let dbUser = null;
+  try {
+    dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true }
+    });
+  } catch (error) {
+    console.error('Prisma error in student layout:', error);
+    redirect('/login');
+  }
 
   if (!dbUser || dbUser.role !== 'STUDENT') {
     redirect('/dashboard');

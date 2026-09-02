@@ -53,63 +53,82 @@ export function PublicNavbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Fixed position, opens from left */}
       {isOpen && (
-        <div className="md:hidden w-full flex flex-col bg-white p-4 shadow-md border-t absolute left-0">
-          <Link
-            href="/"
-            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
             onClick={() => setIsOpen(false)}
-          >
-            Ana Sayfa
-          </Link>
-          <Link
-            href="/hakkimizda"
-            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
-            onClick={() => setIsOpen(false)}
-          >
-            Hakkımızda
-          </Link>
-          <Link
-            href="/hizmetlerimiz"
-            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
-            onClick={() => setIsOpen(false)}
-          >
-            Hizmetlerimiz
-          </Link>
-          <Link
-            href="/ulkeler"
-            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
-            onClick={() => setIsOpen(false)}
-          >
-            Ülkeler
-          </Link>
-          <Link
-            href="/iletisim"
-            className="block w-full py-3 text-gray-700 hover:text-gray-900 border-b border-gray-100"
-            onClick={() => setIsOpen(false)}
-          >
-            İletişim
-          </Link>
-          <div className="flex flex-col space-y-3 pt-4">
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-            >
-              <Button variant="outline" className="w-full">
-                Giriş Yap
+          />
+          {/* Menu - Opens from left */}
+          <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="w-6 h-6 text-blue-600" />
+                <span className="text-lg font-bold text-gray-900">Nexa</span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                <X className="w-5 h-5" />
               </Button>
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setIsOpen(false)}
-            >
-              <Button className="w-full">
-                Kayıt Ol
-              </Button>
-            </Link>
+            </div>
+            <div className="flex-1 overflow-y-auto py-4">
+              <Link
+                href="/"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                onClick={() => setIsOpen(false)}
+              >
+                Ana Sayfa
+              </Link>
+              <Link
+                href="/hakkimizda"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                onClick={() => setIsOpen(false)}
+              >
+                Hakkımızda
+              </Link>
+              <Link
+                href="/hizmetlerimiz"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                onClick={() => setIsOpen(false)}
+              >
+                Hizmetlerimiz
+              </Link>
+              <Link
+                href="/ulkeler"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                onClick={() => setIsOpen(false)}
+              >
+                Ülkeler
+              </Link>
+              <Link
+                href="/iletisim"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                onClick={() => setIsOpen(false)}
+              >
+                İletişim
+              </Link>
+            </div>
+            <div className="p-4 border-t space-y-3">
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+              >
+                <Button variant="outline" className="w-full">
+                  Giriş Yap
+                </Button>
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setIsOpen(false)}
+              >
+                <Button className="w-full">
+                  Kayıt Ol
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </nav>
   );

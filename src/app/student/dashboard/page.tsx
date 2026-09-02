@@ -30,45 +30,65 @@ export default async function StudentDashboard() {
   }
 
   // Get student profile with security check
-  const studentProfile = await prisma.studentProfile.findUnique({
-    where: {
-      userId: user.id
-    },
-    include: {
-      user: true,
-      advisor: {
-        include: {
-          user: true
+  let studentProfile = null;
+  try {
+    studentProfile = await prisma.studentProfile.findUnique({
+      where: {
+        userId: user.id
+      },
+      include: {
+        user: true,
+        advisor: {
+          include: {
+            user: true
+          }
+        },
+        dailyTasks: {
+          where: {
+            taskDate: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0))
+            }
+          },
+          orderBy: { taskDate: 'desc' }
+        },
+        examResults: {
+          orderBy: { examDate: 'desc' },
+          take: 10
+        },
+        subjectAnalysis: {
+          orderBy: { subject: 'asc' }
+        },
+        applications: {
+          include: {
+            documents: {
+              orderBy: { createdAt: 'desc' }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
         }
-      },
-      dailyTasks: {
-        where: {
-          taskDate: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0))
-          }
-        },
-        orderBy: { taskDate: 'desc' }
-      },
-      examResults: {
-        orderBy: { examDate: 'desc' },
-        take: 10
-      },
-      subjectAnalysis: {
-        orderBy: { subject: 'asc' }
-      },
-      applications: {
-        include: {
-          documents: {
-            orderBy: { createdAt: 'desc' }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Error fetching student profile:', error);
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Veri Yükleme Hatası</h2>
+          <p className="text-gray-600">Öğrenci bilgileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!studentProfile) {
-    return <div className="p-8">Öğrenci profili bulunamadı</div>;
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Profil Bulunamadı</h2>
+          <p className="text-gray-600">Öğrenci profiliniz bulunamadı. Lütfen sistem yöneticisi ile iletişime geçin.</p>
+        </div>
+      </div>
+    );
   }
 
   // Flatten documents from all applications
