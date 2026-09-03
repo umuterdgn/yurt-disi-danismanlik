@@ -51,7 +51,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         orderBy: { meetingDate: 'desc' },
         take: 5
       },
-      tasks: {
+      dailyTasks: {
         orderBy: { createdAt: 'desc' }
       }
     }
@@ -236,14 +236,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="font-semibold mb-4 text-gray-700">Yapılacak</h3>
                     <div className="space-y-3">
-                      {student.tasks.filter((t: any) => t.status === 'TODO').map((task: any) => (
+                      {student.dailyTasks.filter((t: any) => t.status === 'TODO').map((task: any) => (
                         <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
                           <p className="font-medium text-sm">{task.title}</p>
                           {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                           {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
                         </div>
                       ))}
-                      {student.tasks.filter((t: any) => t.status === 'TODO').length === 0 && (
+                      {student.dailyTasks.filter((t: any) => t.status === 'TODO').length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
                       )}
                     </div>
@@ -253,14 +253,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <div className="bg-blue-50 rounded-lg p-4">
                     <h3 className="font-semibold mb-4 text-blue-700">Devam Ediyor</h3>
                     <div className="space-y-3">
-                      {student.tasks.filter((t: any) => t.status === 'IN_PROGRESS').map((task: any) => (
+                      {student.dailyTasks.filter((t: any) => t.status === 'IN_PROGRESS').map((task: any) => (
                         <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
                           <p className="font-medium text-sm">{task.title}</p>
                           {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                           {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
                         </div>
                       ))}
-                      {student.tasks.filter((t: any) => t.status === 'IN_PROGRESS').length === 0 && (
+                      {student.dailyTasks.filter((t: any) => t.status === 'IN_PROGRESS').length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
                       )}
                     </div>
@@ -270,14 +270,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <div className="bg-green-50 rounded-lg p-4">
                     <h3 className="font-semibold mb-4 text-green-700">Bitti</h3>
                     <div className="space-y-3">
-                      {student.tasks.filter((t: any) => t.status === 'DONE').map((task: any) => (
+                      {student.dailyTasks.filter((t: any) => t.status === 'DONE').map((task: any) => (
                         <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
                           <p className="font-medium text-sm">{task.title}</p>
                           {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                           {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
                         </div>
                       ))}
-                      {student.tasks.filter((t: any) => t.status === 'DONE').length === 0 && (
+                      {student.dailyTasks.filter((t: any) => t.status === 'DONE').length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
                       )}
                     </div>

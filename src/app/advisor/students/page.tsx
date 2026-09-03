@@ -27,18 +27,21 @@ export default async function AdvisorStudentsPage() {
   
   // Get user role and ID from Prisma
   let userRole = null;
-  let userId = null;
+  let advisorProfileId = null;
   let userName = 'Danışman';
   
   if (user?.email) {
     try {
       const dbUser = await prisma.user.findUnique({
         where: { email: user.email },
-        select: { role: true, id: true, name: true }
+        select: { role: true, id: true, name: true },
+        include: {
+          advisorProfile: true
+        }
       });
       if (dbUser) {
         userRole = dbUser.role;
-        userId = dbUser.id;
+        advisorProfileId = dbUser.advisorProfile?.id;
         userName = dbUser.name;
       }
     } catch (error) {
@@ -58,7 +61,7 @@ export default async function AdvisorStudentsPage() {
           }
         },
       },
-      where: userRole === 'SUPER_ADMIN' ? {} : { advisorId: userId },
+      where: userRole === 'SUPER_ADMIN' ? {} : { advisorId: advisorProfileId },
       orderBy: { createdAt: 'desc' }
     });
   } catch (error) {
