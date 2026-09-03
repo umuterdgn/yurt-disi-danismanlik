@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 export async function addStudent(formData: FormData) {
@@ -17,15 +19,24 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' };
     }
 
-    // Get current advisor from session
-    const supabase = createClient(
+    // Get current advisor from session using Supabase Server Client with cookies
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+        },
+      }
     );
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user?.email) {
+      console.error('Auth error:', userError);
       return { success: false, error: 'Oturum bulunamadı' };
     }
 
@@ -40,8 +51,19 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Danışman profili bulunamadı' };
     }
 
+    // If advisor profile doesn't exist, create one (auto-upsert)
     if (!advisor) {
-      return { success: false, error: 'Danışman profili bulunamadı' };
+      try {
+        advisor = await prisma.advisorProfile.create({
+          data: {
+            userId: user.id,
+            specialization: 'GENERAL'
+          }
+        });
+      } catch (error) {
+        console.error('Prisma error creating advisor profile:', error);
+        return { success: false, error: 'Danışman profili oluşturma hatası' };
+      }
     }
 
     // Check if email already exists
