@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
+import { prisma } from '@/lib/prisma';
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -8,17 +9,26 @@ const groq = new Groq({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { examResults, subjectAnalysis } = body;
+    const { studentId, examResults, subjectAnalysis, scores, notes } = body;
 
     // Build the prompt for AI analysis
     const prompt = `
 Sen bir deneyimli eğitim koçusun. Aşağıdaki öğrenci verilerine dayanarak kapsamlı bir çalışma analizi ve öneri raporu hazırla:
+
+Öğrenci Son Netleri:
+- Türkçe: ${scores?.turkish || 0}
+- Matematik: ${scores?.math || 0}
+- Fen Bilimleri: ${scores?.science || 0}
+- Sosyal Bilimler: ${scores?.social || 0}
 
 Öğrenci Deneme Sonuçları:
 ${JSON.stringify(examResults, null, 2)}
 
 Konu Analizi Verileri:
 ${JSON.stringify(subjectAnalysis, null, 2)}
+
+Ek Notlar:
+${notes || 'Yok'}
 
 Lütfen şu formatta Türkçe bir analiz raporu oluştur:
 1. GENEL DURUM DEĞERLENDİRMESİ: Öğrencinin genel performansını özetle
@@ -48,6 +58,26 @@ Raporu profesyonel, destekleyici ve uygulanabilir bir dilde yaz.
     });
 
     const analysis = chatCompletion.choices[0]?.message?.content || 'Analiz oluşturulamadı';
+
+    // Save analysis to SubjectProgress if studentId is provided
+    if (studentId) {
+      try {
+        // Create or update a subject analysis entry with the AI analysis
+        await prisma.subjectAnalysis.create({
+          data: {
+            studentProfileId: studentId,
+            subject: 'Genel Analiz',
+            topic: 'AI Destekli Çalışma Planı',
+            proficiency: 'MEDIUM',
+            progressPercent: 0,
+            totalHours: 0
+          }
+        });
+      } catch (error) {
+        console.error('Error saving analysis to database:', error);
+        // Don't fail the request if database save fails
+      }
+    }
 
     return NextResponse.json({ success: true, analysis });
   } catch (error) {
