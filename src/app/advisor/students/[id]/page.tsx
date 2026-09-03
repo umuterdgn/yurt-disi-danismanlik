@@ -7,6 +7,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { AIAnalysisButton } from "@/components/ai-analysis-button";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -49,6 +50,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       meetingNotes: {
         orderBy: { meetingDate: 'desc' },
         take: 5
+      },
+      tasks: {
+        orderBy: { createdAt: 'desc' }
       }
     }
   });
@@ -182,9 +186,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList>
             <TabsTrigger value="profile">Profil & Hedefler</TabsTrigger>
+            <TabsTrigger value="tasks">Görevler (Kanban)</TabsTrigger>
+            <TabsTrigger value="analysis">Konu Analizi (AI)</TabsTrigger>
+            <TabsTrigger value="meeting-notes">Görüşme Notları</TabsTrigger>
             <TabsTrigger value="documents">Evrak Sistemi</TabsTrigger>
             <TabsTrigger value="applications">Başvuru Takibi</TabsTrigger>
-            <TabsTrigger value="analysis">Konu Analizi</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -213,6 +219,156 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                       <p><span className="text-gray-600">Danışman:</span> {student.advisor?.user?.name || 'Atanmamış'}</p>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tasks Tab (Kanban) */}
+          <TabsContent value="tasks">
+            <Card>
+              <CardHeader>
+                <CardTitle>Görevler (Kanban)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* TODO Column */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-4 text-gray-700">Yapılacak</h3>
+                    <div className="space-y-3">
+                      {student.tasks.filter((t: any) => t.status === 'TODO').map((task: any) => (
+                        <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
+                          <p className="font-medium text-sm">{task.title}</p>
+                          {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
+                          {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
+                        </div>
+                      ))}
+                      {student.tasks.filter((t: any) => t.status === 'TODO').length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* IN_PROGRESS Column */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-4 text-blue-700">Devam Ediyor</h3>
+                    <div className="space-y-3">
+                      {student.tasks.filter((t: any) => t.status === 'IN_PROGRESS').map((task: any) => (
+                        <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
+                          <p className="font-medium text-sm">{task.title}</p>
+                          {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
+                          {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
+                        </div>
+                      ))}
+                      {student.tasks.filter((t: any) => t.status === 'IN_PROGRESS').length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* DONE Column */}
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-4 text-green-700">Bitti</h3>
+                    <div className="space-y-3">
+                      {student.tasks.filter((t: any) => t.status === 'DONE').map((task: any) => (
+                        <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
+                          <p className="font-medium text-sm">{task.title}</p>
+                          {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
+                          {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
+                        </div>
+                      ))}
+                      {student.tasks.filter((t: any) => t.status === 'DONE').length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Subject Analysis Tab (AI) */}
+          <TabsContent value="analysis">
+            <Card>
+              <CardHeader>
+                <CardTitle>Konu Analizi (AI)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <AIAnalysisButton 
+                    studentId={id}
+                    examResults={[]}
+                    subjectAnalysis={subjectAnalysis}
+                  />
+                  
+                  {Object.keys(groupedSubjects).length > 0 && (
+                    <div className="space-y-6">
+                      <h3 className="font-semibold">Mevcut Konu Analizi</h3>
+                      {Object.entries(groupedSubjects).map(([subject, topics]) => (
+                        <div key={subject}>
+                          <h4 className="font-medium mb-3">{subject}</h4>
+                          <div className="space-y-2">
+                            {topics.map((topic: any) => (
+                              <div key={topic.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                                <span className="flex-1">{topic.topic}</span>
+                                <Badge className={getProficiencyColor(topic.proficiency)}>
+                                  {getProficiencyLabel(topic.proficiency)}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Meeting Notes Tab */}
+          <TabsContent value="meeting-notes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Görüşme Notları</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-semibold mb-3">Yeni Görüşme Notu Ekle</h3>
+                  <div className="space-y-3">
+                    <input
+                      type="date"
+                      className="w-full p-2 border rounded"
+                      placeholder="Tarih"
+                    />
+                    <textarea
+                      className="w-full p-2 border rounded"
+                      rows={4}
+                      placeholder="Görüşme notları..."
+                    />
+                    <Button className="w-full">Not Ekle</Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Geçmiş Notlar</h3>
+                  {student.meetingNotes.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">Henüz görüşme notu yok.</p>
+                  ) : (
+                    student.meetingNotes.map((note: any) => (
+                      <div key={note.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <p className="font-medium text-sm">
+                            {new Date(note.meetingDate).toLocaleDateString('tr-TR')}
+                          </p>
+                          {note.motivationLevel && (
+                            <Badge className="text-xs">{note.motivationLevel}</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">{note.notes}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
