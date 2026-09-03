@@ -41,10 +41,12 @@ export async function addStudent(formData: FormData) {
     }
 
     // Sync current user to Prisma User table (upsert to avoid foreign key errors)
+    // Use email as unique key to handle duplicate IDs from previous tests
+    let dbUser = null;
     try {
-      await prisma.user.upsert({
-        where: { id: user.id },
-        update: {},
+      dbUser = await prisma.user.upsert({
+        where: { email: user.email },
+        update: {}, // User exists, just return it
         create: {
           id: user.id,
           email: user.email,
@@ -59,13 +61,14 @@ export async function addStudent(formData: FormData) {
     }
 
     // Get or create advisor profile (upsert for safety)
+    // Use dbUser.id to ensure correct foreign key relationship
     let advisor = null;
     try {
       advisor = await prisma.advisorProfile.upsert({
-        where: { userId: user.id },
+        where: { userId: dbUser.id },
         update: {},
         create: {
-          userId: user.id,
+          userId: dbUser.id,
           specialization: 'GENERAL'
         }
       });
