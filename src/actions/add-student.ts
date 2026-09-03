@@ -40,30 +40,38 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Oturum bulunamadı' };
     }
 
-    // Get advisor profile
-    let advisor = null;
+    // Sync current user to Prisma User table (upsert to avoid foreign key errors)
     try {
-      advisor = await prisma.advisorProfile.findUnique({
-        where: { userId: user.id }
+      await prisma.user.upsert({
+        where: { id: user.id },
+        update: {},
+        create: {
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.name || user.email,
+          role: 'ADVISOR',
+          password: ''
+        }
       });
     } catch (error) {
-      console.error('Prisma error finding advisor:', error);
-      return { success: false, error: 'Danışman profili bulunamadı' };
+      console.error('Prisma error upserting advisor user:', error);
+      return { success: false, error: 'Kullanıcı senkronizasyon hatası' };
     }
 
-    // If advisor profile doesn't exist, create one (auto-upsert)
-    if (!advisor) {
-      try {
-        advisor = await prisma.advisorProfile.create({
-          data: {
-            userId: user.id,
-            specialization: 'GENERAL'
-          }
-        });
-      } catch (error) {
-        console.error('Prisma error creating advisor profile:', error);
-        return { success: false, error: 'Danışman profili oluşturma hatası' };
-      }
+    // Get or create advisor profile (upsert for safety)
+    let advisor = null;
+    try {
+      advisor = await prisma.advisorProfile.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: {
+          userId: user.id,
+          specialization: 'GENERAL'
+        }
+      });
+    } catch (error) {
+      console.error('Prisma error upserting advisor profile:', error);
+      return { success: false, error: 'Danışman profili oluşturma hatası' };
     }
 
     // Check if email already exists
@@ -102,10 +110,13 @@ export async function addStudent(formData: FormData) {
     }
 
     // Create user in Prisma (password hash is handled by Supabase, we store a placeholder)
+    // Use upsert to handle edge cases where user might already exist
     let newUser = null;
     try {
-      newUser = await prisma.user.create({
-        data: {
+      newUser = await prisma.user.upsert({
+        where: { id: authData.user.id },
+        update: {},
+        create: {
           id: authData.user.id,
           email,
           password: '', // Password is managed by Supabase Auth
@@ -114,7 +125,7 @@ export async function addStudent(formData: FormData) {
         }
       });
     } catch (error) {
-      console.error('Prisma error creating user:', error);
+      console.error('Prisma error upserting student user:', error);
       return { success: false, error: 'Kullanıcı kaydı oluşturma hatası' };
     }
 
