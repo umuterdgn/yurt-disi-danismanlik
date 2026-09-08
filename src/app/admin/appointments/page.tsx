@@ -2,8 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { AddAppointmentDialog } from "@/components/add-appointment-dialog";
 
 export default async function AdminAppointmentsPage() {
   const cookieStore = await cookies();
@@ -23,6 +25,7 @@ export default async function AdminAppointmentsPage() {
   
   let userName = 'Admin';
   let appointments: any[] = [];
+  let students: { id: string; name: string }[] = [];
 
   if (user?.email) {
     try {
@@ -36,6 +39,12 @@ export default async function AdminAppointmentsPage() {
 
         // SUPER_ADMIN sees all appointments
         if (dbUser.role === 'SUPER_ADMIN') {
+          // Get all students for the dialog
+          const allStudents = await prisma.studentProfile.findMany({
+            include: { user: true }
+          });
+          students = allStudents.map(s => ({ id: s.id, name: s.user.name }));
+
           appointments = await prisma.meetingNote.findMany({
             include: {
               studentProfile: {
@@ -67,8 +76,9 @@ export default async function AdminAppointmentsPage() {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl font-semibold text-gray-900">Tüm Randevular</CardTitle>
+            <AddAppointmentDialog students={students} />
           </CardHeader>
           <CardContent>
             <Table>
@@ -80,12 +90,13 @@ export default async function AdminAppointmentsPage() {
                   <TableHead className="text-gray-600">Konu/Not</TableHead>
                   <TableHead className="text-gray-600">Süre</TableHead>
                   <TableHead className="text-gray-600">Motivasyon</TableHead>
+                  <TableHead className="text-gray-600">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {appointments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       <div className="flex flex-col items-center justify-center space-y-2">
                         <p className="text-lg font-medium">Henüz randevu bulunmuyor</p>
                         <p className="text-sm">Sistemde kayıtlı görüşme/randevu yok.</p>
@@ -119,6 +130,11 @@ export default async function AdminAppointmentsPage() {
                           {appointment.motivationLevel === 'high' ? 'Yüksek' :
                            appointment.motivationLevel === 'medium' ? 'Orta' : 'Düşük'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="outline" size="sm">
+                          Düzenle
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

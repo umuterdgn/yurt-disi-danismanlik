@@ -83,8 +83,6 @@ export default async function AdminDashboard() {
     console.error('Error counting completed consultations:', error);
   }
 
-  const monthlyIncome = 125000; // Gelir tablosu şemada olmadığı için şimdilik sabit bırakıyoruz
-
   // 2. Ülkelere Göre Başvuru Dağılımını Hesaplıyoruz
   try {
     allApplications = await prisma.application.findMany({
@@ -164,7 +162,7 @@ export default async function AdminDashboard() {
         <AlertBanner />
         
         {/* Özet Kartları */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">Toplam Öğrenci</CardTitle>
@@ -198,15 +196,6 @@ export default async function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">{completedConsultations}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Bu Ayki Gelir</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{monthlyIncome.toLocaleString("tr-TR")} ₺</div>
             </CardContent>
           </Card>
         </div>
