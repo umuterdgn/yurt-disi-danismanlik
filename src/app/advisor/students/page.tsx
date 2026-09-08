@@ -34,7 +34,6 @@ export default async function AdvisorStudentsPage() {
     try {
       const dbUser = await prisma.user.findUnique({
         where: { email: user.email },
-        select: { role: true, id: true, name: true },
         include: {
           advisorProfile: true
         }

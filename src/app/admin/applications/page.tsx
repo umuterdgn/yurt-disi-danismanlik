@@ -48,8 +48,11 @@ export default async function AdminApplicationsPage() {
                   }
                 }
               },
-              country: true,
-              university: true
+              university: {
+                include: {
+                  country: true
+                }
+              }
             },
             orderBy: { createdAt: 'desc' }
           });
@@ -122,7 +125,7 @@ export default async function AdminApplicationsPage() {
                         {application.studentProfile?.user?.name || '-'}
                       </TableCell>
                       <TableCell className="text-gray-600">
-                        {application.country?.name || '-'}
+                        {application.university?.country?.name || '-'}
                       </TableCell>
                       <TableCell className="text-gray-600">
                         {application.university?.name || '-'}
