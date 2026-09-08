@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy } from 'lucide-react';
 import { StudentDailyTasks } from "@/components/student-daily-tasks";
 import { FileUploadButton } from "@/components/file-upload-button";
+import { AIMotivationCard } from "@/components/ai-motivation-card";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -99,6 +101,18 @@ export default async function StudentDashboard() {
     ? Math.round(((studentProfile.currentScore || 0) / studentProfile.targetScore) * 100) 
     : 0;
 
+  // Calculate level from XP (every 500 XP = 1 level)
+  const level = Math.floor((studentProfile.xp || 0) / 500) + 1;
+  const xpInCurrentLevel = (studentProfile.xp || 0) % 500;
+  const xpProgress = (xpInCurrentLevel / 500) * 100;
+
+  // Get leaderboard (top 5 students by XP)
+  const leaderboard = await prisma.studentProfile.findMany({
+    include: { user: true },
+    orderBy: { xp: 'desc' },
+    take: 5
+  });
+
   // Group subject analysis
   const groupedSubjects = studentProfile.subjectAnalysis.reduce((acc, analysis) => {
     if (!acc[analysis.subject]) {
@@ -166,31 +180,91 @@ export default async function StudentDashboard() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Öğrenci Paneli</h1>
         
-        {/* Student Profile Summary */}
+        {/* AI Motivation Card */}
+        <AIMotivationCard 
+          studentSymbol={studentProfile.studentSymbol || '🎓'}
+          currentXP={studentProfile.xp || 0}
+          studentName={studentProfile.user.name}
+        />
+
+        {/* Student Profile Summary with Gamification */}
         <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Profil Özeti</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
                 <p className="text-sm text-blue-100 mb-1">Öğrenci Adı</p>
                 <p className="text-2xl font-bold">{studentProfile.user.name}</p>
                 <p className="text-sm text-blue-100">{studentProfile.grade}. Sınıf</p>
               </div>
               <div>
-                <p className="text-sm text-blue-100 mb-1">Hedef Üniversite</p>
-                <p className="text-lg font-semibold">{studentProfile.targetUniversity || '-'}</p>
+                <p className="text-sm text-blue-100 mb-1">Sembol</p>
+                <p className="text-4xl">{studentProfile.studentSymbol || '🎓'}</p>
               </div>
               <div>
-                <p className="text-sm text-blue-100 mb-1">Hedef Puan</p>
-                <p className="text-3xl font-bold">{studentProfile.targetScore || 0}</p>
+                <p className="text-sm text-blue-100 mb-1">Seviye</p>
+                <p className="text-3xl font-bold">{level}</p>
+                <p className="text-sm text-blue-100 mt-1">XP: {studentProfile.xp || 0}</p>
+              </div>
+              <div>
+                <p className="text-sm text-blue-100 mb-1">Hedef Üniversite</p>
+                <p className="text-lg font-semibold">{studentProfile.targetUniversity || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-blue-100 mb-1">Mevcut Puan</p>
                 <p className="text-3xl font-bold">{studentProfile.currentScore || 0}</p>
                 <p className="text-sm text-blue-100 mt-1">İlerleme: %{progress}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* XP Progress Bar */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5" />
+              XP İlerlemesi
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Seviye {level}</span>
+                <span className="text-gray-600">{xpInCurrentLevel}/500 XP</span>
+              </div>
+              <Progress value={xpProgress} className="h-3" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Leaderboard */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5" />
+              Liderlik Tablosu
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {leaderboard.map((student, index) => (
+                <div 
+                  key={student.id} 
+                  className={`flex items-center justify-between p-3 rounded-lg ${
+                    student.id === studentProfile.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-gray-500">#{index + 1}</span>
+                    <span className="text-2xl">{student.studentSymbol || '🎓'}</span>
+                    <span className="font-medium">{student.user.name}</span>
+                  </div>
+                  <span className="font-bold text-purple-600">{student.xp || 0} XP</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

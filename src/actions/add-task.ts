@@ -46,12 +46,35 @@ export async function addTask(formData: FormData) {
 
 export async function updateTaskCompletion(taskId: string, isCompleted: boolean) {
   try {
-    const task = await prisma.dailyTask.update({
+    // Get the task with student profile
+    const task = await prisma.dailyTask.findUnique({
+      where: { id: taskId },
+      include: { studentProfile: true }
+    });
+
+    if (!task) {
+      return { success: false, error: 'Görev bulunamadı' };
+    }
+
+    // Update task completion status
+    const updatedTask = await prisma.dailyTask.update({
       where: { id: taskId },
       data: { isCompleted }
     });
 
-    return { success: true, task };
+    // Update student XP based on task completion
+    const xpChange = isCompleted ? 50 : -50;
+    
+    await prisma.studentProfile.update({
+      where: { id: task.studentProfileId },
+      data: {
+        xp: {
+          increment: xpChange
+        }
+      }
+    });
+
+    return { success: true, task: updatedTask };
   } catch (error) {
     console.error('Update task error:', error);
     return { success: false, error: 'Görev güncellenirken bir hata oluştu' };

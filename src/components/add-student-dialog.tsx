@@ -6,9 +6,25 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { addStudent } from "@/actions/add-student";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+
+const SYMBOLS = [
+  { emoji: "🎓", name: "Mezun" },
+  { emoji: "🚀", name: "Roket" },
+  { emoji: "🦁", name: "Aslan" },
+  { emoji: "🦉", name: "Baykuş" },
+  { emoji: "⚡", name: "Yıldırım" },
+  { emoji: "🔥", name: "Alev" },
+  { emoji: "🌟", name: "Yıldız" },
+  { emoji: "💎", name: "Elmas" },
+  { emoji: "🎯", name: "Hedef" },
+  { emoji: "🏆", name: "Kupa" },
+  { emoji: "🎨", name: "Sanat" },
+  { emoji: "🎸", name: "Müzik" },
+];
 
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
@@ -112,6 +128,26 @@ export function AddStudentDialog() {
                 placeholder="Örn: Varşova Üniversitesi"
                 className="col-span-1 md:col-span-3"
               />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+              <Label htmlFor="studentSymbol" className="md:text-right">
+                Sembol Seçimi
+              </Label>
+              <Select name="studentSymbol" defaultValue="🎓">
+                <SelectTrigger className="col-span-1 md:col-span-3">
+                  <SelectValue placeholder="Sembol seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYMBOLS.map((symbol) => (
+                    <SelectItem key={symbol.emoji} value={symbol.emoji}>
+                      <span className="flex items-center gap-2">
+                        <span className="text-xl">{symbol.emoji}</span>
+                        <span>{symbol.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {error && (

@@ -13,6 +13,7 @@ export async function addStudent(formData: FormData) {
     const password = formData.get('password') as string;
     const grade = formData.get('grade') as string;
     const targetUniversity = formData.get('targetUniversity') as string;
+    const studentSymbol = formData.get('studentSymbol') as string;
 
     // Validation
     if (!name || !email || !password || !grade) {
@@ -143,7 +144,10 @@ export async function addStudent(formData: FormData) {
           targetUniversity: targetUniversity || null,
           targetScore: 0,
           currentScore: 0,
-          school: ''
+          school: '',
+          studentSymbol: studentSymbol || '🎓',
+          xp: 0,
+          streak: 0
         }
       });
     } catch (error) {

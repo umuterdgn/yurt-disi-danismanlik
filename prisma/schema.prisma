@@ -60,6 +60,11 @@ model StudentProfile {
   targetScore      Float? // Hedef puan (TYT/AYT)
   currentScore     Float? // Mevcut puan
 
+  // Oyunlaştırma (Gamification)
+  xp               Int     @default(0) // Tecrübe puanı
+  studentSymbol    String  @default("🎓") // Öğrencinin sembolü/emoji
+  streak           Int     @default(0) // Ardışık giriş/görev serisi
+
   // İlişkiler
   advisorId       String?
   advisor         AdvisorProfile? @relation(fields: [advisorId], references: [id])
