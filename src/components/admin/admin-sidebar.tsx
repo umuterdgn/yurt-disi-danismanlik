@@ -29,11 +29,11 @@ export default function AdminSidebar() {
       subItems: [
         {
           title: "Tüm Öğrenciler",
-          href: "/advisor/students",
+          href: "/admin/students",
         },
         {
           title: "Başvuru Yönetimi",
-          href: "/advisor/applications",
+          href: "/admin/applications",
         },
       ],
     },
