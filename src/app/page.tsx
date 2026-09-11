@@ -9,7 +9,12 @@ import {
   ArrowRight,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  Bot,
+  Gamepad2,
+  Timer,
+  Bell,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNavbar } from "@/components/public-navbar";
@@ -24,12 +29,11 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="flex flex-col items-center text-center md:items-start md:text-left">
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 mb-6">
-                Hayallerinizdeki Eğitim,
-                <span className="text-blue-600">Global Kariyer</span>
+                Yurt İçi ve Yurt Dışı Eğitimde
+                <span className="text-blue-600"> Yapay Zeka Destekli Yeni Dönem</span>
               </h1>
               <p className="mt-6 text-lg sm:text-xl text-gray-500 max-w-2xl">
-                Yurt dışı eğitim danışmanlığı ile geleceğinizi şekillendirin. 
-                Nexa ile dünyanın en iyi üniversitelerine adım atın.
+                İster YKS, DGS ve MSÜ ile Türkiye'nin zirvesini, ister dünyanın en iyi üniversitelerini hedefleyin. Nexa'nın oyunlaştırılmış yeni nesil öğrenci paneli ve 7/24 AI eğitim koçluğu ile başarıya giden yolu baştan tasarladık.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row w-full gap-4 justify-center md:justify-start">
                 <Link href="/register" className="w-full sm:w-auto">
@@ -71,6 +75,58 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Nexa Student Platform Section */}
+      <section className="py-20 bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Nexa Öğrenci Platformu</h2>
+            <p className="text-xl text-gray-600">Teknolojik farkımızla eğitiminizi yeni nesil bir deneyime dönüştürüyoruz</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="bg-white rounded-xl p-8 hover:shadow-xl transition-all hover:-translate-y-1 border border-purple-100">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center mb-6">
+                <Bot className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">7/24 AI Eğitim Koçu</h3>
+              <p className="text-gray-600">
+                Groq yapay zeka altyapısıyla deneme analizlerinizi saniyeler içinde yapar, eksik konularınızı belirler ve size özel çalışma stratejileri sunar.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-8 hover:shadow-xl transition-all hover:-translate-y-1 border border-blue-100">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6">
+                <Gamepad2 className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Oyunlaştırılmış Deneyim</h3>
+              <p className="text-gray-600">
+                Sıkıcı çalışma rutinlerine son! Görevleri tamamladıkça XP kazanın, rozetler toplayın, alev serinizi (Streak) koruyun ve liderlik tablosunda yükselin.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-8 hover:shadow-xl transition-all hover:-translate-y-1 border border-green-100">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center mb-6">
+                <Timer className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Entegre Odaklanma Araçları</h3>
+              <p className="text-gray-600">
+                Sistem içi Pomodoro sayacı, günlük Kanban görev panosu ve hedef sınav geri sayım araçlarıyla zaman yönetimini ustalıkla yapın.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-8 hover:shadow-xl transition-all hover:-translate-y-1 border border-orange-100">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-6">
+                <Bell className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">İnteraktif Süreç Takibi</h3>
+              <p className="text-gray-600">
+                Evrak onay döngüsü, anlık bildirim sistemi ve interaktif takvim ile danışmanınızla 7/24 senkronize ilerleyin.
+              </p>
             </div>
           </div>
         </div>
@@ -149,11 +205,11 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gray-900 text-white">
+      <section className="py-20 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Başarılarımız</h2>
-            <p className="text-xl text-gray-300">Yılların deneyimi ve binlerce başarılı öğrenci</p>
+            <h2 className="text-4xl font-bold mb-4">Teknolojik Güçlü Yapımız</h2>
+            <p className="text-xl text-gray-300">Yapay zeka destekli yeni nesil eğitim platformu</p>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -166,8 +222,8 @@ export default function HomePage() {
               <div className="text-gray-300">Partner Üniversite</div>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-bold text-purple-400 mb-2">15+</div>
-              <div className="text-gray-300">Ülke</div>
+              <div className="text-5xl font-bold text-purple-400 mb-2">7/24</div>
+              <div className="text-gray-300">AI Eğitim Koçu</div>
             </div>
             <div className="text-center">
               <div className="text-5xl font-bold text-orange-400 mb-2">%98</div>
@@ -244,8 +300,8 @@ export default function HomePage() {
                   <CheckCircle className="w-4 h-4 text-teal-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Şeffaf İşleyiş</h3>
-                  <p className="text-gray-600">Tüm süreçlerde şeffaf ve güvenilir iletişim sağlıyoruz.</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Şeffaf ve Anlık İletişim</h3>
+                  <p className="text-gray-600">Öğrenci ve veli panelimiz sayesinde evrak süreçlerinizi, net grafiklerinizi ve danışman notlarınızı anlık olarak takip edebilirsiniz.</p>
                 </div>
               </div>
             </div>
@@ -254,11 +310,11 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">Eğitim Hayatınızı Şekillendirmeye Hazır mısınız?</h2>
+          <h2 className="text-4xl font-bold text-white mb-6">Yapay Zeka Destekli Eğitim Deneyimini Keşfedin</h2>
           <p className="text-xl text-blue-100 mb-8">
-            Ücretsiz danışmanlık için hemen iletişime geçin, size özel çözümler sunalım.
+            Yurt içi ve yurt dışı eğitim hedeflerinize Nexa'nın teknolojik gücüyle ulaşın. Hemen ücretsiz danışmanlık alın.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
