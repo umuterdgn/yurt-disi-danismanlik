@@ -237,18 +237,21 @@ export async function updateStudentStreak(studentId: string) {
       const lastLogin = new Date(currentProfile.lastLoginDate)
       const lastLoginDay = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate())
       
-      // Calculate days difference
+      // Calculate days difference (calendar days)
       const daysDiff = Math.floor((today.getTime() - lastLoginDay.getTime()) / (1000 * 60 * 60 * 24))
+      
+      // Calculate hours difference (for 24+ hour check)
+      const hoursDiff = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60))
       
       if (daysDiff === 0) {
         // Already logged in today, no change
         return { success: true, streak: newStreak, lastLoginDate: currentProfile.lastLoginDate }
-      } else if (daysDiff === 1) {
-        // Consecutive day, increment streak
+      } else if (daysDiff === 1 && hoursDiff < 48) {
+        // Exactly 1 calendar day passed and less than 48 hours (consecutive day)
         newStreak += 1
       } else {
-        // More than 1 day gap, reset streak
-        newStreak = 1
+        // More than 1 day gap or 24+ hours passed, reset streak to 0
+        newStreak = 0
       }
     } else {
       // First login ever
@@ -278,12 +281,12 @@ export async function checkAndAwardBadges(studentId: string) {
       where: { id: studentId },
       include: {
         dailyTasks: {
-          where: { status: 'DONE' }
+          where: { isCompleted: true }
         },
         applications: {
           include: {
             documents: {
-              where: { status: 'UPLOADED' }
+              where: { isUploaded: true }
             }
           }
         }
@@ -330,12 +333,11 @@ export async function checkAndAwardBadges(studentId: string) {
     
     // Award new badges
     if (newBadges.length > 0) {
+      const updatedBadges = [...currentBadges, ...newBadges]
       const updatedProfile = await prisma.studentProfile.update({
         where: { id: studentId },
         data: {
-          badges: {
-            push: ...newBadges
-          }
+          badges: updatedBadges
         }
       })
       

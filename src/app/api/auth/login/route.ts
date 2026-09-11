@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { updateStudentStreak } from '@/actions/admin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +37,11 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Hatalı şifre' },
         { status: 401 }
       )
+    }
+
+    // Update streak for students
+    if (user.role === UserRole.STUDENT && user.studentProfile) {
+      await updateStudentStreak(user.studentProfile.id)
     }
 
     // Kullanıcı bilgilerini hazırla (şifre hariç)

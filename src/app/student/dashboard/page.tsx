@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar, Flame } from 'lucide-react';
 import { StudentDailyTasks } from "@/components/student-daily-tasks";
 import { FileUploadButton } from "@/components/file-upload-button";
 import { AIMotivationCard } from "@/components/ai-motivation-card";
@@ -16,6 +16,7 @@ import { AdvisorStickyNote } from "@/components/advisor-sticky-note";
 import { PomodoroTimer } from "@/components/pomodoro-timer";
 import { TrophyRoom } from "@/components/trophy-room";
 import { AICoachChat } from "@/components/ai-coach-chat";
+import { StudentCalendar } from "@/components/student-calendar";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -52,11 +53,6 @@ export default async function StudentDashboard() {
           }
         },
         dailyTasks: {
-          where: {
-            taskDate: {
-              gte: new Date(new Date().setHours(0, 0, 0, 0))
-            }
-          },
           orderBy: { taskDate: 'desc' }
         },
         examResults: {
@@ -70,7 +66,8 @@ export default async function StudentDashboard() {
           include: {
             documents: {
               orderBy: { createdAt: 'desc' }
-            }
+            },
+            university: true
           },
           orderBy: { createdAt: 'desc' }
         }
@@ -189,17 +186,17 @@ export default async function StudentDashboard() {
         {/* Countdown Timer */}
         <div className="mb-6">
           <CountdownTimer 
-            examDate={studentProfile.examDate}
-            examName={studentProfile.targetExam}
+            examDate={studentProfile.examDate || undefined}
+            examName={studentProfile.targetExam || undefined}
           />
         </div>
 
         {/* Dream Board */}
         <div className="mb-6">
           <DreamBoard 
-            targetUniversity={studentProfile.targetUniversity}
-            targetCountry={studentProfile.applications?.[0]?.university?.name}
-            targetProgram={studentProfile.applications?.[0]?.program}
+            targetUniversity={studentProfile.targetUniversity || undefined}
+            targetCountry={studentProfile.applications?.[0]?.university?.name || undefined}
+            targetProgram={studentProfile.applications?.[0]?.program || undefined}
           />
         </div>
 
@@ -222,13 +219,23 @@ export default async function StudentDashboard() {
           </div>
         )}
 
+        {/* Student Calendar */}
+        <div className="mb-8">
+          <StudentCalendar 
+            dailyTasks={studentProfile.dailyTasks || []}
+            examResults={studentProfile.examResults || []}
+            examDate={studentProfile.examDate || undefined}
+            targetExam={studentProfile.targetExam || undefined}
+          />
+        </div>
+
         {/* Student Profile Summary with Gamification */}
         <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Profil Özeti</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
               <div>
                 <p className="text-sm text-blue-100 mb-1">Öğrenci Adı</p>
                 <p className="text-2xl font-bold">{studentProfile.user.name}</p>
@@ -251,6 +258,14 @@ export default async function StudentDashboard() {
                 <p className="text-sm text-blue-100 mb-1">Mevcut Puan</p>
                 <p className="text-3xl font-bold">{studentProfile.currentScore || 0}</p>
                 <p className="text-sm text-blue-100 mt-1">İlerleme: %{progress}</p>
+              </div>
+              <div>
+                <p className="text-sm text-blue-100 mb-1">Seri</p>
+                <div className="flex items-center gap-2">
+                  <Flame className="w-6 h-6 text-orange-300" />
+                  <p className="text-3xl font-bold">{studentProfile.streak || 0}</p>
+                </div>
+                <p className="text-sm text-blue-100 mt-1">Günlük Seri</p>
               </div>
             </div>
           </CardContent>

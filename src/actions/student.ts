@@ -82,6 +82,20 @@ export async function toggleTaskCompletion(taskId: string, isCompleted: boolean)
     data: { isCompleted }
   })
 
+  // If task is being completed, check for badges
+  if (isCompleted) {
+    const { checkAndAwardBadges } = await import('./admin')
+    const badgeResult = await checkAndAwardBadges(dbUser.studentProfile.id)
+    if (badgeResult.success && badgeResult.newBadges && badgeResult.newBadges.length > 0) {
+      return { 
+        success: true, 
+        task,
+        newBadges: badgeResult.newBadges,
+        message: `Tebrikler! Yeni rozetler kazandınız: ${badgeResult.newBadges.join(', ')}`
+      }
+    }
+  }
+
   revalidatePath('/student/dashboard')
   revalidatePath('/student/tasks')
   
