@@ -2,17 +2,24 @@
 
 import { useState } from 'react';
 import StudentSidebar from '@/components/student/student-sidebar';
+import { NotificationBell } from '@/components/notification-bell';
 import { Menu, GraduationCap, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function StudentLayoutClient({ children }: { children: React.ReactNode }) {
+interface StudentLayoutClientProps {
+  children: React.ReactNode;
+  userId: string;
+  initialNotifications?: any[];
+}
+
+export default function StudentLayoutClient({ children, userId, initialNotifications = [] }: StudentLayoutClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Desktop Sidebar - Fixed */}
       <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-50 bg-white border-r">
-        <StudentSidebar />
+        <StudentSidebar userId={userId} initialNotifications={initialNotifications} />
       </aside>
 
       {/* Mobile Header */}
@@ -27,6 +34,7 @@ export default function StudentLayoutClient({ children }: { children: React.Reac
             <p className="text-xs text-gray-500">Öğrenci Paneli</p>
           </div>
         </div>
+        <NotificationBell userId={userId} initialNotifications={initialNotifications} />
       </header>
 
       {/* Mobile Menu Overlay */}
@@ -46,7 +54,7 @@ export default function StudentLayoutClient({ children }: { children: React.Reac
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            <StudentSidebar />
+            <StudentSidebar userId={userId} initialNotifications={initialNotifications} />
           </div>
         </>
       )}

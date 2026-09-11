@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import StudentLayoutClient from './student-layout-client';
+import { Notification } from '@prisma/client';
 
 export default async function StudentLayout({
   children,
@@ -44,5 +45,17 @@ export default async function StudentLayout({
     redirect('/dashboard');
   }
 
-  return <StudentLayoutClient>{children}</StudentLayoutClient>;
+  // Get user notifications
+  let notifications: Notification[] = [];
+  try {
+    notifications = await prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+  }
+
+  return <StudentLayoutClient userId={user.id} initialNotifications={notifications}>{children}</StudentLayoutClient>;
 }

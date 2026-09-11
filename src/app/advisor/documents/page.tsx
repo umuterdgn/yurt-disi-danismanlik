@@ -8,6 +8,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { FileUploadButton } from "@/components/file-upload-button";
+import { DocumentApprovalActions } from "@/components/document-approval-actions";
 
 export default async function DocumentsPage() {
   const cookieStore = await cookies();
@@ -93,10 +94,17 @@ export default async function DocumentsPage() {
             Eksik
           </Badge>
         );
-      case 'UPLOADED':
+      case 'PENDING':
         return (
           <Badge className="bg-yellow-100 text-yellow-700">
             <Clock className="w-3 h-3 mr-1" />
+            Beklemede
+          </Badge>
+        );
+      case 'UPLOADED':
+        return (
+          <Badge className="bg-blue-100 text-blue-700">
+            <CheckCircle className="w-3 h-3 mr-1" />
             Yüklendi
           </Badge>
         );
@@ -105,6 +113,13 @@ export default async function DocumentsPage() {
           <Badge className="bg-green-100 text-green-700">
             <CheckCircle className="w-3 h-3 mr-1" />
             Onaylandı
+          </Badge>
+        );
+      case 'REVISION_REQUIRED':
+        return (
+          <Badge className="bg-orange-100 text-orange-700">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Revizyon Gerekiyor
           </Badge>
         );
       case 'REJECTED':
@@ -120,7 +135,7 @@ export default async function DocumentsPage() {
   };
 
   const missingDocuments = documents.filter((d: any) => d.status === 'MISSING');
-  const pendingDocuments = documents.filter((d: any) => d.status === 'UPLOADED');
+  const pendingDocuments = documents.filter((d: any) => d.status === 'PENDING' || d.status === 'UPLOADED');
 
   return (
     <div className="p-4 md:p-8">
@@ -240,10 +255,11 @@ export default async function DocumentsPage() {
                             : '-'}
                         </TableCell>
                         <TableCell>
-                          <FileUploadButton 
+                          <DocumentApprovalActions
                             documentId={doc.id}
-                            filePath={doc.filePath}
-                            documentName={doc.documentType}
+                            currentStatus={doc.status}
+                            documentType={doc.documentType}
+                            studentName={doc.application?.studentProfile?.user?.name || 'Öğrenci'}
                           />
                         </TableCell>
                       </TableRow>

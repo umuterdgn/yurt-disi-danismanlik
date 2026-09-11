@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
-import { UserRole } from '@prisma/client'
+import { UserRole, NotificationType } from '@prisma/client'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -147,9 +147,31 @@ export async function createStudent(data: {
 
 export async function addAdvisorNote(studentId: string, note: string) {
   try {
+    // Get student profile to get userId
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { userId: true }
+    })
+
+    if (!studentProfile) {
+      return { success: false, error: 'Öğrenci profili bulunamadı' }
+    }
+
     const updatedProfile = await prisma.studentProfile.update({
       where: { id: studentId },
       data: { advisorNote: note }
+    })
+
+    // Create notification for student
+    await prisma.notification.create({
+      data: {
+        userId: studentProfile.userId,
+        title: 'Danışman Notu',
+        message: `Danışmanınız size yeni bir not bıraktı`,
+        type: NotificationType.NOTE,
+        relatedEntityType: 'StudentProfile',
+        relatedEntityId: studentId
+      }
     })
     
     revalidatePath('/advisor/students/[id]')

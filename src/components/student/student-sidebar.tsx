@@ -11,8 +11,14 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { LogoutButton } from '@/components/logout-button';
+import { NotificationBell } from '@/components/notification-bell';
 
-export default function StudentSidebar() {
+interface StudentSidebarProps {
+  userId: string;
+  initialNotifications?: any[];
+}
+
+export default function StudentSidebar({ userId, initialNotifications = [] }: StudentSidebarProps) {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
@@ -42,9 +48,12 @@ export default function StudentSidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
-        <p className="text-sm text-gray-500 mt-1">Öğrenci Paneli</p>
+      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
+          <p className="text-sm text-gray-500 mt-1">Öğrenci Paneli</p>
+        </div>
+        <NotificationBell userId={userId} initialNotifications={initialNotifications} />
       </div>
 
       <nav className="p-4 space-y-2 flex-1 overflow-y-auto">

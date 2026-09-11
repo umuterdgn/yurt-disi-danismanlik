@@ -17,6 +17,7 @@ import { PomodoroTimer } from "@/components/pomodoro-timer";
 import { TrophyRoom } from "@/components/trophy-room";
 import { AICoachChat } from "@/components/ai-coach-chat";
 import { StudentCalendar } from "@/components/student-calendar";
+import { StreakDisplay } from "@/components/streak-display";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -167,14 +168,35 @@ export default async function StudentDashboard() {
 
   const getDocumentStatusIcon = (status: string) => {
     switch (status) {
+      case 'PENDING':
+        return <Clock className="w-4 h-4 text-yellow-600" />;
       case 'UPLOADED':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'VERIFIED':
         return <CheckCircle className="w-4 h-4 text-blue-600" />;
+      case 'APPROVED':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'REVISION_REQUIRED':
+        return <AlertCircle className="w-4 h-4 text-orange-600" />;
       case 'REJECTED':
         return <AlertCircle className="w-4 h-4 text-red-600" />;
       default:
-        return <Clock className="w-4 h-4 text-yellow-600" />;
+        return <Clock className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getDocumentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return <Badge className="bg-yellow-100 text-yellow-700">Beklemede</Badge>;
+      case 'UPLOADED':
+        return <Badge className="bg-blue-100 text-blue-700">Yüklendi</Badge>;
+      case 'APPROVED':
+        return <Badge className="bg-green-100 text-green-700">Onaylandı</Badge>;
+      case 'REVISION_REQUIRED':
+        return <Badge className="bg-orange-100 text-orange-700">Revizyon Gerekiyor</Badge>;
+      case 'REJECTED':
+        return <Badge className="bg-red-100 text-red-700">Reddedildi</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -230,46 +252,94 @@ export default async function StudentDashboard() {
         </div>
 
         {/* Student Profile Summary with Gamification */}
-        <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Profil Özeti</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-              <div>
-                <p className="text-sm text-blue-100 mb-1">Öğrenci Adı</p>
-                <p className="text-2xl font-bold">{studentProfile.user.name}</p>
-                <p className="text-sm text-blue-100">{studentProfile.grade}. Sınıf</p>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold">Profil Özeti</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-blue-100 mb-1">Öğrenci Adı</p>
+                  <p className="text-xl font-bold">{studentProfile.user.name}</p>
+                  <p className="text-sm text-blue-100">{studentProfile.grade}. Sınıf</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-100 mb-1">Sembol</p>
+                  <p className="text-3xl">{studentProfile.studentSymbol || '🎓'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-100 mb-1">Seviye</p>
+                  <p className="text-2xl font-bold">{level}</p>
+                  <p className="text-sm text-blue-100">XP: {studentProfile.xp || 0}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-blue-100 mb-1">Sembol</p>
-                <p className="text-4xl">{studentProfile.studentSymbol || '🎓'}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-green-500 to-teal-600 text-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold">Hedefler</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-green-100 mb-1">Hedef Üniversite</p>
+                  <p className="text-lg font-semibold">{studentProfile.targetUniversity || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-green-100 mb-1">Mevcut Puan</p>
+                  <p className="text-2xl font-bold">{studentProfile.currentScore || 0}</p>
+                  <p className="text-sm text-green-100">İlerleme: %{progress}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-blue-100 mb-1">Seviye</p>
-                <p className="text-3xl font-bold">{level}</p>
-                <p className="text-sm text-blue-100 mt-1">XP: {studentProfile.xp || 0}</p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-100 mb-1">Hedef Üniversite</p>
-                <p className="text-lg font-semibold">{studentProfile.targetUniversity || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-100 mb-1">Mevcut Puan</p>
-                <p className="text-3xl font-bold">{studentProfile.currentScore || 0}</p>
-                <p className="text-sm text-blue-100 mt-1">İlerleme: %{progress}</p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-100 mb-1">Seri</p>
-                <div className="flex items-center gap-2">
-                  <Flame className="w-6 h-6 text-orange-300" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold">Günlük Seri</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <Flame className="w-12 h-12" />
+                  {(studentProfile.streak || 0) >= 7 && (
+                    <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      🔥
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-orange-100">Ardışık Gün</p>
                   <p className="text-3xl font-bold">{studentProfile.streak || 0}</p>
                 </div>
-                <p className="text-sm text-blue-100 mt-1">Günlük Seri</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold">Hedef Sınav</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm text-purple-100 mb-1">Sınav Türü</p>
+                  <p className="text-lg font-semibold">{studentProfile.targetExam || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-100 mb-1">Sınav Tarihi</p>
+                  <p className="text-sm font-semibold">
+                    {studentProfile.examDate 
+                      ? new Date(studentProfile.examDate).toLocaleDateString('tr-TR')
+                      : '-'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* XP Progress Bar */}
         <Card className="mb-8">
@@ -369,19 +439,27 @@ export default async function StudentDashboard() {
               ) : (
                 <div className="space-y-3">
                   {allDocuments.map((doc: any) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {getDocumentStatusIcon(doc.status)}
-                        <div>
-                          <p className="font-medium">{doc.documentType || doc.type}</p>
-                          <p className="text-sm text-gray-600">{doc.status}</p>
+                    <div key={doc.id} className={`p-4 border rounded-lg ${doc.status === 'REVISION_REQUIRED' ? 'bg-orange-50 border-orange-200' : ''}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          {getDocumentStatusIcon(doc.status)}
+                          <div>
+                            <p className="font-medium">{doc.documentType || doc.type}</p>
+                            {getDocumentStatusBadge(doc.status)}
+                          </div>
                         </div>
+                        <FileUploadButton 
+                          documentId={doc.id}
+                          filePath={doc.filePath}
+                          documentName={doc.documentType || doc.type}
+                        />
                       </div>
-                      <FileUploadButton 
-                        documentId={doc.id}
-                        filePath={doc.filePath}
-                        documentName={doc.documentType || doc.type}
-                      />
+                      {doc.status === 'REVISION_REQUIRED' && doc.feedback && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm font-medium text-red-900 mb-1">Revizyon Notu:</p>
+                          <p className="text-sm text-red-700">{doc.feedback}</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

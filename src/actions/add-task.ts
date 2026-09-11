@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { createClient } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
+import { NotificationType } from '@prisma/client';
 
 export async function addTask(formData: FormData) {
   try {
@@ -18,6 +20,16 @@ export async function addTask(formData: FormData) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' };
     }
 
+    // Get student profile to get userId
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentProfileId },
+      select: { userId: true }
+    });
+
+    if (!studentProfile) {
+      return { success: false, error: 'Öğrenci profili bulunamadı' };
+    }
+
     // Create task
     const task = await prisma.dailyTask.create({
       data: {
@@ -32,6 +44,21 @@ export async function addTask(formData: FormData) {
         isCompleted: false
       }
     });
+
+    // Create notification for student
+    await prisma.notification.create({
+      data: {
+        userId: studentProfile.userId,
+        title: 'Yeni Görev Atandı',
+        message: `Danışmanınız size yeni bir görev atadı: ${title}`,
+        type: NotificationType.TASK,
+        relatedEntityType: 'DailyTask',
+        relatedEntityId: task.id
+      }
+    });
+
+    revalidatePath('/student/dashboard');
+    revalidatePath('/student/tasks');
 
     return {
       success: true,

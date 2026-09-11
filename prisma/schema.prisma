@@ -42,6 +42,9 @@ model User {
   // Veli ilişkileri
   childrenAsParent Parent[] @relation("ParentRelations")
 
+  // Bildirim ilişkileri
+  notifications Notification[]
+
   @@map("users")
 }
 
@@ -375,7 +378,8 @@ model Document {
   isUploaded   Boolean        @default(false)
   uploadDate   DateTime?
   expiryDate   DateTime?
-  status       DocumentStatus @default(MISSING) // MISSING, UPLOADED, APPROVED, REJECTED
+  status       DocumentStatus @default(PENDING) // PENDING, APPROVED, REVISION_REQUIRED, MISSING, UPLOADED, REJECTED
+  feedback     String? // Danışmanın ret/revizyon sebebi
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -384,9 +388,11 @@ model Document {
 }
 
 enum DocumentStatus {
+  PENDING
+  APPROVED
+  REVISION_REQUIRED
   MISSING
   UPLOADED
-  APPROVED
   REJECTED
 }
 
@@ -445,10 +451,11 @@ model AppointmentParticipant {
 model Notification {
   id     String @id @default(cuid())
   userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title   String
   message String           @db.Text
-  type    NotificationType // Vize randevusu, Eksik belge, Hatırlatıcı vb.
+  type    NotificationType // TASK, DOCUMENT, NOTE, MEETING, GENERAL
   isRead  Boolean          @default(false)
 
   // İlişkili varlık
@@ -461,12 +468,16 @@ model Notification {
 }
 
 enum NotificationType {
+  TASK
+  DOCUMENT
+  NOTE
+  MEETING
+  GENERAL
   VISA_APPOINTMENT
   MISSING_DOCUMENT
   APPLICATION_UPDATE
   MEETING_REMINDER
   PAYMENT_REMINDER
-  GENERAL
 }
 
 // ============================================
