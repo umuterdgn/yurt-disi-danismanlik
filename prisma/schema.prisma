@@ -21,13 +21,14 @@ enum UserRole {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      UserRole
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       UserRole
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // İlişkiler
   studentProfile StudentProfile?
@@ -61,9 +62,14 @@ model StudentProfile {
   currentScore     Float? // Mevcut puan
 
   // Oyunlaştırma (Gamification)
-  xp               Int     @default(0) // Tecrübe puanı
-  studentSymbol    String  @default("🎓") // Öğrencinin sembolü/emoji
-  streak           Int     @default(0) // Ardışık giriş/görev serisi
+  xp               Int      @default(0) // Tecrübe puanı
+  studentSymbol    String   @default("🎓") // Öğrencinin sembolü/emoji
+  streak           Int      @default(0) // Ardışık giriş/görev serisi
+  lastLoginDate    DateTime? // Son giriş tarihi (streak hesaplama için)
+  badges           String[] @default([]) // Kazanılan rozetler
+  targetExam       String?  // Sınav türü (YKS, DGS, MSÜ, IELTS)
+  examDate         DateTime? // Hedef sınav tarihi
+  advisorNote      String?  // Danışmanın notu
 
   // İlişkiler
   advisorId       String?

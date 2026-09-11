@@ -121,6 +121,8 @@ export async function createStudent(data: {
   targetUniversity: string
   targetScore: number
   currentScore: number
+  targetExam?: string
+  examDate?: Date
   advisorId?: string
 }) {
   return createUser({
@@ -135,8 +137,217 @@ export async function createStudent(data: {
         targetUniversity: data.targetUniversity,
         targetScore: data.targetScore,
         currentScore: data.currentScore,
+        targetExam: data.targetExam,
+        examDate: data.examDate,
         advisorId: data.advisorId
       }
     }
   })
+}
+
+export async function addAdvisorNote(studentId: string, note: string) {
+  try {
+    const updatedProfile = await prisma.studentProfile.update({
+      where: { id: studentId },
+      data: { advisorNote: note }
+    })
+    
+    revalidatePath('/advisor/students/[id]')
+    revalidatePath('/student/dashboard')
+    
+    return { success: true, profile: updatedProfile }
+  } catch (error) {
+    console.error('Advisor note addition error:', error)
+    return { success: false, error: 'Not eklenirken bir hata oluştu' }
+  }
+}
+
+export async function addStudentXP(studentId: string, xpAmount: number) {
+  try {
+    const updatedProfile = await prisma.studentProfile.update({
+      where: { id: studentId },
+      data: { 
+        xp: { increment: xpAmount }
+      }
+    })
+    
+    revalidatePath('/student/dashboard')
+    revalidatePath('/leaderboard')
+    
+    return { success: true, profile: updatedProfile, newXP: updatedProfile.xp }
+  } catch (error) {
+    console.error('XP addition error:', error)
+    return { success: false, error: 'XP eklenirken bir hata oluştu' }
+  }
+}
+
+export async function addStudentBadge(studentId: string, badge: string) {
+  try {
+    const currentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { badges: true }
+    })
+    
+    if (!currentProfile) {
+      return { success: false, error: 'Öğrenci profili bulunamadı' }
+    }
+    
+    const currentBadges = currentProfile.badges || []
+    if (currentBadges.includes(badge)) {
+      return { success: false, error: 'Bu rozet zaten mevcut' }
+    }
+    
+    const updatedProfile = await prisma.studentProfile.update({
+      where: { id: studentId },
+      data: { 
+        badges: { push: badge }
+      }
+    })
+    
+    revalidatePath('/student/dashboard')
+    revalidatePath('/student/trophy-room')
+    
+    return { success: true, profile: updatedProfile, newBadges: updatedProfile.badges }
+  } catch (error) {
+    console.error('Badge addition error:', error)
+    return { success: false, error: 'Rozet eklenirken bir hata oluştu' }
+  }
+}
+
+export async function updateStudentStreak(studentId: string) {
+  try {
+    const currentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { 
+        streak: true,
+        lastLoginDate: true
+      }
+    })
+    
+    if (!currentProfile) {
+      return { success: false, error: 'Öğrenci profili bulunamadı' }
+    }
+    
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    let newStreak = currentProfile.streak || 0
+    
+    if (currentProfile.lastLoginDate) {
+      const lastLogin = new Date(currentProfile.lastLoginDate)
+      const lastLoginDay = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate())
+      
+      // Calculate days difference
+      const daysDiff = Math.floor((today.getTime() - lastLoginDay.getTime()) / (1000 * 60 * 60 * 24))
+      
+      if (daysDiff === 0) {
+        // Already logged in today, no change
+        return { success: true, streak: newStreak, lastLoginDate: currentProfile.lastLoginDate }
+      } else if (daysDiff === 1) {
+        // Consecutive day, increment streak
+        newStreak += 1
+      } else {
+        // More than 1 day gap, reset streak
+        newStreak = 1
+      }
+    } else {
+      // First login ever
+      newStreak = 1
+    }
+    
+    const updatedProfile = await prisma.studentProfile.update({
+      where: { id: studentId },
+      data: { 
+        streak: newStreak,
+        lastLoginDate: now
+      }
+    })
+    
+    revalidatePath('/student/dashboard')
+    
+    return { success: true, streak: newStreak, lastLoginDate: now }
+  } catch (error) {
+    console.error('Streak update error:', error)
+    return { success: false, error: 'Streak güncellenirken bir hata oluştu' }
+  }
+}
+
+export async function checkAndAwardBadges(studentId: string) {
+  try {
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      include: {
+        dailyTasks: {
+          where: { status: 'DONE' }
+        },
+        applications: {
+          include: {
+            documents: {
+              where: { status: 'UPLOADED' }
+            }
+          }
+        }
+      }
+    })
+    
+    if (!studentProfile) {
+      return { success: false, error: 'Öğrenci profili bulunamadı' }
+    }
+    
+    const newBadges: string[] = []
+    const currentBadges = studentProfile.badges || []
+    
+    // Check for task-related badges
+    const completedTasks = studentProfile.dailyTasks.length
+    if (completedTasks >= 5 && !currentBadges.includes('odak_ustasi')) {
+      newBadges.push('odak_ustasi')
+    }
+    if (completedTasks >= 50 && !currentBadges.includes('gorev_canavari')) {
+      newBadges.push('gorev_canavari')
+    }
+    
+    // Check for document-related badges
+    const uploadedDocuments = studentProfile.applications.reduce((total, app) => {
+      return total + (app.documents?.length || 0)
+    }, 0)
+    
+    if (uploadedDocuments >= 1 && !currentBadges.includes('evrak_canavari')) {
+      newBadges.push('evrak_canavari')
+    }
+    
+    // Check for streak-related badges
+    if (studentProfile.streak >= 7 && !currentBadges.includes('ates_ustasi')) {
+      newBadges.push('ates_ustasi')
+    }
+    
+    // Check for XP-related badges
+    if (studentProfile.xp >= 1000 && !currentBadges.includes('yildiz_ogrenci')) {
+      newBadges.push('yildiz_ogrenci')
+    }
+    if (studentProfile.xp >= 5000 && !currentBadges.includes('bilge_ustasi')) {
+      newBadges.push('bilge_ustasi')
+    }
+    
+    // Award new badges
+    if (newBadges.length > 0) {
+      const updatedProfile = await prisma.studentProfile.update({
+        where: { id: studentId },
+        data: {
+          badges: {
+            push: ...newBadges
+          }
+        }
+      })
+      
+      revalidatePath('/student/dashboard')
+      revalidatePath('/student/trophy-room')
+      
+      return { success: true, newBadges, allBadges: updatedProfile.badges }
+    }
+    
+    return { success: true, newBadges: [], allBadges: currentBadges }
+  } catch (error) {
+    console.error('Badge check error:', error)
+    return { success: false, error: 'Rozet kontrolü sırasında hata oluştu' }
+  }
 }

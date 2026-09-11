@@ -7,7 +7,8 @@ import {
   Calendar, 
   FileText, 
   Globe,
-  Settings
+  Settings,
+  UserCheck
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -22,6 +23,11 @@ export default function AdminSidebar() {
       title: "Kullanıcılar",
       icon: Users,
       href: "/admin/users",
+    },
+    {
+      title: "Onay Bekleyenler",
+      icon: UserCheck,
+      href: "/admin/pending-approvals",
     },
     {
       title: "Danışmanlık Modülleri",

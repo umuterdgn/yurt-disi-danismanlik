@@ -23,9 +23,16 @@ export function AIMotivationCard({ studentSymbol, currentXP, studentName }: AIMo
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ studentSymbol, currentXP, studentName })
         });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         if (data.success) {
           setMotivation(data.motivation);
+        } else {
+          throw new Error(data.error || 'API returned unsuccessful response');
         }
       } catch (error) {
         console.error('Error fetching motivation:', error);

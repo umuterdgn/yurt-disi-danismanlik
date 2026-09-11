@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare } from 'lucide-react';
 import { AIAnalysisButton } from "@/components/ai-analysis-button";
+import { AdvisorNoteForm } from "@/components/advisor-note-form";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -195,33 +196,42 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
           {/* Profile Tab */}
           <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Öğrenci Profili</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold mb-3">Kişisel Bilgiler</h3>
-                    <div className="space-y-2">
-                      <p><span className="text-gray-600">Ad Soyad:</span> {student.user.name}</p>
-                      <p><span className="text-gray-600">E-posta:</span> {student.user.email}</p>
-                      <p><span className="text-gray-600">Sınıf:</span> {student.grade}</p>
-                      <p><span className="text-gray-600">Okul:</span> {student.school}</p>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Öğrenci Profili</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-semibold mb-3">Kişisel Bilgiler</h3>
+                      <div className="space-y-2">
+                        <p><span className="text-gray-600">Ad Soyad:</span> {student.user.name}</p>
+                        <p><span className="text-gray-600">E-posta:</span> {student.user.email}</p>
+                        <p><span className="text-gray-600">Sınıf:</span> {student.grade}</p>
+                        <p><span className="text-gray-600">Okul:</span> {student.school}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-3">Hedefler</h3>
+                      <div className="space-y-2">
+                        <p><span className="text-gray-600">Hedef Üniversite:</span> {student.targetUniversity}</p>
+                        <p><span className="text-gray-600">Hedef Puan:</span> {student.targetScore}</p>
+                        <p><span className="text-gray-600">Mevcut Puan:</span> {student.currentScore}</p>
+                        <p><span className="text-gray-600">Hedef Sınav:</span> {student.targetExam || '-'}</p>
+                        <p><span className="text-gray-600">Sınav Tarihi:</span> {student.examDate ? new Date(student.examDate).toLocaleDateString('tr-TR') : '-'}</p>
+                        <p><span className="text-gray-600">Danışman:</span> {student.advisor?.user?.name || 'Atanmamış'}</p>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold mb-3">Hedefler</h3>
-                    <div className="space-y-2">
-                      <p><span className="text-gray-600">Hedef Üniversite:</span> {student.targetUniversity}</p>
-                      <p><span className="text-gray-600">Hedef Puan:</span> {student.targetScore}</p>
-                      <p><span className="text-gray-600">Mevcut Puan:</span> {student.currentScore}</p>
-                      <p><span className="text-gray-600">Danışman:</span> {student.advisor?.user?.name || 'Atanmamış'}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <AdvisorNoteForm 
+                studentId={id}
+                currentNote={student.advisorNote}
+              />
+            </div>
           </TabsContent>
 
           {/* Tasks Tab (Kanban) */}

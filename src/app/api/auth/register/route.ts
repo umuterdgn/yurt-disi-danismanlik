@@ -5,14 +5,17 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, role } = await request.json()
+    const { email, password, name } = await request.json()
 
-    if (!email || !password || !name || !role) {
+    if (!email || !password || !name) {
       return NextResponse.json(
         { success: false, error: 'Tüm zorunlu alanları doldurun' },
         { status: 400 }
       )
     }
+
+    // Force role to STUDENT for security - no role selection from public registration
+    const role = 'STUDENT'
 
     // Supabase Admin Client oluştur
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

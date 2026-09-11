@@ -6,10 +6,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar } from 'lucide-react';
 import { StudentDailyTasks } from "@/components/student-daily-tasks";
 import { FileUploadButton } from "@/components/file-upload-button";
 import { AIMotivationCard } from "@/components/ai-motivation-card";
+import { CountdownTimer } from "@/components/countdown-timer";
+import { DreamBoard } from "@/components/dream-board";
+import { AdvisorStickyNote } from "@/components/advisor-sticky-note";
+import { PomodoroTimer } from "@/components/pomodoro-timer";
+import { TrophyRoom } from "@/components/trophy-room";
+import { AICoachChat } from "@/components/ai-coach-chat";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -180,12 +186,41 @@ export default async function StudentDashboard() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Öğrenci Paneli</h1>
         
+        {/* Countdown Timer */}
+        <div className="mb-6">
+          <CountdownTimer 
+            examDate={studentProfile.examDate}
+            examName={studentProfile.targetExam}
+          />
+        </div>
+
+        {/* Dream Board */}
+        <div className="mb-6">
+          <DreamBoard 
+            targetUniversity={studentProfile.targetUniversity}
+            targetCountry={studentProfile.applications?.[0]?.university?.name}
+            targetProgram={studentProfile.applications?.[0]?.program}
+          />
+        </div>
+
         {/* AI Motivation Card */}
-        <AIMotivationCard 
-          studentSymbol={studentProfile.studentSymbol || '🎓'}
-          currentXP={studentProfile.xp || 0}
-          studentName={studentProfile.user.name}
-        />
+        <div className="mb-6">
+          <AIMotivationCard 
+            studentSymbol={studentProfile.studentSymbol || '🎓'}
+            currentXP={studentProfile.xp || 0}
+            studentName={studentProfile.user.name}
+          />
+        </div>
+
+        {/* Advisor Sticky Note */}
+        {studentProfile.advisorNote && (
+          <div className="mb-6">
+            <AdvisorStickyNote 
+              advisorNote={studentProfile.advisorNote}
+              advisorName={studentProfile.advisor?.user.name}
+            />
+          </div>
+        )}
 
         {/* Student Profile Summary with Gamification */}
         <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
@@ -240,36 +275,45 @@ export default async function StudentDashboard() {
           </CardContent>
         </Card>
 
-        {/* Leaderboard */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="w-5 h-5" />
-              Liderlik Tablosu
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {leaderboard.map((student, index) => (
-                <div 
-                  key={student.id} 
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    student.id === studentProfile.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-gray-500">#{index + 1}</span>
-                    <span className="text-2xl">{student.studentSymbol || '🎓'}</span>
-                    <span className="font-medium">{student.user.name}</span>
+        {/* Leaderboard and Trophy Room */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Leaderboard */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5" />
+                Liderlik Tablosu
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {leaderboard.map((student, index) => (
+                  <div 
+                    key={student.id} 
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      student.id === studentProfile.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-gray-500">#{index + 1}</span>
+                      <span className="text-2xl">{student.studentSymbol || '🎓'}</span>
+                      <span className="font-medium">{student.user.name}</span>
+                    </div>
+                    <span className="font-bold text-purple-600">{student.xp || 0} XP</span>
                   </div>
-                  <span className="font-bold text-purple-600">{student.xp || 0} XP</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Daily Tasks and Documents */}
+          {/* Trophy Room */}
+          <TrophyRoom 
+            badges={studentProfile.badges}
+            xp={studentProfile.xp}
+          />
+        </div>
+
+        {/* Daily Tasks and Pomodoro */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Daily Tasks */}
           <Card>
@@ -283,6 +327,11 @@ export default async function StudentDashboard() {
               <StudentDailyTasks tasks={studentProfile.dailyTasks || []} />
             </CardContent>
           </Card>
+
+          {/* Pomodoro Timer */}
+          <div>
+            <PomodoroTimer />
+          </div>
 
           {/* Document Upload Area */}
           <Card>
@@ -404,6 +453,9 @@ export default async function StudentDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* AI Coach Chat */}
+        <AICoachChat />
       </div>
     </div>
   );

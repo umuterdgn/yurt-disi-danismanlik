@@ -17,6 +17,7 @@ export default function UsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [userType, setUserType] = useState<"advisor" | "student">("advisor");
   const [loading, setLoading] = useState(false);
+  const [approving, setApproving] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -32,7 +33,9 @@ export default function UsersPage() {
     school: "",
     targetUniversity: "",
     targetScore: "",
-    currentScore: ""
+    currentScore: "",
+    targetExam: "",
+    examDate: ""
   });
 
   const loadUsers = async () => {
@@ -72,7 +75,9 @@ export default function UsersPage() {
           school: formData.school,
           targetUniversity: formData.targetUniversity,
           targetScore: parseInt(formData.targetScore),
-          currentScore: parseInt(formData.currentScore)
+          currentScore: parseInt(formData.currentScore),
+          targetExam: formData.targetExam,
+          examDate: formData.examDate ? new Date(formData.examDate) : undefined
         });
       }
 
@@ -91,7 +96,9 @@ export default function UsersPage() {
           school: "",
           targetUniversity: "",
           targetScore: "",
-          currentScore: ""
+          currentScore: "",
+          targetExam: "",
+          examDate: ""
         });
         loadUsers();
       } else {
@@ -102,6 +109,30 @@ export default function UsersPage() {
       alert('Bir hata oluştu');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveUser = async (userId: string) => {
+    setApproving(userId);
+    try {
+      const response = await fetch('/api/admin/approve-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Kullanıcı başarıyla onaylandı');
+        loadUsers();
+      } else {
+        alert('Hata: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error approving user:', error);
+      alert('Bir hata oluştu');
+    } finally {
+      setApproving(null);
     }
   };
 
@@ -146,6 +177,7 @@ export default function UsersPage() {
                 <TableHead>Ad Soyad</TableHead>
                 <TableHead>E-posta</TableHead>
                 <TableHead>Rol</TableHead>
+                <TableHead>Onay Durumu</TableHead>
                 <TableHead>Detaylar</TableHead>
                 <TableHead>Kayıt Tarihi</TableHead>
                 <TableHead>İşlemler</TableHead>
@@ -157,6 +189,17 @@ export default function UsersPage() {
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
+                  <TableCell>
+                    {user.role === 'STUDENT' ? (
+                      user.isApproved ? (
+                        <Badge className="bg-green-100 text-green-700">Onaylı</Badge>
+                      ) : (
+                        <Badge className="bg-yellow-100 text-yellow-700">Onay Bekliyor</Badge>
+                      )
+                    ) : (
+                      <Badge className="bg-gray-100 text-gray-700">N/A</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {user.advisorProfile && (
                       <span className="text-sm text-blue-600">Danışman</span>
@@ -172,9 +215,22 @@ export default function UsersPage() {
                     {new Date(user.createdAt).toLocaleDateString('tr-TR')}
                   </TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm">
-                      Düzenle
-                    </Button>
+                    <div className="flex space-x-2">
+                      {user.role === 'STUDENT' && !user.isApproved && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleApproveUser(user.id)}
+                          disabled={approving === user.id}
+                          className="bg-green-50 text-green-700 hover:bg-green-100"
+                        >
+                          {approving === user.id ? 'Onaylanıyor...' : 'Onayla'}
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm">
+                        Düzenle
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -328,6 +384,35 @@ export default function UsersPage() {
                         value={formData.currentScore}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, currentScore: e.target.value})}
                         required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Hedef Sınav</label>
+                      <Select
+                        value={formData.targetExam}
+                        onValueChange={(value) => setFormData({...formData, targetExam: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sınav seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="YKS">YKS</SelectItem>
+                          <SelectItem value="DGS">DGS</SelectItem>
+                          <SelectItem value="MSÜ">MSÜ</SelectItem>
+                          <SelectItem value="IELTS">IELTS</SelectItem>
+                          <SelectItem value="TOEFL">TOEFL</SelectItem>
+                          <SelectItem value="Diğer">Diğer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Sınav Tarihi</label>
+                      <Input
+                        type="date"
+                        value={formData.examDate}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, examDate: e.target.value})}
                       />
                     </div>
                   </div>
