@@ -8,7 +8,11 @@ import {
   Calendar, 
   TrendingUp, 
   FileText,
-  GraduationCap
+  GraduationCap,
+  Sparkles,
+  PenTool,
+  Plane,
+  CheckSquare
 } from 'lucide-react';
 import { LogoutButton } from '@/components/logout-button';
 import { NotificationBell } from '@/components/notification-bell';
@@ -24,26 +28,64 @@ export default function StudentSidebar({ userId, initialNotifications = [] }: St
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
   const navItems = [
+    // ANA EKRAN
     {
-      title: 'Dashboard',
-      href: '/student/dashboard',
-      icon: LayoutDashboard,
+      category: 'Ana Ekran',
+      items: [
+        {
+          title: 'Dashboard',
+          href: '/student/dashboard',
+          icon: LayoutDashboard,
+        },
+        {
+          title: 'Takvim',
+          href: '/student/calendar',
+          icon: Calendar,
+        }
+      ]
     },
+    // EĞİTİM KOÇLUĞU
     {
-      title: 'Çalışma Programları',
-      href: '/student/tasks',
-      icon: Calendar,
+      category: 'Eğitim Koçluğu',
+      items: [
+        {
+          title: 'Çalışma Programları',
+          href: '/student/tasks',
+          icon: CheckSquare,
+        },
+        {
+          title: 'Deneme Sonuçları',
+          href: '/student/exams',
+          icon: TrendingUp,
+        }
+      ]
     },
+    // YURT DIŞI SÜRECİ
     {
-      title: 'Deneme Sonuçları',
-      href: '/student/exams',
-      icon: TrendingUp,
-    },
-    {
-      title: 'Yurt Dışı Başvurular',
-      href: '/student/study-abroad',
-      icon: GraduationCap,
-    },
+      category: 'Yurt Dışı Süreci',
+      items: [
+        {
+          title: 'Yurt Dışı Başvurular',
+          href: '/student/study-abroad',
+          icon: GraduationCap,
+        },
+        {
+          title: 'Üniversite Keşfet (AI)',
+          href: '/student/universities/match',
+          icon: Sparkles,
+        },
+        {
+          title: 'Niyet Mektubu (AI)',
+          href: '/student/sop-assistant',
+          icon: PenTool,
+        },
+        {
+          title: 'Başvurular & Vize',
+          href: '/student/applications',
+          icon: Plane,
+        }
+      ]
+    }
   ];
 
   return (
@@ -56,25 +98,35 @@ export default function StudentSidebar({ userId, initialNotifications = [] }: St
         <NotificationBell userId={userId} initialNotifications={initialNotifications} />
       </div>
 
-      <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                isActive(item.href)
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              )}
-            >
-              <Icon className="w-5 h-5" />
-              <span>{item.title}</span>
-            </Link>
-          );
-        })}
+      <nav className="p-4 space-y-6 flex-1 overflow-y-auto">
+        {navItems.map((section) => (
+          <div key={section.category}>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              {section.category}
+            </h3>
+            <ul className="space-y-1">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                        isActive(item.href)
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-gray-700 hover:bg-gray-100"
+                      )}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
       <div className="p-4 border-t border-gray-200 mt-auto">

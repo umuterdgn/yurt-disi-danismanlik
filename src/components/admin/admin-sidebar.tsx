@@ -18,75 +18,96 @@ import { LogoutButton } from "@/components/logout-button";
 
 export default function AdminSidebar() {
   const menuItems = [
+    // ANA EKRAN
     {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      href: "/admin/dashboard",
+      category: "Ana Ekran",
+      items: [
+        {
+          title: "Dashboard",
+          icon: LayoutDashboard,
+          href: "/admin/dashboard",
+        }
+      ]
     },
+    // OPERASYON
     {
-      title: "Satış CRM",
-      icon: Kanban,
-      href: "/admin/crm",
+      category: "Operasyon",
+      items: [
+        {
+          title: "Satış & CRM",
+          icon: Kanban,
+          href: "/admin/crm",
+        },
+        {
+          title: "Finans & Muhasebe",
+          icon: DollarSign,
+          href: "/admin/finance",
+        },
+        {
+          title: "Danışman Analitiği",
+          icon: TrendingUp,
+          href: "/admin/advisors",
+        }
+      ]
     },
+    // SİSTEM
     {
-      title: "Danışman Analitiği",
-      icon: TrendingUp,
-      href: "/admin/advisors",
+      category: "Sistem",
+      items: [
+        {
+          title: "Otomasyonlar",
+          icon: Zap,
+          href: "/admin/workflows",
+        },
+        {
+          title: "Kullanıcılar",
+          icon: Users,
+          href: "/admin/users",
+        },
+        {
+          title: "Onay Bekleyenler",
+          icon: UserCheck,
+          href: "/admin/pending-approvals",
+        }
+      ]
     },
+    // DANIŞMANLIK MODÜLLERİ
     {
-      title: "Finans & Muhasebe",
-      icon: DollarSign,
-      href: "/admin/finance",
-    },
-    {
-      title: "Otomasyonlar",
-      icon: Zap,
-      href: "/admin/workflows",
-    },
-    {
-      title: "Kullanıcılar",
-      icon: Users,
-      href: "/admin/users",
-    },
-    {
-      title: "Onay Bekleyenler",
-      icon: UserCheck,
-      href: "/admin/pending-approvals",
-    },
-    {
-      title: "Danışmanlık Modülleri",
-      icon: Users,
-      subItems: [
+      category: "Danışmanlık Modülleri",
+      items: [
         {
           title: "Tüm Öğrenciler",
+          icon: Users,
           href: "/admin/students",
         },
         {
           title: "Başvuru Yönetimi",
+          icon: FileText,
           href: "/admin/applications",
-        },
-      ],
+        }
+      ]
     },
+    // DİĞER
     {
-      title: "Randevular",
-      icon: Calendar,
-      href: "/admin/appointments",
-    },
-    {
-      title: "İçerik Yönetimi",
-      icon: FileText,
-      subItems: [
+      category: "Diğer",
+      items: [
         {
-          title: "Ülke Sayfaları",
+          title: "Randevular",
+          icon: Calendar,
+          href: "/admin/appointments",
+        },
+        {
+          title: "İçerik Yönetimi",
+          icon: Globe,
           href: "/admin/content/countries",
         },
-      ],
-    },
-    {
-      title: "Ayarlar",
-      icon: Settings,
-      href: "/admin/settings",
-    },
+        {
+          title: "Ayarlar",
+          icon: Settings,
+          href: "/admin/settings",
+        }
+      ]
+    }
   ];
 
   return (
@@ -96,37 +117,28 @@ export default function AdminSidebar() {
         <p className="text-sm text-gray-500 mt-1">Yönetici Paneli</p>
       </div>
 
-      <nav className="px-4 space-y-2 flex-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <div key={item.title}>
-            {item.subItems ? (
-              <div>
-                <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 font-medium">
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
-                </div>
-                <div className="ml-8 space-y-1">
-                  {item.subItems.map((subItem) => (
+      <nav className="p-4 space-y-6 flex-1 overflow-y-auto">
+        {menuItems.map((section) => (
+          <div key={section.category}>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              {section.category}
+            </h3>
+            <ul className="space-y-1">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
                     <Link
-                      key={subItem.href}
-                      href={subItem.href}
-                      className="flex items-center space-x-3 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      href={item.href}
+                      className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <Globe className="w-4 h-4" />
-                      <span>{subItem.title}</span>
+                      <Icon className="w-5 h-5" />
+                      <span>{item.title}</span>
                     </Link>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <Link
-                href={item.href}
-                className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.title}</span>
-              </Link>
-            )}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         ))}
       </nav>

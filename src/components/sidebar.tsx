@@ -12,7 +12,10 @@ import {
   FileText,
   Building2,
   Globe,
-  GraduationCap
+  GraduationCap,
+  Plane,
+  CheckSquare,
+  File as FileIcon
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { LogoutButton } from '@/components/logout-button';
@@ -53,6 +56,12 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
         {
           title: 'Çalışma Programları',
           href: '/advisor/tasks',
+          icon: CheckSquare,
+          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
+        },
+        {
+          title: 'Takvim',
+          href: '/advisor/calendar',
           icon: Calendar,
           roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
         },
@@ -84,7 +93,14 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
         {
           title: 'Evrak Yönetimi',
           href: '/advisor/documents',
-          icon: GraduationCap,
+          icon: FileIcon,
+          roles: ['SUPER_ADMIN', 'ADVISOR'],
+          requiresConsultant: true
+        },
+        {
+          title: 'Vize Süreçleri',
+          href: '/advisor/visa',
+          icon: Plane,
           roles: ['SUPER_ADMIN', 'ADVISOR'],
           requiresConsultant: true
         },
