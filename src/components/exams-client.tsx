@@ -1,24 +1,50 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AddExamDialog } from "@/components/add-exam-dialog";
+import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
+import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
+import { MasteryMap } from "@/components/mastery-map";
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
+interface SubjectResult {
+  id: string;
+  subjectName: string;
+  correct: number;
+  wrong: number;
+  empty: number;
+  net: number;
+  questionResults?: {
+    id: string;
+    topic: string;
+    subTopic?: string;
+    isCorrect: boolean;
+    errorType?: string;
+    timeSpent: number;
+  }[];
+}
 
 interface ExamResult {
   id: string;
-  examName: string;
-  examDate: string;
-  actualScore: number | null;
-  targetScore: number;
+  examName?: string;
+  title?: string;
+  examDate?: string;
+  date?: string;
+  actualScore?: number | null;
+  totalNet?: number | null;
+  targetScore?: number;
+  totalScore?: number | null;
   change: number;
+  examType?: string;
   studentProfile: {
     user: {
       name: string;
     };
   };
+  subjectResults?: SubjectResult[];
 }
 
 interface SubjectAnalysis {
@@ -42,6 +68,8 @@ interface ExamsClientProps {
 }
 
 export function ExamsClient({ examResults, subjectAnalysis, students, userName }: ExamsClientProps) {
+  const [selectedExam, setSelectedExam] = useState<ExamResult | null>(null);
+
   const getProficiencyBadge = (level: string) => {
     switch (level) {
       case 'WEAK':
@@ -83,16 +111,16 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
   };
 
   const averageScore = examResults.length > 0 
-    ? (examResults.reduce((sum, e) => sum + (e.actualScore || 0), 0) / examResults.length).toFixed(1)
+    ? (examResults.reduce((sum, e) => sum + (e.actualScore || e.totalNet || 0), 0) / examResults.length).toFixed(1)
     : 0;
 
   const improvementCount = examResults.filter(e => e.change > 0).length;
 
   const chartData = examResults.slice(-20).map((e) => ({
     name: e.studentProfile.user.name,
-    date: new Date(e.examDate).toLocaleDateString('tr-TR'),
-    score: e.actualScore || 0,
-    target: e.targetScore || 0
+    date: new Date(e.examDate || e.date).toLocaleDateString('tr-TR'),
+    score: e.actualScore || e.totalNet || 0,
+    target: e.targetScore || e.totalScore || 0
   }));
 
   return (
@@ -166,7 +194,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
         <Card className="mb-6 md:mb-8">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Deneme Sonuçları</CardTitle>
-            <AddExamDialog students={students} />
+            <AddAdvancedExamDialog students={students} />
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -176,8 +204,8 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
                     <TableHead className="text-gray-600 text-xs md:text-sm">Öğrenci</TableHead>
                     <TableHead className="text-gray-600 text-xs md:text-sm">Deneme Adı</TableHead>
                     <TableHead className="text-gray-600 text-xs md:text-sm">Tarih</TableHead>
-                    <TableHead className="text-gray-600 text-xs md:text-sm">Net</TableHead>
-                    <TableHead className="text-gray-600 text-xs md:text-sm">Hedef</TableHead>
+                    <TableHead className="text-gray-600 text-xs md:text-sm">Toplam Net</TableHead>
+                    <TableHead className="text-gray-600 text-xs md:text-sm">Tür</TableHead>
                     <TableHead className="text-gray-600 text-xs md:text-sm">Değişim</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -190,16 +218,21 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
                     </TableRow>
                   ) : (
                     examResults.map((exam) => (
-                      <TableRow key={exam.id}>
+                      <TableRow 
+                        key={exam.id} 
+                        className={selectedExam?.id === exam.id ? 'bg-purple-50' : 'hover:bg-gray-50'}
+                        onClick={() => setSelectedExam(selectedExam?.id === exam.id ? null : exam)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         <TableCell className="font-medium text-gray-900 text-xs md:text-sm">
                           {exam.studentProfile?.user?.name || '-'}
                         </TableCell>
-                        <TableCell className="text-gray-600 text-xs md:text-sm">{exam.examName}</TableCell>
+                        <TableCell className="text-gray-600 text-xs md:text-sm">{exam.examName || exam.title}</TableCell>
                         <TableCell className="text-gray-600 text-xs md:text-sm">
-                          {new Date(exam.examDate).toLocaleDateString('tr-TR')}
+                          {new Date(exam.examDate || exam.date).toLocaleDateString('tr-TR')}
                         </TableCell>
-                        <TableCell className="text-gray-600 text-xs md:text-sm">{exam.actualScore ?? '-'}</TableCell>
-                        <TableCell className="text-gray-600 text-xs md:text-sm">{exam.targetScore}</TableCell>
+                        <TableCell className="text-gray-600 text-xs md:text-sm">{exam.actualScore ?? exam.totalNet ?? '-'}</TableCell>
+                        <TableCell className="text-gray-600 text-xs md:text-sm">{(exam as any).examType || '-'}</TableCell>
                         <TableCell className="text-xs md:text-sm">{getChangeIndicator(exam.change)}</TableCell>
                       </TableRow>
                     ))
@@ -211,7 +244,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
         </Card>
 
         {/* Subject Analysis */}
-        <Card>
+        <Card className="mb-6 md:mb-8">
           <CardHeader>
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Konu Analizi</CardTitle>
           </CardHeader>
@@ -239,6 +272,26 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
             )}
           </CardContent>
         </Card>
+
+        {/* Mastery Map for All Exams */}
+        <Card className="mb-6 md:mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Genel Konu Hakimiyet Haritası</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MasteryMap exams={examResults as any} />
+          </CardContent>
+        </Card>
+
+        {/* Selected Exam Error Analysis */}
+        {selectedExam && (
+          <div className="mb-6 md:mb-8">
+            <ExamErrorAnalysis 
+              exam={selectedExam as any} 
+              studentId={selectedExam.studentProfile.id} 
+            />
+          </div>
+        )}
       </div>
     </div>
   );

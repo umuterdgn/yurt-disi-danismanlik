@@ -41,13 +41,18 @@ export default async function ExamsPage() {
         });
         students = allStudents.map(s => ({ id: s.id, name: s.user.name }));
         
-        examResults = await prisma.examResult.findMany({
+        examResults = await prisma.exam.findMany({
           include: {
             studentProfile: {
               include: { user: true }
+            },
+            subjectResults: {
+              include: {
+                questionResults: true
+              }
             }
           },
-          orderBy: { examDate: 'desc' }
+          orderBy: { date: 'desc' }
         });
       } else if (dbUser.advisorProfile) {
         const advisorStudents = await prisma.studentProfile.findMany({
@@ -56,7 +61,7 @@ export default async function ExamsPage() {
         });
         students = advisorStudents.map(s => ({ id: s.id, name: s.user.name }));
         
-        examResults = await prisma.examResult.findMany({
+        examResults = await prisma.exam.findMany({
           where: {
             studentProfile: {
               advisorId: dbUser.advisorProfile.id
@@ -65,9 +70,14 @@ export default async function ExamsPage() {
           include: {
             studentProfile: {
               include: { user: true }
+            },
+            subjectResults: {
+              include: {
+                questionResults: true
+              }
             }
           },
-          orderBy: { examDate: 'desc' }
+          orderBy: { date: 'desc' }
         });
       }
     }
@@ -87,9 +97,17 @@ export default async function ExamsPage() {
   const examResultsWithChange = examResults.map((exam, index, arr) => {
     const nextExam = arr[index + 1];
     const change = nextExam && nextExam.studentProfileId === exam.studentProfileId
-      ? (exam.actualScore || 0) - (nextExam.actualScore || 0)
+      ? (exam.totalNet || 0) - (nextExam.totalNet || 0)
       : 0;
-    return { ...exam, change };
+    return { 
+      ...exam, 
+      change,
+      examName: exam.title,
+      actualScore: exam.totalNet,
+      targetScore: exam.totalScore,
+      examDate: exam.date,
+      subjectResults: exam.subjectResults || [] // Keep subjectResults for detailed analysis
+    };
   });
 
   return <ExamsClient examResults={examResultsWithChange} subjectAnalysis={subjectAnalysis} students={students} userName={userName} />;

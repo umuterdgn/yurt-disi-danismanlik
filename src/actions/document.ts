@@ -132,3 +132,48 @@ export async function getUnreadNotifications(userId: string) {
     return { success: false, error: 'Bildirimler alınırken bir hata oluştu' }
   }
 }
+
+export async function createDocument(formData: FormData) {
+  try {
+    const applicationId = formData.get('applicationId') as string;
+    const documentType = formData.get('documentType') as string;
+    const documentName = formData.get('documentName') as string;
+    const filePath = formData.get('filePath') as string;
+
+    if (!applicationId || !documentType || !documentName) {
+      return { success: false, error: 'Eksik parametreler' };
+    }
+
+    const document = await prisma.document.create({
+      data: {
+        applicationId,
+        documentType,
+        documentName,
+        filePath,
+        isUploaded: !!filePath,
+        status: filePath ? 'UPLOADED' : 'PENDING',
+        uploadDate: filePath ? new Date() : null
+      }
+    });
+
+    // Trigger AI document check if file was uploaded
+    if (filePath) {
+      try {
+        const { checkDocumentWithAI } = await import('./ai-document-check');
+        await checkDocumentWithAI(document.id);
+      } catch (error) {
+        console.error('AI document check failed:', error);
+        // Don't fail the document creation if AI check fails
+      }
+    }
+
+    revalidatePath('/advisor/documents');
+    revalidatePath('/student/dashboard');
+    revalidatePath('/student/study-abroad');
+
+    return { success: true, document };
+  } catch (error) {
+    console.error('Create document error:', error);
+    return { success: false, error: 'Belge oluşturulurken bir hata oluştu' };
+  }
+}

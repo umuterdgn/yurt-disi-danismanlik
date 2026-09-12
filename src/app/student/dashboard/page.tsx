@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar, Flame } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar, Flame, Globe, Plane } from 'lucide-react';
 import { StudentDailyTasks } from "@/components/student-daily-tasks";
 import { FileUploadButton } from "@/components/file-upload-button";
 import { AIMotivationCard } from "@/components/ai-motivation-card";
@@ -18,6 +18,11 @@ import { TrophyRoom } from "@/components/trophy-room";
 import { AICoachChat } from "@/components/ai-coach-chat";
 import { StudentCalendar } from "@/components/student-calendar";
 import { StreakDisplay } from "@/components/streak-display";
+import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
+import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
+import { MasteryMap } from "@/components/mastery-map";
+import { ApplicationReadinessScore } from "@/components/application-readiness-score";
+import { DocumentChecklist } from "@/components/document-checklist";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -60,6 +65,17 @@ export default async function StudentDashboard() {
           orderBy: { examDate: 'desc' },
           take: 10
         },
+        exams: {
+          include: {
+            subjectResults: {
+              include: {
+                questionResults: true
+              }
+            }
+          },
+          orderBy: { date: 'desc' },
+          take: 5
+        },
         subjectAnalysis: {
           orderBy: { subject: 'asc' }
         },
@@ -68,7 +84,8 @@ export default async function StudentDashboard() {
             documents: {
               orderBy: { createdAt: 'desc' }
             },
-            university: true
+            university: true,
+            visaProcesses: true
           },
           orderBy: { createdAt: 'desc' }
         }
@@ -470,11 +487,12 @@ export default async function StudentDashboard() {
 
         {/* Exam Results */}
         <Card className="mb-8">
-          <CardHeader>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
               Deneme Sonuçları
             </CardTitle>
+            <AddAdvancedExamDialog students={[{ id: studentProfile.id, name: studentProfile.user.name }]} studentId={studentProfile.id} />
           </CardHeader>
           <CardContent>
             {studentProfile.examResults?.length === 0 ? (
@@ -513,6 +531,79 @@ export default async function StudentDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Mastery Map */}
+        <div className="mb-8">
+          <MasteryMap exams={studentProfile.exams || []} />
+        </div>
+
+        {/* Exam Error Analysis */}
+        {studentProfile.exams && studentProfile.exams.length > 0 && (
+          <div className="mb-8">
+            <ExamErrorAnalysis 
+              exam={studentProfile.exams[0]} 
+              studentId={studentProfile.id} 
+            />
+          </div>
+        )}
+
+        {/* Application Readiness Score */}
+        {studentProfile.applications && studentProfile.applications.length > 0 && (
+          <div className="mb-8">
+            <ApplicationReadinessScore 
+              applicationReadiness={studentProfile.applicationReadiness || 0}
+              criteria={[
+                {
+                  name: 'Akademik Yeterlilik',
+                  value: studentProfile.currentScore && studentProfile.targetScore 
+                    ? Math.min(100, Math.round((studentProfile.currentScore / studentProfile.targetScore) * 100)) 
+                    : 0,
+                  icon: BookOpen,
+                  color: 'bg-blue-100',
+                  description: 'Hedef puana göre akademik hazırlık'
+                },
+                {
+                  name: 'Dil Seviyesi',
+                  value: studentProfile.applications[0]?.languageScore && studentProfile.applications[0]?.requiredScore
+                    ? Math.min(100, Math.round((studentProfile.applications[0].languageScore / studentProfile.applications[0].requiredScore) * 100))
+                    : 0,
+                  icon: Globe,
+                  color: 'bg-green-100',
+                  description: 'IELTS/TOEFL dil puanı'
+                },
+                {
+                  name: 'Evrak Tamamlanma',
+                  value: studentProfile.applications[0]?.documents 
+                    ? Math.min(100, Math.round((studentProfile.applications[0].documents.filter((d: any) => d.status === 'APPROVED').length / Math.max(1, studentProfile.applications[0].documents.length)) * 100))
+                    : 0,
+                  icon: FileText,
+                  color: 'bg-purple-100',
+                  description: 'Gerekli evrakların tamamlanma durumu'
+                },
+                {
+                  name: 'Vize Hazırlığı',
+                  value: studentProfile.applications[0]?.visaProcesses && studentProfile.applications[0].visaProcesses.length > 0 
+                    ? 60 
+                    : 0,
+                  icon: Plane,
+                  color: 'bg-orange-100',
+                  description: 'Vize süreci hazırlık durumu'
+                }
+              ]}
+            />
+          </div>
+        )}
+
+        {/* Document Checklist */}
+        {studentProfile.applications && studentProfile.applications.length > 0 && (
+          <div className="mb-8">
+            <DocumentChecklist 
+              documents={studentProfile.applications[0]?.documents || []}
+              applicationId={studentProfile.applications[0].id}
+              universityRequirements={studentProfile.applications[0]?.university?.requirements ? studentProfile.applications[0].university.requirements.split(',') : undefined}
+            />
+          </div>
+        )}
 
         {/* Subject Analysis */}
         <Card>

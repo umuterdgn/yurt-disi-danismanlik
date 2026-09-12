@@ -8,9 +8,11 @@ import { updateDocumentFile } from "@/actions/update-document-file";
 import { toast } from "sonner";
 
 interface FileUploadButtonProps {
-  documentId: string;
+  documentId?: string;
   filePath?: string | null;
   documentName?: string;
+  applicationId?: string;
+  documentType?: string;
   onUploadComplete?: () => void;
 }
 
@@ -18,6 +20,8 @@ export function FileUploadButton({
   documentId, 
   filePath, 
   documentName,
+  applicationId,
+  documentType,
   onUploadComplete 
 }: FileUploadButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -45,18 +49,43 @@ export function FileUploadButton({
         return;
       }
 
-      // Update document record
-      const updateResult = await updateDocumentFile(documentId, uploadResult.url);
-      
-      if (updateResult.success) {
-        toast.success("Belge başarıyla yüklendi!");
-        if (onUploadComplete) {
-          onUploadComplete();
+      // If it's a new document (no documentId), create it
+      if (!documentId && applicationId && documentType) {
+        const { createDocument } = await import('@/actions/document');
+        
+        // Create new form data for document creation
+        const docFormData = new FormData();
+        docFormData.append('applicationId', applicationId);
+        docFormData.append('documentType', documentType);
+        docFormData.append('documentName', documentName || documentType);
+        docFormData.append('filePath', uploadResult.url);
+        
+        const finalCreateResult = await createDocument(docFormData);
+        
+        if (finalCreateResult.success) {
+          toast.success("Belge başarıyla yüklendi!");
+          if (onUploadComplete) {
+            onUploadComplete();
+          } else {
+            window.location.reload();
+          }
         } else {
-          window.location.reload();
+          toast.error(finalCreateResult.error || "Belge oluşturulamadı");
         }
-      } else {
-        toast.error(updateResult.error || "Belge güncellenemedi");
+      } else if (documentId) {
+        // Update existing document
+        const updateResult = await updateDocumentFile(documentId, uploadResult.url);
+        
+        if (updateResult.success) {
+          toast.success("Belge başarıyla yüklendi!");
+          if (onUploadComplete) {
+            onUploadComplete();
+          } else {
+            window.location.reload();
+          }
+        } else {
+          toast.error(updateResult.error || "Belge güncellenemedi");
+        }
       }
     } catch (error) {
       console.error("Upload error:", error);
