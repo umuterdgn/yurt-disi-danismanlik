@@ -96,7 +96,7 @@ export async function createApplication(formData: FormData) {
         program,
         semester,
         year,
-        status: 'INITIAL_INTERVIEW'
+        status: 'LEAD'
       }
     })
 

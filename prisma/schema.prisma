@@ -1,5 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// learn more about the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -45,6 +45,9 @@ model User {
   // Bildirim ilişkileri
   notifications Notification[]
 
+  // Audit Log ilişkileri
+  auditLogs AuditLog[]
+
   @@map("users")
 }
 
@@ -72,13 +75,22 @@ model StudentProfile {
   badges           String[] @default([]) // Kazanılan rozetler
   targetExam       String?  // Sınav türü (YKS, DGS, MSÜ, IELTS)
   examDate         DateTime? // Hedef sınav tarihi
-  advisorNote      String?  // Danışmanın notu
+  advisorNote      String? // Danışmanın notu
+
+  // Nexa Intelligence Layer - Student 360 & Risk Motoru
+  healthScore        Int      @default(100) // Öğrenci sağlık skoru (0-100)
+  riskStatus         String   @default("GREEN") // GREEN, YELLOW, RED
+  applicationReadiness Int      @default(0) // Başvuru hazırlık skoru (0-100)
+  lastActivityDate   DateTime? // Son aktivite tarihi
 
   // İlişkiler
   advisorId       String?
   advisor         AdvisorProfile? @relation(fields: [advisorId], references: [id])
   parentProfiles  ParentProfile[] @relation("StudentParents")
   parentRelations Parent[]        @relation("StudentProfile")
+  
+  // Nexa Intelligence Layer - AI Recommendation
+  aiRecommendations AIRecommendation[]
 
   // Eğitim verileri
   dailyTasks      DailyTask[]
@@ -87,6 +99,9 @@ model StudentProfile {
   meetingNotes    MeetingNote[]
   applications    Application[]
   tasks           Task[]
+  
+  // Nexa Intelligence Layer - Gelişmiş Deneme Motoru
+  exams           Exam[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,6 +123,7 @@ model AdvisorProfile {
   // İlişkiler
   students StudentProfile[]
   tasks    Task[]
+  aiRecommendations AIRecommendation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -195,7 +211,71 @@ enum TaskStatus {
   DONE
 }
 
-// Deneme Sonuçları
+// ============================================
+// NEXA INTELLIGENCE LAYER - GELİŞMİŞTİŞ DENEME MOTORU
+// ============================================
+
+model Exam {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  title             String
+  date              DateTime
+  totalNet          Float?
+  totalScore        Float?
+  examType          String? // TYT, AYT, YKS vb.
+  
+  // İlişkiler
+  subjectResults    SubjectResult[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("exams")
+}
+
+model SubjectResult {
+  id               String         @id @default(cuid())
+  examId           String
+  exam             Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  subjectName       String // Matematik, Fizik vb.
+  correct           Int      @default(0)
+  wrong             Int      @default(0)
+  empty             Int      @default(0)
+  net               Float?
+
+  // İlişkiler
+  questionResults  QuestionResult[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subject_results")
+}
+
+model QuestionResult {
+  id               String         @id @default(cuid())
+  subjectResultId  String
+  subjectResult   SubjectResult @relation(fields: [subjectResultId], references: [id], onDelete: Cascade)
+
+  topic             String // Türev, İntegral vb.
+  subTopic          String?
+  isCorrect         Boolean  @default(false)
+  errorType         String? // İşlem, Konu, Dikkat vb.
+  timeSpent         Int      @default(0) // saniye
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("question_results")
+}
+
+// ============================================
+// LEGACY DENEME SONUÇLARI (Eski sistem için korundu)
+// ============================================
+
 model ExamResult {
   id               String         @id @default(cuid())
   studentProfileId String
@@ -271,7 +351,7 @@ model MeetingNote {
 }
 
 // ============================================
-// YURT DIŞI EĞİTİM MODÜLÜ
+// YURT DIŞI EĞİTİM MODÜLÜ - APPLICATION OS
 // ============================================
 
 model Country {
@@ -322,6 +402,16 @@ model University {
   @@map("universities")
 }
 
+enum ApplicationStatus {
+  LEAD
+  SUBMITTED
+  OFFER
+  DEPOSIT
+  VISA
+  ENROLLED
+  REJECTED
+}
+
 model Application {
   id               String         @id @default(cuid())
   studentProfileId String
@@ -329,25 +419,31 @@ model Application {
   universityId     String
   university       University     @relation(fields: [universityId], references: [id], onDelete: Cascade)
 
-  program         String // Lisans, Yüksek Lisans, Doktora
-  semester        String // Fall, Spring
-  year            Int
-  status          ApplicationStatus // Ön görüşme, Evrak toplama, Başvuru, Kabul, Ödeme, Vize, Konaklama, Sonuçlandı
-  applicationDate DateTime?
-  decisionDate    DateTime?
+  universityName     String? // Dinamik olarak university'ten alınabilir
+  country            String? // Dinamik olarak country'den alınabilir
+  program            String // Lisans, Yüksek Lisans, Doktora
+  semester           String // Fall, Spring
+  year               Int
+  status             ApplicationStatus @default(LEAD) // Nexa OS status
+  applicationDate    DateTime?
+  decisionDate       DateTime?
+  deadline           DateTime? // Application deadline
 
   // Bütçe bilgileri
-  estimatedBudget Float?
-  actualBudget    Float?
+  estimatedBudget     Float?
+  actualBudget       Float?
 
   // Dil bilgileri
-  languageTest  String? // IELTS, TOEFL, GRE
-  languageScore Float?
+  languageTest       String? // IELTS, TOEFL, GRE
+  languageScore       Float?
 
   // Belgeler
-  documents Document[]
+  documents          Document[]
 
-  notes String? @db.Text
+  // Nexa Intelligence Layer - Visa Process
+  visaProcesses       VisaProcess[]
+
+  notes               String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -355,16 +451,19 @@ model Application {
   @@map("applications")
 }
 
-enum ApplicationStatus {
-  INITIAL_INTERVIEW
-  DOCUMENT_COLLECTION
-  SUBMITTED
-  ACCEPTED
-  PAYMENT
-  VISA
-  ACCOMMODATION
-  COMPLETED
-  REJECTED
+model VisaProcess {
+  id               String         @id @default(cuid())
+  applicationId     String
+  application       Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  status             String         @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, APPOINTMENT_SCHEDULED, APPROVED, REJECTED
+  appointmentDate    DateTime?
+  missingDocuments   String[]       @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("visa_processes")
 }
 
 model Document {
@@ -380,6 +479,10 @@ model Document {
   expiryDate   DateTime?
   status       DocumentStatus @default(PENDING) // PENDING, APPROVED, REVISION_REQUIRED, MISSING, UPLOADED, REJECTED
   feedback     String? // Danışmanın ret/revizyon sebebi
+  
+  // Nexa Intelligence Layer - AI Check
+  aiCheckStatus Boolean       @default(false) // AI tarafından kontrol edildi mi?
+  aiCheckDate   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -481,6 +584,52 @@ enum NotificationType {
 }
 
 // ============================================
+// NEXA INTELLIGENCE LAYER - AI COPILOT & AKSİYON MERKEZİ
+// ============================================
+
+model AIRecommendation {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  advisorId       String?
+  advisor         AdvisorProfile? @relation(fields: [advisorId], references: [id], onDelete: Cascade)
+  
+  type            AIRecommendationType // RISK, ACADEMIC, APPLICATION
+  message         String   @db.Text
+  suggestedAction String   @db.Text
+  isResolved      Boolean  @default(false)
+  priority        String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("ai_recommendations")
+}
+
+enum AIRecommendationType {
+  RISK
+  ACADEMIC
+  APPLICATION
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action      String   // DOCUMENT_APPROVED, EXAM_ADDED, APPLICATION_CREATED, TASK_COMPLETED vb.
+  entityType  String   // User, Student, Application, Document, Exam vb.
+  entityId    String?
+  details     String?  @db.Text
+  ipAddress   String?
+  userAgent   String?
+  
+  timestamp   DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// ============================================
 // SİSTEM AYARLARI VE LOG'LAR
 // ============================================
 
@@ -497,7 +646,7 @@ model SystemSettings {
 }
 
 model ActivityLog {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String?
   action      String
   entityType  String // User, Student, Application vb.

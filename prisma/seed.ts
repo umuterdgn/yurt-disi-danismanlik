@@ -457,7 +457,7 @@ async function main() {
         program: 'Lisans',
         semester: 'Fall',
         year: 2025,
-        status: ApplicationStatus.DOCUMENT_COLLECTION,
+        status: ApplicationStatus.SUBMITTED,
         applicationDate: new Date(),
         estimatedBudget: 60000,
         languageTest: 'TOEFL',

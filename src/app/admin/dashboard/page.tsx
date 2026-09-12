@@ -60,7 +60,7 @@ export default async function AdminDashboard() {
   try {
     activeApplications = await prisma.application.count({
       where: { 
-        status: { notIn: ['COMPLETED', 'REJECTED'] } 
+        status: { notIn: ['ENROLLED', 'REJECTED'] } 
       }
     });
   } catch (error) {
@@ -140,11 +140,11 @@ export default async function AdminDashboard() {
   const getStatusBadge = (status: ApplicationStatus) => {
     switch (status) {
       case 'VISA':
-      case 'ACCEPTED':
-      case 'COMPLETED':
+      case 'OFFER':
+      case 'ENROLLED':
         return <Badge variant="default">{getStatusText(status)}</Badge>;
-      case 'DOCUMENT_COLLECTION':
-      case 'INITIAL_INTERVIEW':
+      case 'LEAD':
+      case 'SUBMITTED':
         return <Badge variant="secondary">{getStatusText(status)}</Badge>;
       case 'REJECTED':
         return <Badge variant="destructive">{getStatusText(status)}</Badge>;
