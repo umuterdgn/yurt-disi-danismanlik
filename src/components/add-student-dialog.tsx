@@ -27,21 +27,6 @@ const SYMBOLS = [
   { emoji: "🎸", name: "Müzik" },
 ];
 
-const SYMBOLS = [
-  { emoji: "🎓", name: "Mezun" },
-  { emoji: "🚀", name: "Roket" },
-  { emoji: "🦁", name: "Aslan" },
-  { emoji: "🦉", name: "Baykuş" },
-  { emoji: "⚡", name: "Yıldırım" },
-  { emoji: "🔥", name: "Alev" },
-  { emoji: "🌟", name: "Yıldız" },
-  { emoji: "💎", name: "Elmas" },
-  { emoji: "🎯", name: "Hedef" },
-  { emoji: "🏆", name: "Kupa" },
-  { emoji: "🎨", name: "Sanat" },
-  { emoji: "🎸", name: "Müzik" },
-];
-
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
