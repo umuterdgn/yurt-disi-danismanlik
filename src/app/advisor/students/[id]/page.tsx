@@ -6,9 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare, Plus } from 'lucide-react';
 import { AIAnalysisButton } from "@/components/ai-analysis-button";
 import { AdvisorNoteForm } from "@/components/advisor-note-form";
+import { DocumentAddDialog } from "@/components/document-add-dialog";
+import { ApplicationAddDialog } from "@/components/application-add-dialog";
+import { MeetingNoteForm } from "@/components/meeting-note-form";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -343,21 +346,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <CardTitle>Görüşme Notları</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold mb-3">Yeni Görüşme Notu Ekle</h3>
-                  <div className="space-y-3">
-                    <input
-                      type="date"
-                      className="w-full p-2 border rounded"
-                      placeholder="Tarih"
-                    />
-                    <textarea
-                      className="w-full p-2 border rounded"
-                      rows={4}
-                      placeholder="Görüşme notları..."
-                    />
-                    <Button className="w-full">Not Ekle</Button>
-                  </div>
+                <div className="mb-6">
+                  <MeetingNoteForm studentId={id} />
                 </div>
                 
                 <div className="space-y-4">
@@ -387,8 +377,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {/* Documents Tab */}
           <TabsContent value="documents">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex items-center justify-between">
                 <CardTitle>Evrak Sistemi</CardTitle>
+                <DocumentAddDialog studentId={id} applications={student.applications} />
               </CardHeader>
               <CardContent>
                 {allDocuments.length === 0 ? (
@@ -418,8 +409,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {/* Applications Tab */}
           <TabsContent value="applications">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex items-center justify-between">
                 <CardTitle>Başvuru Takip Sistemi</CardTitle>
+                <ApplicationAddDialog studentId={id} />
               </CardHeader>
               <CardContent>
                 {student.applications.length === 0 ? (

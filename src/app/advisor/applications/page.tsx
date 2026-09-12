@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Clock, CheckCircle, AlertCircle, Building2, Globe, Calendar } from 'lucide-react';
 import { updateApplicationStatus } from "@/actions/update-application-status";
 import { KanbanBoard } from "@/components/kanban-board";
+import { ApplicationAddDialog } from "@/components/application-add-dialog";
 
 const KANBAN_COLUMNS = [
   { status: 'INITIAL_INTERVIEW', label: 'Ön Görüşme', color: 'bg-blue-50 border-blue-200' },
@@ -20,6 +21,14 @@ const KANBAN_COLUMNS = [
 ];
 
 export default async function AdvisorApplicationsPage() {
+  // Get students for the dialog
+  const students = await prisma.studentProfile.findMany({
+    select: { 
+      id: true, 
+      user: { select: { name: true } } 
+    }
+  });
+
   const applications = await prisma.application.findMany({
     include: {
       studentProfile: {
@@ -42,5 +51,18 @@ export default async function AdvisorApplicationsPage() {
     deadline: app.deadline?.toISOString() || null,
   }));
 
-  return <KanbanBoard applications={serializedApplications} columns={KANBAN_COLUMNS} />;
+  return (
+    <div className="p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6 md:mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Başvuru Takibi</h1>
+            <p className="text-gray-600 mt-1">Öğrenci başvuru süreçlerini yönetin</p>
+          </div>
+          <ApplicationAddDialog students={students} />
+        </div>
+        <KanbanBoard applications={serializedApplications} columns={KANBAN_COLUMNS} />
+      </div>
+    </div>
+  );
 }

@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { FileUploadButton } from "@/components/file-upload-button";
 import { DocumentApprovalActions } from "@/components/document-approval-actions";
+import { DocumentAddDialog } from "@/components/document-add-dialog";
 
 export default async function DocumentsPage() {
   const cookieStore = await cookies();
@@ -27,6 +28,7 @@ export default async function DocumentsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   
   let documents: any[] = [];
+  let students: any[] = [];
   let userName = 'Danışman';
   let userRole = null;
 
@@ -58,6 +60,13 @@ export default async function DocumentsPage() {
           },
           orderBy: { createdAt: 'desc' }
         });
+        
+        students = await prisma.studentProfile.findMany({
+          select: { 
+            id: true, 
+            user: { select: { name: true } } 
+          }
+        });
       } else if (dbUser.advisorProfile) {
         documents = await prisma.document.findMany({
           where: {
@@ -80,6 +89,14 @@ export default async function DocumentsPage() {
             }
           },
           orderBy: { createdAt: 'desc' }
+        });
+        
+        students = await prisma.studentProfile.findMany({
+          where: { advisorId: dbUser.advisorProfile.id },
+          select: { 
+            id: true, 
+            user: { select: { name: true } } 
+          }
         });
       }
     }
@@ -213,8 +230,9 @@ export default async function DocumentsPage() {
 
         {/* Documents Table */}
         <Card>
-         <CardHeader>
+         <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Evrak Listesi</CardTitle>
+            <DocumentAddDialog students={students} />
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
