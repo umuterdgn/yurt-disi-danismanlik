@@ -20,9 +20,10 @@ import { createApplication } from "@/actions/advisor-crud"
 interface ApplicationAddDialogProps {
   studentId?: string
   students?: any[]
+  universities?: any[]
 }
 
-export function ApplicationAddDialog({ studentId, students }: ApplicationAddDialogProps) {
+export function ApplicationAddDialog({ studentId, students, universities }: ApplicationAddDialogProps) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState(studentId || "")
@@ -35,6 +36,17 @@ export function ApplicationAddDialog({ studentId, students }: ApplicationAddDial
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!selectedStudentId) {
+      alert("Lütfen bir öğrenci seçin")
+      return
+    }
+    
+    if (!formData.universityId || !formData.program || !formData.semester || !formData.year) {
+      alert("Lütfen tüm zorunlu alanları doldurun")
+      return
+    }
+    
     setIsSubmitting(true)
 
     const data = new FormData()
@@ -57,6 +69,7 @@ export function ApplicationAddDialog({ studentId, students }: ApplicationAddDial
         year: ""
       })
       alert("Başvuru başarıyla başlatıldı!")
+      window.location.reload()
     } else {
       alert(result.error || "Bir hata oluştu")
     }
@@ -110,16 +123,15 @@ export function ApplicationAddDialog({ studentId, students }: ApplicationAddDial
                   <SelectValue placeholder="Üniversite seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mit">MIT (Massachusetts Institute of Technology)</SelectItem>
-                  <SelectItem value="stanford">Stanford University</SelectItem>
-                  <SelectItem value="harvard">Harvard University</SelectItem>
-                  <SelectItem value="oxford">University of Oxford</SelectItem>
-                  <SelectItem value="cambridge">University of Cambridge</SelectItem>
-                  <SelectItem value="eth">ETH Zurich</SelectItem>
-                  <SelectItem value="caltech">California Institute of Technology</SelectItem>
-                  <SelectItem value="imperial">Imperial College London</SelectItem>
-                  <SelectItem value="ucl">UCL (University College London)</SelectItem>
-                  <SelectItem value="toronto">University of Toronto</SelectItem>
+                  {universities && universities.length > 0 ? (
+                    universities.map((university) => (
+                      <SelectItem key={university.id} value={university.id}>
+                        {university.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>Üniversite bulunmuyor</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

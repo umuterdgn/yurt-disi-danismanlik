@@ -37,6 +37,17 @@ export function DocumentAddDialog({ studentId, applications, students }: Documen
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!selectedStudentId) {
+      alert("Lütfen bir öğrenci seçin")
+      return
+    }
+    
+    if (!formData.applicationId) {
+      alert("Lütfen bir başvuru seçin")
+      return
+    }
+    
     setIsSubmitting(true)
 
     const data = new FormData()
@@ -61,6 +72,7 @@ export function DocumentAddDialog({ studentId, applications, students }: Documen
         expiryDate: ""
       })
       alert("Evrak başarıyla eklendi!")
+      window.location.reload()
     } else {
       alert(result.error || "Bir hata oluştu")
     }

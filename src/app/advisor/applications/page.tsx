@@ -29,6 +29,14 @@ export default async function AdvisorApplicationsPage() {
     }
   });
 
+  // Get universities for the dialog
+  const universities = await prisma.university.findMany({
+    select: {
+      id: true,
+      name: true
+    }
+  });
+
   const applications = await prisma.application.findMany({
     include: {
       studentProfile: {
@@ -59,7 +67,7 @@ export default async function AdvisorApplicationsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Başvuru Takibi</h1>
             <p className="text-gray-600 mt-1">Öğrenci başvuru süreçlerini yönetin</p>
           </div>
-          <ApplicationAddDialog students={students} />
+          <ApplicationAddDialog students={students} universities={universities} />
         </div>
         <KanbanBoard applications={serializedApplications} columns={KANBAN_COLUMNS} />
       </div>
