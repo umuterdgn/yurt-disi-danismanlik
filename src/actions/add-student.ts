@@ -14,6 +14,7 @@ export async function addStudent(formData: FormData) {
     const grade = formData.get('grade') as string;
     const targetUniversity = formData.get('targetUniversity') as string;
     const studentSymbol = formData.get('studentSymbol') as string;
+    const serviceType = formData.get('serviceType') as string || 'BOTH';
 
     // Validation
     if (!name || !email || !password || !grade) {
@@ -147,7 +148,8 @@ export async function addStudent(formData: FormData) {
           school: '',
           studentSymbol: studentSymbol || '🎓',
           xp: 0,
-          streak: 0
+          streak: 0,
+          serviceType: serviceType as any
         }
       });
     } catch (error) {

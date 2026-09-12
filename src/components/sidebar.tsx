@@ -15,7 +15,10 @@ import {
   GraduationCap,
   Plane,
   CheckSquare,
-  File as FileIcon
+  File as FileIcon,
+  Timer,
+  BarChart3,
+  ClipboardList
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { LogoutButton } from '@/components/logout-button';
@@ -37,9 +40,15 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
       items: [
         {
           title: 'Dashboard',
-          href: userRole === 'SUPER_ADMIN' ? '/admin/dashboard' : '/advisor/dashboard',
+          href: '/advisor/dashboard',
           icon: LayoutDashboard,
-          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
+          roles: ['ADVISOR', 'COACH']
+        },
+        {
+          title: 'Öğrencilerim',
+          href: '/advisor/students',
+          icon: Users,
+          roles: ['ADVISOR', 'COACH']
         }
       ]
     },
@@ -48,34 +57,25 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
       category: 'Eğitim Koçluğu',
       items: [
         {
-          title: 'Öğrencilerim',
-          href: '/advisor/students',
-          icon: Users,
-          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
-        },
-        {
-          title: 'Çalışma Programları',
+          title: 'Görevler & Pomodoro',
           href: '/advisor/tasks',
           icon: CheckSquare,
-          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
-        },
-        {
-          title: 'Takvim',
-          href: '/advisor/calendar',
-          icon: Calendar,
-          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
+          roles: ['ADVISOR', 'COACH'],
+          requiresConsultant: false
         },
         {
           title: 'Deneme & Analiz',
           href: '/advisor/exams',
           icon: TrendingUp,
-          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
+          roles: ['ADVISOR', 'COACH'],
+          requiresConsultant: false
         },
         {
-          title: 'Görüşme Notları',
+          title: 'Takvim & Görüşmeler',
           href: '/advisor/meetings',
-          icon: MessageSquare,
-          roles: ['SUPER_ADMIN', 'ADVISOR', 'COACH']
+          icon: Calendar,
+          roles: ['ADVISOR', 'COACH'],
+          requiresConsultant: false
         }
       ]
     },
@@ -87,28 +87,28 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
           title: 'Başvuru Takibi',
           href: '/advisor/applications',
           icon: FileText,
-          roles: ['SUPER_ADMIN', 'ADVISOR'],
+          roles: ['ADVISOR'],
           requiresConsultant: true
         },
         {
           title: 'Evrak Yönetimi',
           href: '/advisor/documents',
           icon: FileIcon,
-          roles: ['SUPER_ADMIN', 'ADVISOR'],
+          roles: ['ADVISOR'],
           requiresConsultant: true
         },
         {
-          title: 'Vize Süreçleri',
+          title: 'Vize CRM',
           href: '/advisor/visa',
           icon: Plane,
-          roles: ['SUPER_ADMIN', 'ADVISOR'],
+          roles: ['ADVISOR'],
           requiresConsultant: true
         },
         {
           title: 'Üniversiteler & Ülkeler',
           href: '/advisor/universities',
           icon: Globe,
-          roles: ['SUPER_ADMIN', 'ADVISOR'],
+          roles: ['ADVISOR'],
           requiresConsultant: true
         }
       ]
@@ -126,7 +126,7 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {userRole === 'SUPER_ADMIN' ? 'Yönetici Paneli' : advisorType === 'COACH' ? 'Eğitim Koçluğu' : 'Danışman Paneli'}
+          {advisorType === 'COACH' ? 'Eğitim Koçluğu' : advisorType === 'CONSULTANT' ? 'Yurt Dışı Danışmanlık' : 'Danışman Paneli'}
         </p>
       </div>
 

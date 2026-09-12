@@ -7,9 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { addStudent } from "@/actions/add-student";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+
+const SYMBOLS = [
+  { emoji: "🎓", name: "Mezun" },
+  { emoji: "🚀", name: "Roket" },
+  { emoji: "🦁", name: "Aslan" },
+  { emoji: "🦉", name: "Baykuş" },
+  { emoji: "⚡", name: "Yıldırım" },
+  { emoji: "🔥", name: "Alev" },
+  { emoji: "🌟", name: "Yıldız" },
+  { emoji: "💎", name: "Elmas" },
+  { emoji: "🎯", name: "Hedef" },
+  { emoji: "🏆", name: "Kupa" },
+  { emoji: "🎨", name: "Sanat" },
+  { emoji: "🎸", name: "Müzik" },
+];
 
 const SYMBOLS = [
   { emoji: "🎓", name: "Mezun" },
@@ -148,6 +164,31 @@ export function AddStudentDialog() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-4">
+              <Label htmlFor="serviceType" className="md:text-right pt-2">
+                Hizmet Türü
+              </Label>
+              <RadioGroup name="serviceType" defaultValue="BOTH" className="col-span-1 md:col-span-3">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="COACHING" id="coaching" />
+                  <Label htmlFor="coaching" className="font-normal cursor-pointer">
+                    Sadece Eğitim Koçluğu
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="STUDY_ABROAD" id="study_abroad" />
+                  <Label htmlFor="study_abroad" className="font-normal cursor-pointer">
+                    Sadece Yurt Dışı Danışmanlığı
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="BOTH" id="both" />
+                  <Label htmlFor="both" className="font-normal cursor-pointer">
+                    İkisi Birlikte (Tam Paket)
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
           </div>
           {error && (

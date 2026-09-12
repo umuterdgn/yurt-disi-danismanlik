@@ -10,16 +10,17 @@ interface StudentLayoutClientProps {
   children: React.ReactNode;
   userId: string;
   initialNotifications?: any[];
+  serviceType?: string;
 }
 
-export default function StudentLayoutClient({ children, userId, initialNotifications = [] }: StudentLayoutClientProps) {
+export default function StudentLayoutClient({ children, userId, initialNotifications = [], serviceType = 'BOTH' }: StudentLayoutClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Desktop Sidebar - Fixed */}
       <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-50 bg-white border-r">
-        <StudentSidebar userId={userId} initialNotifications={initialNotifications} />
+        <StudentSidebar userId={userId} initialNotifications={initialNotifications} serviceType={serviceType} />
       </aside>
 
       {/* Mobile Header */}
@@ -54,7 +55,7 @@ export default function StudentLayoutClient({ children, userId, initialNotificat
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            <StudentSidebar userId={userId} initialNotifications={initialNotifications} />
+            <StudentSidebar userId={userId} initialNotifications={initialNotifications} serviceType={serviceType} />
           </div>
         </>
       )}

@@ -42,7 +42,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // Get student data
   const student = await prisma.studentProfile.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      serviceType: true,
       user: {
         include: {
           auditLogs: {
@@ -85,7 +87,18 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         },
         orderBy: { date: 'desc' },
         take: 3
-      }
+      },
+      school: true,
+      grade: true,
+      targetUniversity: true,
+      targetScore: true,
+      currentScore: true,
+      targetExam: true,
+      examDate: true,
+      advisorNote: true,
+      healthScore: true,
+      riskStatus: true,
+      applicationReadiness: true
     }
   });
 
@@ -232,23 +245,29 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
         {/* Main Tabs - 360° Profile */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="flex flex-wrap gap-2">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Genel Bakış
             </TabsTrigger>
-            <TabsTrigger value="academic" className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              Eğitim
-            </TabsTrigger>
-            <TabsTrigger value="study-efficiency" className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              Çalışma & Efor
-            </TabsTrigger>
-            <TabsTrigger value="application" className="flex items-center gap-2">
-              <GraduationCap className="w-4 h-4" />
-              Başvuru & Vize
-            </TabsTrigger>
+            {student.serviceType !== 'STUDY_ABROAD' && (
+              <TabsTrigger value="academic" className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Eğitim
+              </TabsTrigger>
+            )}
+            {student.serviceType !== 'STUDY_ABROAD' && (
+              <TabsTrigger value="study-efficiency" className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Çalışma & Efor
+              </TabsTrigger>
+            )}
+            {student.serviceType !== 'COACHING' && (
+              <TabsTrigger value="application" className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4" />
+                Başvuru & Vize
+              </TabsTrigger>
+            )}
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <History className="w-4 h-4" />
               Zaman Çizelgesi

@@ -45,6 +45,17 @@ export default async function StudentLayout({
     redirect('/dashboard');
   }
 
+  // Get student profile with serviceType
+  let studentProfile = null;
+  try {
+    studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId: user.id },
+      select: { serviceType: true }
+    });
+  } catch (error) {
+    console.error('Error fetching student profile:', error);
+  }
+
   // Get user notifications
   let notifications: Notification[] = [];
   try {
@@ -57,5 +68,5 @@ export default async function StudentLayout({
     console.error('Error fetching notifications:', error);
   }
 
-  return <StudentLayoutClient userId={user.id} initialNotifications={notifications}>{children}</StudentLayoutClient>;
+  return <StudentLayoutClient userId={user.id} initialNotifications={notifications} serviceType={studentProfile?.serviceType || 'BOTH'}>{children}</StudentLayoutClient>;
 }

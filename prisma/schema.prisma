@@ -20,6 +20,12 @@ enum UserRole {
   PARENT
 }
 
+enum ServiceType {
+  COACHING
+  STUDY_ABROAD
+  BOTH
+}
+
 model User {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -70,6 +76,7 @@ model StudentProfile {
   targetUniversity String?
   targetScore      Float? // Hedef puan (TYT/AYT)
   currentScore     Float? // Mevcut puan
+  serviceType      ServiceType @default(BOTH) // Hizmet türü: Eğitim Koçluğu, Yurt Dışı Danışmanlık, İkisi Birlikte
 
   // Oyunlaştırma (Gamification)
   xp               Int      @default(0) // Tecrübe puanı

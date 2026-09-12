@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
   Users, 
@@ -8,22 +10,34 @@ import {
   FileText, 
   Globe,
   Settings,
-  UserCheck,
   Kanban,
   TrendingUp,
   DollarSign,
-  Zap
+  Zap,
+  Wallet,
+  Briefcase,
+  BarChart3,
+  Cpu,
+  CreditCard,
+  PieChart,
+  Building2,
+  UserPlus,
+  ShieldCheck
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 
 export default function AdminSidebar() {
+  const pathname = usePathname();
+  
+  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
+
   const menuItems = [
-    // ANA EKRAN
+    // GENEL BAKIŞ
     {
-      category: "Ana Ekran",
+      category: "Genel Bakış",
       items: [
         {
-          title: "Dashboard",
+          title: "Komuta Merkezi",
           icon: LayoutDashboard,
           href: "/admin/dashboard",
         }
@@ -39,14 +53,19 @@ export default function AdminSidebar() {
           href: "/admin/crm",
         },
         {
-          title: "Finans & Muhasebe",
-          icon: DollarSign,
-          href: "/admin/finance",
+          title: "Tüm Öğrenciler",
+          icon: Users,
+          href: "/admin/students",
         },
         {
-          title: "Danışman Analitiği",
+          title: "Danışmanlar & Analitik",
           icon: TrendingUp,
           href: "/admin/advisors",
+        },
+        {
+          title: "Finans & Muhasebe",
+          icon: Wallet,
+          href: "/admin/finance",
         }
       ]
     },
@@ -55,51 +74,9 @@ export default function AdminSidebar() {
       category: "Sistem",
       items: [
         {
-          title: "Otomasyonlar",
+          title: "Otomasyonlar & Workflow",
           icon: Zap,
           href: "/admin/workflows",
-        },
-        {
-          title: "Kullanıcılar",
-          icon: Users,
-          href: "/admin/users",
-        },
-        {
-          title: "Onay Bekleyenler",
-          icon: UserCheck,
-          href: "/admin/pending-approvals",
-        }
-      ]
-    },
-    // DANIŞMANLIK MODÜLLERİ
-    {
-      category: "Danışmanlık Modülleri",
-      items: [
-        {
-          title: "Tüm Öğrenciler",
-          icon: Users,
-          href: "/admin/students",
-        },
-        {
-          title: "Başvuru Yönetimi",
-          icon: FileText,
-          href: "/admin/applications",
-        }
-      ]
-    },
-    // DİĞER
-    {
-      category: "Diğer",
-      items: [
-        {
-          title: "Randevular",
-          icon: Calendar,
-          href: "/admin/appointments",
-        },
-        {
-          title: "İçerik Yönetimi",
-          icon: Globe,
-          href: "/admin/content/countries",
         },
         {
           title: "Ayarlar",
@@ -130,7 +107,12 @@ export default function AdminSidebar() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      className={cn(
+                        "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                        isActive(item.href)
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-gray-700 hover:bg-gray-100"
+                      )}
                     >
                       <Icon className="w-5 h-5" />
                       <span>{item.title}</span>
