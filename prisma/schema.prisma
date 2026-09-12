@@ -30,6 +30,10 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // Multi-tenant support (optional for future)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
   // İlişkiler
   studentProfile StudentProfile?
   advisorProfile AdvisorProfile?
@@ -76,6 +80,7 @@ model StudentProfile {
   targetExam       String?  // Sınav türü (YKS, DGS, MSÜ, IELTS)
   examDate         DateTime? // Hedef sınav tarihi
   advisorNote      String? // Danışmanın notu
+  pomodoroDuration Int      @default(25) // Pomodoro süresi (dakika)
 
   // Nexa Intelligence Layer - Student 360 & Risk Motoru
   healthScore        Int      @default(100) // Öğrenci sağlık skoru (0-100)
@@ -102,6 +107,12 @@ model StudentProfile {
   
   // Nexa Intelligence Layer - Gelişmiş Deneme Motoru
   exams           Exam[]
+  
+  // Finance & Gamification
+  financePackage  FinancePackage?
+  
+  // Study Sessions
+  studySessions   StudySession[] @relation("StudentStudySessions")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -124,6 +135,7 @@ model AdvisorProfile {
   students StudentProfile[]
   tasks    Task[]
   aiRecommendations AIRecommendation[]
+  leads    Lead[] @relation("LeadAdvisor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -178,10 +190,35 @@ model DailyTask {
   taskDate          DateTime
   priority          String   @default("medium") // low, medium, high
 
+  // İlişkiler
+  studySessions StudySession[] @relation("TaskStudySessions")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("daily_tasks")
+}
+
+// Çalışma Oturumları (Study Sessions)
+model StudySession {
+  id               String     @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation("StudentStudySessions", fields: [studentProfileId], references: [id], onDelete: Cascade)
+  
+  taskId           String?
+  task             DailyTask? @relation("TaskStudySessions", fields: [taskId], references: [id], onDelete: SetNull)
+  
+  subject          String?
+  startTime        DateTime
+  endTime          DateTime?
+  pauseCount       Int        @default(0)
+  actualDuration   Int?       // dakika cinsinden
+  status           String     @default("IN_PROGRESS") // COMPLETED, INTERRUPTED, IN_PROGRESS
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("study_sessions")
 }
 
 // Danışman Görevleri (Kanban/Todo)
@@ -343,6 +380,13 @@ model MeetingNote {
   actionItems     String? // Atılacak adımlar
   nextMeetingDate DateTime?
   notes           String    @db.Text
+  
+  // AI Summary fields
+  aiSummary       String?  @db.Text // AI tarafından oluşturulan özet
+  aiDecisions     String?  @db.Text // AI tarafından çıkarılan kararlar
+  aiActions       String?  @db.Text // AI tarafından çıkarılan aksiyonlar (JSON formatında görevler)
+  aiProcessedAt   DateTime? // AI işleme zamanı
+  tasksGenerated  Boolean  @default(false) // AI'dan görevler oluşturuldu mu?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -659,3 +703,224 @@ model ActivityLog {
 
   @@map("activity_logs")
 }
+
+// ============================================
+// CRM & LEAD MANAGEMENT
+// ============================================
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  MEETING_SET
+  WON
+  LOST
+}
+
+enum LeadSource {
+  INSTAGRAM
+  WEBSITE
+  REFERRAL
+  FACEBOOK
+  TWITTER
+  LINKEDIN
+  GOOGLE
+  OTHER
+}
+
+enum LeadService {
+  YKS
+  STUDY_ABROAD
+  LANGUAGE_SCHOOL
+  CONSULTING
+  OTHER
+}
+
+model Lead {
+  id        String      @id @default(cuid())
+  name      String
+  email     String     @unique
+  phone     String?
+  source    LeadSource
+  service   LeadService
+  status    LeadStatus  @default(NEW)
+  notes     String?     @db.Text
+  
+  // İlişkiler
+  assignedAdvisorId String?
+  assignedAdvisor   AdvisorProfile? @relation("LeadAdvisor", fields: [assignedAdvisorId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leads")
+}
+
+// ============================================
+// MULTI-TENANT ORGANIZATION SUPPORT
+// ============================================
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  logo      String?
+  domain    String?  @unique
+  isActive  Boolean  @default(true)
+  
+  users     User[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("organizations")
+}
+
+// ============================================
+// FINANCE & PAYMENT MANAGEMENT
+// ============================================
+
+model FinancePackage {
+  id               String @id @default(cuid())
+  studentProfileId String @unique
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  
+  packageName      String   // Paket adı (Örn: "Premium YKS Paketi", "Yurt Dışı Başvuru Paketi")
+  totalAmount      Float    // Toplam tutar
+  paidAmount       Float    @default(0) // Ödenen tutar
+  currency         String   @default("TRY") // TRY, USD, EUR
+  discount         Float?   @default(0) // İndirim tutarı
+  status           String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  
+  // Taksit bilgileri
+  installments     Installment[]
+  
+  // Ödeme bilgileri
+  paymentMethod    String?  // CREDIT_CARD, BANK_TRANSFER, CASH
+  paymentDate      DateTime?
+  notes            String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("finance_packages")
+}
+
+model Installment {
+  id               String         @id @default(cuid())
+  financePackageId String
+  financePackage   FinancePackage @relation(fields: [financePackageId], references: [id], onDelete: Cascade)
+  
+  amount           Float
+  dueDate          DateTime
+  paidDate         DateTime?
+  status           String         @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED
+  paymentMethod    String?
+  notes            String?        @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("installments")
+}
+
+// ============================================
+// WORKFLOW AUTOMATION ENGINE
+// ============================================
+
+enum WorkflowTrigger {
+  NEW_STUDENT
+  DOC_REJECTED
+  APPLICATION_STATUS_CHANGE
+  TASK_COMPLETED
+  MEETING_COMPLETED
+  PAYMENT_OVERDUE
+  RISK_STATUS_CHANGE
+}
+
+enum WorkflowActionType {
+  CREATE_TASK
+  SEND_WHATSAPP
+  SEND_EMAIL
+  ASSIGN_ADVISOR
+  UPDATE_STATUS
+  CREATE_NOTIFICATION
+  TRIGGER_AI_ANALYSIS
+}
+
+model Workflow {
+  id          String          @id @default(cuid())
+  name        String
+  description String?         @db.Text
+  trigger     WorkflowTrigger
+  isActive    Boolean         @default(true)
+  
+  actions     WorkflowAction[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("workflows")
+}
+
+model WorkflowAction {
+  id         String            @id @default(cuid())
+  workflowId String
+  workflow   Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  actionType WorkflowActionType
+  payload    String            @db.Text // JSON payload for action parameters
+  order      Int               @default(0) // Execution order
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("workflow_actions")
+}
+
+// ============================================
+// ADVANCED GAMIFICATION - QUEST SYSTEM
+// ============================================
+
+enum QuestType {
+  POMODORO
+  TASK
+  EXAM
+  STUDY_TIME
+  DOCUMENT_UPLOAD
+  MEETING_ATTENDANCE
+}
+
+model Quest {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @db.Text
+  xpReward    Int       // XP ödülü
+  targetCount Int       // Hedef sayı (Örn: 5 pomodoro)
+  type        QuestType
+  difficulty  String    @default("MEDIUM") // EASY, MEDIUM, HARD
+  isActive    Boolean   @default(true)
+  startDate   DateTime
+  endDate     DateTime
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quests")
+}
+
+model QuestProgress {
+  id               String         @id @default(cuid())
+  questId          String
+  studentProfileId String
+  
+  currentCount     Int            @default(0) // Mevcut ilerleme
+  isCompleted      Boolean        @default(false)
+  completedAt      DateTime?
+  xpAwarded        Boolean        @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([questId, studentProfileId])
+  @@map("quest_progress")
+}
+

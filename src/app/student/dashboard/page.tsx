@@ -23,6 +23,8 @@ import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
 import { ApplicationReadinessScore } from "@/components/application-readiness-score";
 import { DocumentChecklist } from "@/components/document-checklist";
+import { MyJourney } from "@/components/my-journey";
+import { WeeklyQuests } from "@/components/weekly-quests";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -430,60 +432,63 @@ export default async function StudentDashboard() {
             </CardContent>
           </Card>
 
-          {/* Pomodoro Timer */}
-          <div>
-            <PomodoroTimer />
-          </div>
-
-          {/* Document Upload Area */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Evrak Durumu
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {allDocuments.length === 0 ? (
-                <div className="text-center py-8">
-                  <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-4">Henüz evrak yüklenmemiş.</p>
-                  <Button variant="outline" className="w-full">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Evrak Yükle
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {allDocuments.map((doc: any) => (
-                    <div key={doc.id} className={`p-4 border rounded-lg ${doc.status === 'REVISION_REQUIRED' ? 'bg-orange-50 border-orange-200' : ''}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-3">
-                          {getDocumentStatusIcon(doc.status)}
-                          <div>
-                            <p className="font-medium">{doc.documentType || doc.type}</p>
-                            {getDocumentStatusBadge(doc.status)}
-                          </div>
-                        </div>
-                        <FileUploadButton 
-                          documentId={doc.id}
-                          filePath={doc.filePath}
-                          documentName={doc.documentType || doc.type}
-                        />
-                      </div>
-                      {doc.status === 'REVISION_REQUIRED' && doc.feedback && (
-                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm font-medium text-red-900 mb-1">Revizyon Notu:</p>
-                          <p className="text-sm text-red-700">{doc.feedback}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Weekly Quests */}
+          <WeeklyQuests studentId={studentProfile.id} />
         </div>
+
+        {/* Pomodoro Timer */}
+        <div className="mb-8">
+          <PomodoroTimer />
+        </div>
+
+        {/* Document Upload Area */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Evrak Durumu
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {allDocuments.length === 0 ? (
+              <div className="text-center py-8">
+                <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 mb-4">Henüz evrak yüklenmemiş.</p>
+                <Button variant="outline" className="w-full">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Evrak Yükle
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allDocuments.map((doc: any) => (
+                  <div key={doc.id} className={`p-4 border rounded-lg ${doc.status === 'REVISION_REQUIRED' ? 'bg-orange-50 border-orange-200' : ''}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        {getDocumentStatusIcon(doc.status)}
+                        <div>
+                          <p className="font-medium">{doc.documentType || doc.type}</p>
+                          {getDocumentStatusBadge(doc.status)}
+                        </div>
+                      </div>
+                      <FileUploadButton 
+                        documentId={doc.id}
+                        filePath={doc.filePath}
+                        documentName={doc.documentType || doc.type}
+                      />
+                    </div>
+                    {doc.status === 'REVISION_REQUIRED' && (doc.feedback || (doc as any).feedback) && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm font-medium text-red-900 mb-1">Revizyon Notu:</p>
+                        <p className="text-sm text-red-700">{doc.feedback || (doc as any).feedback}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Exam Results */}
         <Card className="mb-8">
@@ -534,14 +539,14 @@ export default async function StudentDashboard() {
 
         {/* Mastery Map */}
         <div className="mb-8">
-          <MasteryMap exams={studentProfile.exams || []} />
+          <MasteryMap exams={studentProfile.exams as any || []} />
         </div>
 
         {/* Exam Error Analysis */}
         {studentProfile.exams && studentProfile.exams.length > 0 && (
           <div className="mb-8">
             <ExamErrorAnalysis 
-              exam={studentProfile.exams[0]} 
+              exam={studentProfile.exams[0] as any} 
               studentId={studentProfile.id} 
             />
           </div>
@@ -564,8 +569,8 @@ export default async function StudentDashboard() {
                 },
                 {
                   name: 'Dil Seviyesi',
-                  value: studentProfile.applications[0]?.languageScore && studentProfile.applications[0]?.requiredScore
-                    ? Math.min(100, Math.round((studentProfile.applications[0].languageScore / studentProfile.applications[0].requiredScore) * 100))
+                  value: studentProfile.applications[0]?.languageScore && (studentProfile.applications[0] as any)?.requiredScore
+                    ? Math.min(100, Math.round((studentProfile.applications[0].languageScore / (studentProfile.applications[0] as any).requiredScore) * 100))
                     : 0,
                   icon: Globe,
                   color: 'bg-green-100',
@@ -604,6 +609,11 @@ export default async function StudentDashboard() {
             />
           </div>
         )}
+
+        {/* My Journey */}
+        <div className="mb-8">
+          <MyJourney studentProfile={studentProfile as any} />
+        </div>
 
         {/* Subject Analysis */}
         <Card>

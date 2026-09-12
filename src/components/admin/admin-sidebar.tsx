@@ -8,7 +8,11 @@ import {
   FileText, 
   Globe,
   Settings,
-  UserCheck
+  UserCheck,
+  Kanban,
+  TrendingUp,
+  DollarSign,
+  Zap
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -18,6 +22,26 @@ export default function AdminSidebar() {
       title: "Dashboard",
       icon: LayoutDashboard,
       href: "/admin/dashboard",
+    },
+    {
+      title: "Satış CRM",
+      icon: Kanban,
+      href: "/admin/crm",
+    },
+    {
+      title: "Danışman Analitiği",
+      icon: TrendingUp,
+      href: "/admin/advisors",
+    },
+    {
+      title: "Finans & Muhasebe",
+      icon: DollarSign,
+      href: "/admin/finance",
+    },
+    {
+      title: "Otomasyonlar",
+      icon: Zap,
+      href: "/admin/workflows",
     },
     {
       title: "Kullanıcılar",

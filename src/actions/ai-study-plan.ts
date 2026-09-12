@@ -64,31 +64,41 @@ export async function generateAIStudyPlan(examId: string) {
       return { success: false, error: 'No subject data available for analysis' };
     }
 
-    // Generate AI-powered study tasks using Groq
+    // Generate AI-powered study tasks using Groq with Spaced Repetition
     const generatedTasks = [];
 
     for (const subject of weakestSubjects) {
-      // Create a targeted task based on the weak subject
-      const taskTitle = `${subject.subjectName} - Tekrar ve Pratik`;
-      const taskDescription = `${subject.subjectName} dersinde net artışı için çalışma. Mevcut net: ${subject.net.toFixed(2)}, Yanlış: ${subject.wrong}`;
-      
-      // Create daily task
-      const dailyTask = await prisma.dailyTask.create({
-        data: {
-          studentProfileId: exam.studentProfileId,
-          title: taskTitle,
-          description: taskDescription,
-          subject: subject.subjectName,
-          taskType: 'Soru Çözme',
-          targetQuantity: 40, // Default 40 questions
-          completedQuantity: 0,
-          isCompleted: false,
-          taskDate: new Date(),
-          priority: subject.net < 5 ? 'high' : 'medium'
-        }
-      });
+      // Spaced Repetition: Create 3 tasks with different due dates
+      const dueDates = [
+        new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // +2 days
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 days
+        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // +14 days
+      ];
 
-      generatedTasks.push(dailyTask);
+      const repetitionLabels = ['1. Tekrar', '2. Tekrar', '3. Tekrar'];
+
+      for (let i = 0; i < 3; i++) {
+        const taskTitle = `${subject.subjectName} - ${repetitionLabels[i]}`;
+        const taskDescription = `${subject.subjectName} dersinde net artışı için aralıklı tekrar çalışması. Mevcut net: ${subject.net.toFixed(2)}, Yanlış: ${subject.wrong}. Bu, ${repetitionLabels[i]} çalışmasıdır.`;
+        
+        // Create daily task with spaced repetition due date
+        const dailyTask = await prisma.dailyTask.create({
+          data: {
+            studentProfileId: exam.studentProfileId,
+            title: taskTitle,
+            description: taskDescription,
+            subject: subject.subjectName,
+            taskType: 'Soru Çözme',
+            targetQuantity: 40, // Default 40 questions
+            completedQuantity: 0,
+            isCompleted: false,
+            taskDate: dueDates[i],
+            priority: subject.net < 5 ? 'high' : 'medium'
+          }
+        });
+
+        generatedTasks.push(dailyTask);
+      }
     }
 
     // Create audit log
@@ -98,7 +108,7 @@ export async function generateAIStudyPlan(examId: string) {
         action: 'AI_TASK_GENERATED',
         entityType: 'DailyTask',
         entityId: generatedTasks[0]?.id,
-        details: `AI generated ${generatedTasks.length} study tasks based on exam ${exam.title} for weakest subjects: ${weakestSubjects.map(s => s.subjectName).join(', ')}`
+        details: `AI generated ${generatedTasks.length} study tasks with Spaced Repetition (+2, +7, +14 days) based on exam ${exam.title} for weakest subjects: ${weakestSubjects.map(s => s.subjectName).join(', ')}`
       }
     });
 
@@ -106,8 +116,8 @@ export async function generateAIStudyPlan(examId: string) {
     await prisma.notification.create({
       data: {
         userId: exam.studentProfile.userId,
-        title: 'AI Çalışma Planı Oluşturuldu',
-        message: `${exam.title} deneme sonucuna göre ${generatedTasks.length} yeni çalışma görevi eklendi.`,
+        title: 'AI Çalışma Planı Oluşturuldu (Aralıklı Tekrar)',
+        message: `${exam.title} deneme sonucuna göre ${weakestSubjects.length} zayıf konu için aralıklı tekrar sistemiyle (${generatedTasks.length} görev: +2, +7, +14 gün) çalışma planı oluşturuldu.`,
         type: 'TASK',
         relatedEntityType: 'DailyTask',
         relatedEntityId: generatedTasks[0]?.id

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare, Plus, TrendingUp, History, BookOpen, GraduationCap } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare, Plus, TrendingUp, History, BookOpen, GraduationCap, Timer, Activity, BarChart3 } from 'lucide-react';
 import { AIAnalysisButton } from "@/components/ai-analysis-button";
 import { AdvisorNoteForm } from "@/components/advisor-note-form";
 import { DocumentAddDialog } from "@/components/document-add-dialog";
@@ -17,6 +17,10 @@ import { AICopilotPanel } from "@/components/ai-copilot-panel";
 import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
 import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
+import { StudySessionLogs } from "@/components/study-session-logs";
+import { TimeAnalysisCard } from "@/components/time-analysis-card";
+import { EfficiencyAnalysisCard } from "@/components/efficiency-analysis-card";
+import { getTimeAnalysis, getEfficiencyAnalysis, getStudySessionLogs } from "@/actions/advisor-analytics";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -94,6 +98,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     where: { studentProfileId: id },
     orderBy: { subject: 'asc' }
   });
+
+  // Get study session analytics
+  const studySessionLogs = await getStudySessionLogs(id);
+  const timeAnalysis = await getTimeAnalysis(id);
+  const efficiencyAnalysis = await getEfficiencyAnalysis(id);
 
   // Group subject analysis by subject
   const groupedSubjects = subjectAnalysis.reduce((acc, item) => {
@@ -223,7 +232,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
         {/* Main Tabs - 360° Profile */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Genel Bakış
@@ -231,6 +240,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             <TabsTrigger value="academic" className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               Eğitim
+            </TabsTrigger>
+            <TabsTrigger value="study-efficiency" className="flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Çalışma & Efor
             </TabsTrigger>
             <TabsTrigger value="application" className="flex items-center gap-2">
               <GraduationCap className="w-4 h-4" />
@@ -401,7 +414,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               </div>
 
               {/* Mastery Map */}
-              <MasteryMap exams={student.exams} subjectAnalysis={subjectAnalysis} />
+              <MasteryMap exams={student.exams as any} />
 
               {/* Subject Analysis (AI) */}
               <Card>
@@ -531,6 +544,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+
+          {/* Study Efficiency & Effort Tab */}
+          <TabsContent value="study-efficiency">
+            <div className="space-y-6">
+              {/* Study Session Logs */}
+              <StudySessionLogs studySessionLogs={studySessionLogs} />
+
+              {/* Time Analysis */}
+              <TimeAnalysisCard timeAnalysis={timeAnalysis} />
+
+              {/* Efficiency Analysis */}
+              <EfficiencyAnalysisCard efficiencyAnalysis={efficiencyAnalysis as any} />
             </div>
           </TabsContent>
 
