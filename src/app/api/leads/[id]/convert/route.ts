@@ -3,12 +3,14 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // Get the lead
     const lead = await prisma.lead.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         assignedAdvisor: true,
       },
@@ -58,7 +60,7 @@ export async function POST(
 
     // Update lead status to indicate conversion
     await prisma.lead.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: 'WON',
         notes: lead.notes ? `${lead.notes}\n\nConverted to student on ${new Date().toISOString()}` : `Converted to student on ${new Date().toISOString()}`,

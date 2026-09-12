@@ -47,7 +47,7 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
       social: setSocial
     }[subject];
 
-    setter(prev => ({
+    setter?.(prev => ({
       ...prev,
       [field]: numValue
     }));

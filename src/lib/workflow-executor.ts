@@ -12,7 +12,7 @@ export async function executeWorkflows(context: WorkflowExecutionContext) {
     // Find active workflows for the given trigger
     const workflows = await prisma.workflow.findMany({
       where: {
-        trigger: context.trigger,
+        trigger: context.trigger as any,
         isActive: true
       },
       include: {

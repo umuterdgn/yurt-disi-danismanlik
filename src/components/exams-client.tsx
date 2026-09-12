@@ -118,7 +118,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
 
   const chartData = examResults.slice(-20).map((e) => ({
     name: e.studentProfile.user.name,
-    date: new Date(e.examDate || e.date).toLocaleDateString('tr-TR'),
+    date: new Date(e.examDate || e.date || Date.now()).toLocaleDateString('tr-TR'),
     score: e.actualScore || e.totalNet || 0,
     target: e.targetScore || e.totalScore || 0
   }));
@@ -229,7 +229,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
                         </TableCell>
                         <TableCell className="text-gray-600 text-xs md:text-sm">{exam.examName || exam.title}</TableCell>
                         <TableCell className="text-gray-600 text-xs md:text-sm">
-                          {new Date(exam.examDate || exam.date).toLocaleDateString('tr-TR')}
+                          {new Date(exam.examDate || exam.date || Date.now()).toLocaleDateString('tr-TR')}
                         </TableCell>
                         <TableCell className="text-gray-600 text-xs md:text-sm">{exam.actualScore ?? exam.totalNet ?? '-'}</TableCell>
                         <TableCell className="text-gray-600 text-xs md:text-sm">{(exam as any).examType || '-'}</TableCell>
@@ -284,11 +284,11 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
         </Card>
 
         {/* Selected Exam Error Analysis */}
-        {selectedExam && (
+        {selectedExam && (selectedExam as any).studentProfile?.id && (
           <div className="mb-6 md:mb-8">
             <ExamErrorAnalysis 
               exam={selectedExam as any} 
-              studentId={selectedExam.studentProfile.id} 
+              studentId={(selectedExam as any).studentProfile.id} 
             />
           </div>
         )}

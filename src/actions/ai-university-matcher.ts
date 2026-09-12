@@ -183,8 +183,8 @@ async function performAIMatching(formData: {
 
       // IELTS matching (25 points)
       const ieltsDiff = ieltsScore - uni.requiredIELTS;
-      const ieltsScore = Math.max(0, 25 + (ieltsDiff * 5));
-      score += ieltsScore;
+      const ieltsScoreMatch = Math.max(0, 25 + (ieltsDiff * 5));
+      score += ieltsScoreMatch;
       if (ieltsScore >= uni.requiredIELTS) {
         reasons.push("IELTS skorunuz yetiyor");
       } else if (ieltsScore >= uni.requiredIELTS - 0.5) {

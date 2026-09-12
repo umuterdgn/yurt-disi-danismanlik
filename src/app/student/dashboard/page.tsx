@@ -461,30 +461,33 @@ export default async function StudentDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {allDocuments.map((doc: any) => (
-                  <div key={doc.id} className={`p-4 border rounded-lg ${doc.status === 'REVISION_REQUIRED' ? 'bg-orange-50 border-orange-200' : ''}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        {getDocumentStatusIcon(doc.status)}
-                        <div>
-                          <p className="font-medium">{doc.documentType || doc.type}</p>
-                          {getDocumentStatusBadge(doc.status)}
+                {allDocuments.map((doc: any) => {
+                  const feedback = doc.feedback ?? undefined;
+                  return (
+                    <div key={doc.id} className={`p-4 border rounded-lg ${doc.status === 'REVISION_REQUIRED' ? 'bg-orange-50 border-orange-200' : ''}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          {getDocumentStatusIcon(doc.status)}
+                          <div>
+                            <p className="font-medium">{doc.documentType || doc.type}</p>
+                            {getDocumentStatusBadge(doc.status)}
+                          </div>
                         </div>
+                        <FileUploadButton 
+                          documentId={doc.id}
+                          filePath={doc.filePath}
+                          documentName={doc.documentType || doc.type}
+                        />
                       </div>
-                      <FileUploadButton 
-                        documentId={doc.id}
-                        filePath={doc.filePath}
-                        documentName={doc.documentType || doc.type}
-                      />
+                      {doc.status === 'REVISION_REQUIRED' && feedback && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm font-medium text-red-900 mb-1">Revizyon Notu:</p>
+                          <p className="text-sm text-red-700">{feedback}</p>
+                        </div>
+                      )}
                     </div>
-                    {doc.status === 'REVISION_REQUIRED' && (doc.feedback || (doc as any).feedback) && (
-                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm font-medium text-red-900 mb-1">Revizyon Notu:</p>
-                        <p className="text-sm text-red-700">{doc.feedback || (doc as any).feedback}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -603,7 +606,10 @@ export default async function StudentDashboard() {
         {studentProfile.applications && studentProfile.applications.length > 0 && (
           <div className="mb-8">
             <DocumentChecklist 
-              documents={studentProfile.applications[0]?.documents || []}
+              documents={(studentProfile.applications[0]?.documents || []).map((doc: any) => ({
+                ...doc,
+                feedback: doc.feedback ?? undefined
+              }))}
               applicationId={studentProfile.applications[0].id}
               universityRequirements={studentProfile.applications[0]?.university?.requirements ? studentProfile.applications[0].university.requirements.split(',') : undefined}
             />
