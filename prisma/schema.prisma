@@ -26,6 +26,12 @@ enum ServiceType {
   BOTH
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
 model User {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -200,6 +206,7 @@ model DailyTask {
   isCompleted       Boolean  @default(false)
   taskDate          DateTime
   priority          String   @default("medium") // low, medium, high
+  status            TaskStatus @default(TODO) // Kanban status
 
   // İlişkiler
   studySessions StudySession[] @relation("TaskStudySessions")
@@ -251,12 +258,6 @@ model Task {
   updatedAt DateTime @updatedAt
 
   @@map("tasks")
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  DONE
 }
 
 // ============================================

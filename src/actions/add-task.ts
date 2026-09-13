@@ -42,7 +42,8 @@ export async function addTask(formData: FormData) {
         completedQuantity: 0,
         priority,
         taskDate: new Date(taskDate),
-        isCompleted: false
+        isCompleted: false,
+        status: 'TODO' // Set default status
       }
     });
 
@@ -106,5 +107,30 @@ export async function updateTaskCompletion(taskId: string, isCompleted: boolean)
   } catch (error) {
     console.error('Update task error:', error);
     return { success: false, error: 'Görev güncellenirken bir hata oluştu' };
+  }
+}
+
+export async function updateTaskStatus(taskId: string, status: 'TODO' | 'IN_PROGRESS' | 'DONE') {
+  try {
+    const task = await prisma.dailyTask.findUnique({
+      where: { id: taskId }
+    });
+
+    if (!task) {
+      return { success: false, error: 'Görev bulunamadı' };
+    }
+
+    const updatedTask = await prisma.dailyTask.update({
+      where: { id: taskId },
+      data: { status }
+    });
+
+    revalidatePath('/advisor/tasks');
+    revalidatePath('/advisor/students/[id]');
+
+    return { success: true, task: updatedTask };
+  } catch (error) {
+    console.error('Update task status error:', error);
+    return { success: false, error: 'Görev durumu güncellenirken bir hata oluştu' };
   }
 }

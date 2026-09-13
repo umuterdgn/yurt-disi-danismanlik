@@ -12,9 +12,10 @@ import { toast } from "sonner";
 
 interface AddTaskDialogProps {
   students: { id: string; name: string }[];
+  studentId?: string; // Optional for auto-selection
 }
 
-export function AddTaskDialog({ students }: AddTaskDialogProps) {
+export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -57,7 +58,7 @@ export function AddTaskDialog({ students }: AddTaskDialogProps) {
               <Label htmlFor="studentProfileId" className="md:text-right">
                 Öğrenci
               </Label>
-              <Select name="studentProfileId" required>
+              <Select name="studentProfileId" required defaultValue={studentId}>
                 <SelectTrigger className="col-span-1 md:col-span-3">
                   <SelectValue placeholder="Öğrenci seçin" />
                 </SelectTrigger>

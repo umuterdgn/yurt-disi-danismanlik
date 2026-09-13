@@ -21,6 +21,7 @@ import { StudySessionLogs } from "@/components/study-session-logs";
 import { TimeAnalysisCard } from "@/components/time-analysis-card";
 import { EfficiencyAnalysisCard } from "@/components/efficiency-analysis-card";
 import { getTimeAnalysis, getEfficiencyAnalysis, getStudySessionLogs } from "@/actions/advisor-analytics";
+import { AddTaskDialog } from "@/components/add-task-dialog";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -310,8 +311,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
               {/* Kanban Tasks */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex items-center justify-between">
                   <CardTitle>Görevler (Kanban)</CardTitle>
+                  <AddTaskDialog students={[{ id, name: student.user.name }]} studentId={id} />
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -319,14 +321,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-semibold mb-4 text-gray-700">Yapılacak</h3>
                       <div className="space-y-3">
-                        {student.dailyTasks.filter((t: any) => t.status === 'TODO').map((task: any) => (
+                        {student.dailyTasks.filter((t: any) => (t.status || 'TODO') === 'TODO').map((task: any) => (
                           <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
                             <p className="font-medium text-sm">{task.title}</p>
                             {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                             {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
+                            {task.estimatedPomodoros > 0 && (
+                              <div className="mt-2 text-xs text-gray-600 flex items-center gap-1">
+                                <span>🍅</span>
+                                <span>{task.estimatedPomodoros} Pomodoro</span>
+                              </div>
+                            )}
                           </div>
                         ))}
-                        {student.dailyTasks.filter((t: any) => t.status === 'TODO').length === 0 && (
+                        {student.dailyTasks.filter((t: any) => (t.status || 'TODO') === 'TODO').length === 0 && (
                           <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
                         )}
                       </div>
@@ -341,6 +349,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                             <p className="font-medium text-sm">{task.title}</p>
                             {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                             {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
+                            {task.estimatedPomodoros > 0 && (
+                              <div className="mt-2 text-xs text-gray-600 flex items-center gap-1">
+                                <span>🍅</span>
+                                <span>{task.estimatedPomodoros} Pomodoro</span>
+                              </div>
+                            )}
                           </div>
                         ))}
                         {student.dailyTasks.filter((t: any) => t.status === 'IN_PROGRESS').length === 0 && (
@@ -354,10 +368,16 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                       <h3 className="font-semibold mb-4 text-green-700">Bitti</h3>
                       <div className="space-y-3">
                         {student.dailyTasks.filter((t: any) => t.status === 'DONE').map((task: any) => (
-                          <div key={task.id} className="bg-white p-3 rounded border shadow-sm">
-                            <p className="font-medium text-sm">{task.title}</p>
+                          <div key={task.id} className="bg-white p-3 rounded border shadow-sm opacity-75">
+                            <p className="font-medium text-sm line-through">{task.title}</p>
                             {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                             {task.subject && <Badge className="mt-2 text-xs">{task.subject}</Badge>}
+                            {task.estimatedPomodoros > 0 && (
+                              <div className="mt-2 text-xs text-gray-600 flex items-center gap-1">
+                                <span>🍅</span>
+                                <span>{task.estimatedPomodoros} Pomodoro</span>
+                              </div>
+                            )}
                           </div>
                         ))}
                         {student.dailyTasks.filter((t: any) => t.status === 'DONE').length === 0 && (
