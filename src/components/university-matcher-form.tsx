@@ -13,10 +13,12 @@ import { matchUniversitiesWithAI } from "@/actions/ai-university-matcher";
 import { createApplicationFromMatch } from "@/actions/create-application-from-match";
 
 interface UniversityMatcherFormProps {
-  studentProfile: any;
+  studentProfile?: any; // Optional for advisor context
   countries: any[];
   departments: string[];
+  students?: any[]; // For advisor context
   studentId?: string; // Optional for advisor context
+  isAdvisor?: boolean; // Flag for advisor mode
 }
 
 interface UniversityMatch {
@@ -30,16 +32,17 @@ interface UniversityMatch {
   ranking?: number;
 }
 
-export function UniversityMatcherForm({ studentProfile, countries, departments, studentId }: UniversityMatcherFormProps) {
+export function UniversityMatcherForm({ studentProfile, countries, departments, students, studentId, isAdvisor = false }: UniversityMatcherFormProps) {
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<UniversityMatch[]>([]);
   const [creatingApplication, setCreatingApplication] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(studentId || '');
   const [formData, setFormData] = useState({
-    budget: studentProfile.applications?.[0]?.estimatedBudget?.toString() || '',
+    budget: studentProfile?.applications?.[0]?.estimatedBudget?.toString() || '',
     gpa: '',
-    ieltsScore: studentProfile.applications?.[0]?.languageScore?.toString() || '',
+    ieltsScore: studentProfile?.applications?.[0]?.languageScore?.toString() || '',
     targetCountry: '',
-    department: studentProfile.applications?.[0]?.program || ''
+    department: studentProfile?.applications?.[0]?.program || ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,7 +83,9 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
   };
 
   const handleSelectAsTarget = async (match: UniversityMatch) => {
-    if (!studentId) {
+    const targetStudentId = isAdvisor ? selectedStudentId : studentId;
+    
+    if (!targetStudentId) {
       toast.error('Öğrenci ID bulunamadı');
       return;
     }
@@ -89,7 +94,7 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
     
     try {
       const result = await createApplicationFromMatch({
-        studentProfileId: studentId,
+        studentProfileId: targetStudentId,
         universityName: match.name,
         country: match.country,
         estimatedCost: match.estimatedCost,
@@ -112,6 +117,28 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {isAdvisor && students && students.length > 0 && (
+          <div>
+            <Label htmlFor="student">Öğrenci Seç</Label>
+            <Select
+              value={selectedStudentId}
+              onValueChange={setSelectedStudentId}
+              required
+            >
+              <SelectTrigger id="student">
+                <SelectValue placeholder="Öğrenci seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map((student) => (
+                  <SelectItem key={student.id} value={student.id}>
+                    {student.user.name} - {student.grade}. Sınıf
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div>
           <Label htmlFor="budget">Yıllık Bütçe ($)</Label>
           <Input
@@ -298,10 +325,10 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
                     </ul>
                   </div>
 
-                  {studentId && (
+                  {isAdvisor ? (
                     <Button
                       onClick={() => handleSelectAsTarget(match)}
-                      disabled={creatingApplication === match.name}
+                      disabled={creatingApplication === match.name || !selectedStudentId}
                       className="w-full bg-green-600 hover:bg-green-700"
                     >
                       {creatingApplication === match.name ? (
@@ -312,11 +339,11 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
                       ) : (
                         <>
                           <Target className="w-4 h-4 mr-2" />
-                          Hedef Olarak Seç
+                          Öğrenci Hedefi Olarak Ata
                         </>
                       )}
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </CardContent>
             </Card>

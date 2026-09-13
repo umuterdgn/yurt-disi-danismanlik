@@ -19,7 +19,8 @@ import {
   Timer,
   BarChart3,
   ClipboardList,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { LogoutButton } from '@/components/logout-button';
@@ -92,6 +93,13 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
       category: 'Yurt Dışı Danışmanlık',
       items: [
         {
+          title: '🎓 Üniversite & Ülke Keşfet (AI)',
+          href: '/advisor/universities',
+          icon: Sparkles,
+          roles: ['ADVISOR'],
+          requiresConsultant: true
+        },
+        {
           title: 'Başvuru Takibi',
           href: '/advisor/applications',
           icon: FileText,
@@ -109,13 +117,6 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
           title: 'Vize CRM',
           href: '/advisor/visa',
           icon: Plane,
-          roles: ['ADVISOR'],
-          requiresConsultant: true
-        },
-        {
-          title: 'Üniversiteler & Ülkeler',
-          href: '/advisor/universities',
-          icon: Globe,
           roles: ['ADVISOR'],
           requiresConsultant: true
         }

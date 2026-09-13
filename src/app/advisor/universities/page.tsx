@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { Building2, Globe, GraduationCap } from 'lucide-react';
+import { Building2, Globe, GraduationCap, Sparkles, Target, User } from 'lucide-react';
+import { UniversityMatcherForm } from "@/components/university-matcher-form";
 
 export default async function UniversitiesPage() {
   const cookieStore = await cookies();
@@ -51,6 +52,7 @@ export default async function UniversitiesPage() {
   });
 
   countries = await prisma.country.findMany({
+    where: { isActive: true },
     include: {
       _count: {
         select: { universities: true }
@@ -59,13 +61,111 @@ export default async function UniversitiesPage() {
     orderBy: { name: 'asc' }
   });
 
+  // Get students for assignment functionality
+  const students = await prisma.studentProfile.findMany({
+    include: { user: true },
+    orderBy: { user: { name: 'asc' } }
+  });
+
+  // Get common departments/programs
+  const departments = [
+    'Computer Science',
+    'Business Administration',
+    'Engineering',
+    'Medicine',
+    'Law',
+    'Arts & Design',
+    'Psychology',
+    'Economics',
+    'Architecture',
+    'Data Science'
+  ];
+
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Üniversiteler & Ülkeler</h1>
-          <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+          <div className="flex items-center gap-3 mb-2">
+            <Sparkles className="w-8 h-8 text-purple-600" />
+            <h1 className="text-3xl font-bold text-gray-900">🎓 Üniversite & Ülke Keşfet (AI)</h1>
+          </div>
+          <p className="text-gray-600">
+            Hoş Geldiniz, {userName}! AI ile öğrencileriniz için en uygun üniversiteleri bulun ve hedef olarak atayın.
+          </p>
         </div>
+
+        {/* AI Matcher Section - Prominently Displayed */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              AI Üniversite Eşleştirme
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Öğrenci İçin Üniversite Bul
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Bir öğrencinin profil bilgilerine göre AI ile en uygun üniversiteleri bulun, ardından çıkan sonuçlardan birini öğrencinin hedefi olarak atayın.
+                </p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-600 rounded-full" />
+                    <span>Akademik profil analiz edilir</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-600 rounded-full" />
+                    <span>Bütçe ve dil gereksinimleri karşılaştırılır</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-600 rounded-full" />
+                    <span>Eşleşme yüzdesi ve öneriler sunulur</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-600 rounded-full" />
+                    <span>Sonuç öğrencinin hedefi olarak atanabilir</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Mevcut Öğrenciler ({students.length})
+                </h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {students.length === 0 ? (
+                    <p className="text-sm text-gray-500">Henüz öğrenci kaydı bulunmuyor.</p>
+                  ) : (
+                    students.slice(0, 5).map((student) => (
+                      <div key={student.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">
+                          {student.studentSymbol || '🎓'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{student.user.name}</p>
+                          <p className="text-xs text-gray-500">{student.grade}. Sınıf</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-purple-200">
+              <UniversityMatcherForm 
+                countries={countries}
+                departments={departments}
+                students={students}
+                isAdvisor={true}
+                studentId={undefined}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -100,14 +200,10 @@ export default async function UniversitiesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Ortalama Başvuru</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Kayıtlı Öğrenci</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-600">
-                {universities.length > 0 
-                  ? Math.round(universities.reduce((sum, u) => sum + u._count.applications, 0) / universities.length)
-                  : 0}
-              </div>
+              <div className="text-3xl font-bold text-orange-600">{students.length}</div>
             </CardContent>
           </Card>
         </div>

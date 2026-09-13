@@ -80,9 +80,9 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
       category: 'Yurt Dışı',
       items: [
         {
-          title: 'Üniversite Keşfet AI',
-          href: '/student/universities/match',
-          icon: Sparkles,
+          title: 'Seçilen Üniversiteler',
+          href: '/student/applications',
+          icon: GraduationCap,
           visibleFor: ['STUDY_ABROAD', 'BOTH']
         },
         {
@@ -92,7 +92,7 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
           visibleFor: ['STUDY_ABROAD', 'BOTH']
         },
         {
-          title: 'Başvurular & Vize',
+          title: 'Vize Durumu',
           href: '/student/applications',
           icon: Plane,
           visibleFor: ['STUDY_ABROAD', 'BOTH']

@@ -84,6 +84,8 @@ export default async function UniversityMatcherPage() {
                 studentProfile={studentProfile}
                 countries={countries}
                 departments={departments}
+                studentId={studentProfile.id}
+                isAdvisor={false}
               />
             </CardContent>
           </Card>
