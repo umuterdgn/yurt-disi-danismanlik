@@ -11,12 +11,12 @@ export async function addTask(formData: FormData) {
     const title = formData.get('title') as string;
     const subject = formData.get('subject') as string;
     const taskType = formData.get('taskType') as string;
-    const targetQuantity = parseInt(formData.get('targetQuantity') as string);
+    const estimatedPomodoros = parseInt(formData.get('estimatedPomodoros') as string);
     const priority = formData.get('priority') as string;
     const taskDate = formData.get('taskDate') as string;
 
     // Validation
-    if (!studentProfileId || !title || !subject || !taskType || !targetQuantity || !taskDate) {
+    if (!studentProfileId || !title || !subject || !taskType || !estimatedPomodoros || !taskDate) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' };
     }
 
@@ -37,7 +37,8 @@ export async function addTask(formData: FormData) {
         title,
         subject,
         taskType,
-        targetQuantity,
+        targetQuantity: estimatedPomodoros, // Keep targetQuantity for compatibility
+        estimatedPomodoros,
         completedQuantity: 0,
         priority,
         taskDate: new Date(taskDate),

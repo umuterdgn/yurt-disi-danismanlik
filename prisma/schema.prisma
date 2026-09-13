@@ -195,6 +195,7 @@ model DailyTask {
   subject           String // Matematik, Fizik vb.
   taskType          String // Soru çözme, Video izleme, Deneme vb.
   targetQuantity    Int // 40 soru, 2 saat vb.
+  estimatedPomodoros Int      @default(0) // Tahmini Pomodoro sayısı
   completedQuantity Int      @default(0)
   isCompleted       Boolean  @default(false)
   taskDate          DateTime

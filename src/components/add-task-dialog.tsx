@@ -110,13 +110,14 @@ export function AddTaskDialog({ students }: AddTaskDialogProps) {
               </Select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-              <Label htmlFor="targetQuantity" className="md:text-right">
-                Hedef Miktar
+              <Label htmlFor="estimatedPomodoros" className="md:text-right">
+                Tahmini Pomodoro Sayısı
               </Label>
               <Input
-                id="targetQuantity"
-                name="targetQuantity"
+                id="estimatedPomodoros"
+                name="estimatedPomodoros"
                 type="number"
+                min="0"
                 placeholder="Örn: 2"
                 className="col-span-1 md:col-span-3"
                 required
