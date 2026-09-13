@@ -10,6 +10,7 @@ interface UniversityMatch {
   reasons: string[];
   estimatedCost: string;
   requirements: string[];
+  admissionRequirements: string[];
   ranking?: number;
 }
 
@@ -72,7 +73,7 @@ async function performAIMatching(formData: {
   const targetCountry = formData.targetCountry;
   const department = formData.department;
 
-  // Mock university database with real universities
+  // Mock university database with real universities and admission requirements
   const universityDatabase = [
     {
       name: "University College London",
@@ -81,7 +82,8 @@ async function performAIMatching(formData: {
       averageCost: 30000,
       requiredGPA: 3.5,
       requiredIELTS: 7.0,
-      popularDepartments: ["Computer Science", "Engineering", "Medicine", "Law"]
+      popularDepartments: ["Computer Science", "Engineering", "Medicine", "Law"],
+      admissionRequirements: ["IELTS 7.0 minimum", "Academic transcripts", "Personal statement", "Two academic references", "Passport copy"]
     },
     {
       name: "Technical University of Munich",
@@ -90,7 +92,8 @@ async function performAIMatching(formData: {
       averageCost: 15000,
       requiredGPA: 3.2,
       requiredIELTS: 6.5,
-      popularDepartments: ["Engineering", "Computer Science", "Data Science", "Architecture"]
+      popularDepartments: ["Engineering", "Computer Science", "Data Science", "Architecture"],
+      admissionRequirements: ["IELTS 6.5 minimum", "Abitur or equivalent", "Motivation letter", "CV/Resume", "Proof of German language proficiency (optional but recommended)"]
     },
     {
       name: "University of Toronto",
@@ -99,7 +102,8 @@ async function performAIMatching(formData: {
       averageCost: 35000,
       requiredGPA: 3.3,
       requiredIELTS: 6.5,
-      popularDepartments: ["Computer Science", "Business Administration", "Medicine", "Psychology"]
+      popularDepartments: ["Computer Science", "Business Administration", "Medicine", "Psychology"],
+      admissionRequirements: ["IELTS 6.5 minimum", "High school transcripts", "Personal statement", "Two teacher recommendations", "Study permit application"]
     },
     {
       name: "ETH Zurich",
@@ -108,7 +112,8 @@ async function performAIMatching(formData: {
       averageCost: 20000,
       requiredGPA: 3.7,
       requiredIELTS: 7.0,
-      popularDepartments: ["Engineering", "Computer Science", "Data Science", "Architecture"]
+      popularDepartments: ["Engineering", "Computer Science", "Data Science", "Architecture"],
+      admissionRequirements: ["IELTS 7.0 minimum", "Matura or equivalent", "Motivation letter", "Two academic references", "Portfolio (for architecture)"]
     },
     {
       name: "University of Melbourne",
@@ -117,7 +122,8 @@ async function performAIMatching(formData: {
       averageCost: 28000,
       requiredGPA: 3.2,
       requiredIELTS: 6.5,
-      popularDepartments: ["Business Administration", "Arts & Design", "Medicine", "Law"]
+      popularDepartments: ["Business Administration", "Arts & Design", "Medicine", "Law"],
+      admissionRequirements: ["IELTS 6.5 minimum", "Academic transcripts", "Personal statement", "Two references", "Student visa (Subclass 500)"]
     },
     {
       name: "National University of Singapore",
@@ -126,7 +132,8 @@ async function performAIMatching(formData: {
       averageCost: 25000,
       requiredGPA: 3.5,
       requiredIELTS: 6.5,
-      popularDepartments: ["Computer Science", "Business Administration", "Engineering", "Data Science"]
+      popularDepartments: ["Computer Science", "Business Administration", "Engineering", "Data Science"],
+      admissionRequirements: ["IELTS 6.5 minimum", "High school diploma", "Personal statement", "Two teacher recommendations", "Student pass application"]
     },
     {
       name: "University of Amsterdam",
@@ -135,7 +142,8 @@ async function performAIMatching(formData: {
       averageCost: 18000,
       requiredGPA: 3.0,
       requiredIELTS: 6.5,
-      popularDepartments: ["Business Administration", "Psychology", "Law", "Economics"]
+      popularDepartments: ["Business Administration", "Psychology", "Law", "Economics"],
+      admissionRequirements: ["IELTS 6.5 minimum", "Dutch VWO diploma or equivalent", "Motivation letter", "CV/Resume", "Residence permit application"]
     },
     {
       name: "KU Leuven",
@@ -144,7 +152,8 @@ async function performAIMatching(formData: {
       averageCost: 12000,
       requiredGPA: 3.1,
       requiredIELTS: 6.5,
-      popularDepartments: ["Engineering", "Computer Science", "Medicine", "Architecture"]
+      popularDepartments: ["Engineering", "Computer Science", "Medicine", "Architecture"],
+      admissionRequirements: ["IELTS 6.5 minimum", "Secondary school diploma", "Motivation letter", "Two academic references", "Proof of language proficiency"]
     }
   ];
 
@@ -214,6 +223,7 @@ async function performAIMatching(formData: {
           `IELTS: ${uni.requiredIELTS}`,
           department
         ],
+        admissionRequirements: uni.admissionRequirements,
         ranking: uni.ranking
       };
     })
@@ -234,6 +244,7 @@ async function performAIMatching(formData: {
         ],
         estimatedCost: "$45,000",
         requirements: ["GPA: 3.7+", "IELTS: 7.0+", department],
+        admissionRequirements: ["IELTS 7.0 minimum", "SAT/ACT scores", "Personal statement", "Two teacher recommendations", "Transcripts", "Passport copy", "F-1 visa application"],
         ranking: 15
       },
       {
@@ -247,6 +258,7 @@ async function performAIMatching(formData: {
         ],
         estimatedCost: "$32,000",
         requirements: ["GPA: 3.2+", "IELTS: 6.5+", department],
+        admissionRequirements: ["IELTS 6.5 minimum", "High school transcripts", "Personal statement", "Two references", "Student visa (Subclass 500)", "Health insurance (OSHC)"],
         ranking: 40
       }
     ];

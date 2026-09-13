@@ -7,14 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, MapPin, DollarSign, GraduationCap, Star, CheckCircle } from "lucide-react";
+import { Loader2, Sparkles, MapPin, DollarSign, GraduationCap, Star, CheckCircle, Target } from "lucide-react";
 import { toast } from "sonner";
 import { matchUniversitiesWithAI } from "@/actions/ai-university-matcher";
+import { createApplicationFromMatch } from "@/actions/create-application-from-match";
 
 interface UniversityMatcherFormProps {
   studentProfile: any;
   countries: any[];
   departments: string[];
+  studentId?: string; // Optional for advisor context
 }
 
 interface UniversityMatch {
@@ -24,12 +26,14 @@ interface UniversityMatch {
   reasons: string[];
   estimatedCost: string;
   requirements: string[];
+  admissionRequirements: string[];
   ranking?: number;
 }
 
-export function UniversityMatcherForm({ studentProfile, countries, departments }: UniversityMatcherFormProps) {
+export function UniversityMatcherForm({ studentProfile, countries, departments, studentId }: UniversityMatcherFormProps) {
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<UniversityMatch[]>([]);
+  const [creatingApplication, setCreatingApplication] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     budget: studentProfile.applications?.[0]?.estimatedBudget?.toString() || '',
     gpa: '',
@@ -73,6 +77,36 @@ export function UniversityMatcherForm({ studentProfile, countries, departments }
     if (percentage >= 75) return 'bg-blue-100 border-blue-300 text-blue-900';
     if (percentage >= 60) return 'bg-yellow-100 border-yellow-300 text-yellow-900';
     return 'bg-gray-100 border-gray-300 text-gray-900';
+  };
+
+  const handleSelectAsTarget = async (match: UniversityMatch) => {
+    if (!studentId) {
+      toast.error('Öğrenci ID bulunamadı');
+      return;
+    }
+
+    setCreatingApplication(match.name);
+    
+    try {
+      const result = await createApplicationFromMatch({
+        studentProfileId: studentId,
+        universityName: match.name,
+        country: match.country,
+        estimatedCost: match.estimatedCost,
+        admissionRequirements: match.admissionRequirements,
+        program: formData.department
+      });
+
+      if (result.success) {
+        toast.success(`${match.name} hedef olarak seçildi! Başvuru ve evraklar otomatik oluşturuldu.`);
+      } else {
+        toast.error(result.error || 'Başvuru oluşturulurken bir hata oluştu');
+      }
+    } catch (error) {
+      toast.error('Bir hata oluştu');
+    } finally {
+      setCreatingApplication(null);
+    }
   };
 
   return (
@@ -248,6 +282,41 @@ export function UniversityMatcherForm({ studentProfile, countries, departments }
                       ))}
                     </div>
                   </div>
+
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Kabul Şartları
+                    </h4>
+                    <ul className="space-y-1">
+                      {match.admissionRequirements.map((req, i) => (
+                        <li key={i} className="text-sm flex items-start gap-2">
+                          <span className="text-blue-600 mt-1">•</span>
+                          <span>{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {studentId && (
+                    <Button
+                      onClick={() => handleSelectAsTarget(match)}
+                      disabled={creatingApplication === match.name}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      {creatingApplication === match.name ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Oluşturuluyor...
+                        </>
+                      ) : (
+                        <>
+                          <Target className="w-4 h-4 mr-2" />
+                          Hedef Olarak Seç
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

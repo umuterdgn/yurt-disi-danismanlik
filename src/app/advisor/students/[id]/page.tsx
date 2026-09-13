@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare, Plus, TrendingUp, History, BookOpen, GraduationCap, Timer, Activity, BarChart3 } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Clock, ArrowRight, MessageSquare, Plus, TrendingUp, History, BookOpen, GraduationCap, Timer, Activity, BarChart3, Sparkles } from 'lucide-react';
 import { AIAnalysisButton } from "@/components/ai-analysis-button";
 import { AdvisorNoteForm } from "@/components/advisor-note-form";
 import { DocumentAddDialog } from "@/components/document-add-dialog";
@@ -22,6 +22,7 @@ import { TimeAnalysisCard } from "@/components/time-analysis-card";
 import { EfficiencyAnalysisCard } from "@/components/efficiency-analysis-card";
 import { getTimeAnalysis, getEfficiencyAnalysis, getStudySessionLogs } from "@/actions/advisor-analytics";
 import { AddTaskDialog } from "@/components/add-task-dialog";
+import { UniversityMatcherForm } from "@/components/university-matcher-form";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -112,6 +113,26 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     where: { studentProfileId: id },
     orderBy: { subject: 'asc' }
   });
+
+  // Get countries for university matcher
+  const countries = await prisma.country.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' }
+  });
+
+  // Define departments for university matcher
+  const departments = [
+    "Computer Science",
+    "Engineering",
+    "Business Administration",
+    "Medicine",
+    "Law",
+    "Psychology",
+    "Data Science",
+    "Architecture",
+    "Arts & Design",
+    "Economics"
+  ];
 
   // Get study session analytics
   const studySessionLogs = await getStudySessionLogs(id);
@@ -603,6 +624,24 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {/* Application & Visa Tab */}
           <TabsContent value="application">
             <div className="space-y-6">
+              {/* AI University Matcher */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                    AI Üniversite Eşleştirici
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <UniversityMatcherForm 
+                    studentProfile={student} 
+                    countries={countries} 
+                    departments={departments}
+                    studentId={id}
+                  />
+                </CardContent>
+              </Card>
+
               {/* Applications with Timeline */}
               <Card>
                 <CardHeader className="flex items-center justify-between">
