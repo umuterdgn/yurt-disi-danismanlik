@@ -9,14 +9,14 @@ interface SubjectResult {
   correct: number;
   wrong: number;
   empty: number;
-  net: number;
+  net: number | null;
 }
 
 interface Exam {
   id: string;
   title?: string;
   date?: Date | string;
-  totalNet?: number;
+  totalNet?: number | null;
   subjectResults?: SubjectResult[];
 }
 
@@ -42,7 +42,7 @@ export function MasteryMap({ exams }: MasteryMapProps) {
         }
         subjectMastery[subject.subjectName].correct += subject.correct;
         subjectMastery[subject.subjectName].total += subject.correct + subject.wrong + subject.empty;
-        subjectMastery[subject.subjectName].net += subject.net;
+        subjectMastery[subject.subjectName].net += subject.net || 0;
       });
     });
 

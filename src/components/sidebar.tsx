@@ -18,7 +18,8 @@ import {
   File as FileIcon,
   Timer,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  AlertTriangle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { LogoutButton } from '@/components/logout-button';
@@ -74,6 +75,13 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
           title: 'Takvim & Görüşmeler',
           href: '/advisor/meetings',
           icon: Calendar,
+          roles: ['ADVISOR', 'COACH'],
+          requiresConsultant: false
+        },
+        {
+          title: '🚨 Risk Radarı',
+          href: '/advisor/risk-radar',
+          icon: AlertTriangle,
           roles: ['ADVISOR', 'COACH'],
           requiresConsultant: false
         }

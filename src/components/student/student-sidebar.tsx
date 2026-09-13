@@ -15,7 +15,8 @@ import {
   CheckSquare,
   FolderOpen,
   Compass,
-  Map
+  Map,
+  Brain
 } from 'lucide-react';
 import { LogoutButton } from '@/components/logout-button';
 import { NotificationBell } from '@/components/notification-bell';
@@ -54,6 +55,12 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
     {
       category: 'Eğitim Koçluğu',
       items: [
+        {
+          title: 'AI Çalışma Planım',
+          href: '/student/study-plan',
+          icon: Brain,
+          visibleFor: ['COACHING', 'BOTH']
+        },
         {
           title: 'Çalışma Masası & Pomodoro',
           href: '/student/tasks',

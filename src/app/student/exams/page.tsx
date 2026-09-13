@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { TrendingUp, Calendar, Target } from 'lucide-react';
+import { MasteryMap } from "@/components/mastery-map";
 
 export default async function StudentExams() {
   const cookieStore = await cookies();
@@ -36,6 +37,12 @@ export default async function StudentExams() {
         user: true,
         examResults: {
           orderBy: { examDate: 'desc' }
+        },
+        exams: {
+          include: {
+            subjectResults: true
+          },
+          orderBy: { date: 'desc' }
         }
       }
     });
@@ -126,6 +133,11 @@ export default async function StudentExams() {
               <div className="text-3xl font-bold text-orange-600">{100 - progress}%</div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Mastery Map */}
+        <div className="mb-8">
+          <MasteryMap exams={studentProfile.exams || []} />
         </div>
 
         {/* Exam Results Table */}
