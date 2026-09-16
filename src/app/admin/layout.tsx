@@ -42,7 +42,7 @@ export default async function AdminLayout({
     }
 
     if (!dbUser || dbUser.role !== 'SUPER_ADMIN') {
-      redirect('/dashboard');
+      redirect('/login');
     }
 
     return <AdminLayoutClient>{children}</AdminLayoutClient>;

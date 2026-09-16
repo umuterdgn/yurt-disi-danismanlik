@@ -41,7 +41,7 @@ export default async function ParentLayout({
   }
 
   if (!dbUser || dbUser.role !== 'PARENT') {
-    redirect('/dashboard');
+    redirect('/login');
   }
 
   return <ParentLayoutClient>{children}</ParentLayoutClient>;

@@ -42,7 +42,7 @@ export default async function StudentLayout({
   }
 
   if (!dbUser || dbUser.role !== 'STUDENT') {
-    redirect('/dashboard');
+    redirect('/login');
   }
 
   // Get student profile with serviceType

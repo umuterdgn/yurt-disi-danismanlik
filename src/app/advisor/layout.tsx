@@ -42,7 +42,7 @@ export default async function AdvisorLayout({
     }
 
     if (!dbUser || dbUser.role !== 'ADVISOR') {
-      redirect('/dashboard');
+      redirect('/login');
     }
 
     return <AdvisorLayoutClient>{children}</AdvisorLayoutClient>;

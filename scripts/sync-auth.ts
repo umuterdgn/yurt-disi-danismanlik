@@ -12,11 +12,14 @@ const databaseUrl = process.env.DATABASE_URL || "postgresql://postgres.cgclalfcu
 const adapter = new PrismaPg({ connectionString: databaseUrl })
 const prisma = new PrismaClient({ adapter })
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-project.supabase.co"
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "your-service-role-key"
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseServiceKey || supabaseUrl === "https://your-project.supabase.co") {
   console.error('❌ NEXT_PUBLIC_SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY environment değişkenleri eksik')
+  console.log('Lütfen .env.local dosyasında bu değişkenleri tanımlayın:')
+  console.log('NEXT_PUBLIC_SUPABASE_URL=your-supabase-url')
+  console.log('SUPABASE_SERVICE_ROLE_KEY=your-service-role-key')
   process.exit(1)
 }
 
@@ -49,7 +52,7 @@ async function main() {
   console.log(`📋 Supabase'de ${existingUsers.users.length} kullanıcı bulundu`)
 
   // Test kullanıcılarını Supabase'den sil
-  const testEmails = ['advisor@example.com', 'student@example.com', 'parent@example.com', 'superadmin@example.com']
+  const testEmails = ['admin@test.com', 'advisor@test.com', 'student@test.com', 'student2@example.com', 'student3@example.com', 'parent@example.com']
   for (const user of existingUsers.users) {
     if (user.email && testEmails.includes(user.email) && user.id) {
       const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
