@@ -9,7 +9,7 @@ export default function SOPAssistantPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <PenTool className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Nexa Writing Assistant</h1>
+            <h1 className="text-3xl font-bold text-gray-900">ATA VISION Writing Assistant</h1>
             <Sparkles className="w-6 h-6 text-yellow-500" />
           </div>
           <p className="text-gray-600">

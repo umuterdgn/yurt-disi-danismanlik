@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nexa Yurt Dışı Danışmanlık",
+  title: "ATA VISION | Eğitim Danışmanlığı İşletim Sistemi",
   description: "Uluslararası eğitim danışmanlığı ve yurt dışı eğitim hizmetleri",
 };
 

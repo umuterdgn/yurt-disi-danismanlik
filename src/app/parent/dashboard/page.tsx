@@ -164,21 +164,21 @@ export default async function ParentDashboard() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Veli Paneli</h1>
         
         {/* Parent Info */}
-        <Card className="mb-8 bg-gradient-to-r from-green-500 to-teal-600 text-white">
+        <Card className="mb-8 bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Hoş Geldiniz, {parentProfile.user.name}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-green-100 mb-1">Öğrenci</p>
+                <p className="text-sm text-[#c89f65]/80 mb-1">Öğrenci</p>
                 <p className="text-2xl font-bold">{student.user.name}</p>
-                <p className="text-sm text-green-100">{student.grade}. Sınıf - {student.school}</p>
+                <p className="text-sm text-[#c89f65]/80">{student.grade}. Sınıf - {student.school}</p>
               </div>
               <div>
-                <p className="text-sm text-green-100 mb-1">Hedef Üniversite</p>
+                <p className="text-sm text-[#c89f65]/80 mb-1">Hedef Üniversite</p>
                 <p className="text-lg font-semibold">{student.targetUniversity || '-'}</p>
-                <p className="text-sm text-green-100 mt-1">Danışman: {student.advisor?.user?.name || 'Atanmamış'}</p>
+                <p className="text-sm text-[#c89f65]/80 mt-1">Danışman: {student.advisor?.user?.name || 'Atanmamış'}</p>
               </div>
             </div>
           </CardContent>
@@ -194,7 +194,7 @@ export default async function ParentDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{totalStudyHours} saat</div>
+              <div className="text-3xl font-bold text-[#c89f65]">{totalStudyHours} saat</div>
               <p className="text-sm text-gray-500 mt-1">Bu hafta</p>
             </CardContent>
           </Card>
@@ -207,7 +207,7 @@ export default async function ParentDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">{examCount}</div>
+              <div className="text-3xl font-bold text-[#0f2042]">{examCount}</div>
               <p className="text-sm text-gray-500 mt-1">Son 3 deneme</p>
             </CardContent>
           </Card>
@@ -220,7 +220,7 @@ export default async function ParentDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${scoreChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-3xl font-bold ${scoreChange >= 0 ? 'text-[#c89f65]' : 'text-red-600'}`}>
                 {scoreChange >= 0 ? '+' : ''}{scoreChange.toFixed(1)}%
               </div>
               <p className="text-sm text-gray-500 mt-1">Son denemeler</p>
@@ -235,7 +235,7 @@ export default async function ParentDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-600">{100 - progress}%</div>
+              <div className="text-3xl font-bold text-[#0f2042]">{100 - progress}%</div>
               <p className="text-sm text-gray-500 mt-1">Kalan</p>
             </CardContent>
           </Card>
@@ -255,39 +255,39 @@ export default async function ParentDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-[#c89f65]" />
                     <div>
                       <p className="font-medium">Tamamlanan Görevler</p>
                       <p className="text-sm text-gray-600">{completedTasks.length}/{weeklyTasks.length} görev</p>
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-700">
+                  <Badge className="bg-[#c89f65]/20 text-[#c89f65]">
                     {weeklyTasks.length > 0 ? Math.round((completedTasks.length / weeklyTasks.length) * 100) : 0}%
                   </Badge>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <Clock className="w-5 h-5 text-blue-600" />
+                    <Clock className="w-5 h-5 text-[#0f2042]" />
                     <div>
                       <p className="font-medium">Çalışma Süresi</p>
                       <p className="text-sm text-gray-600">Bu hafta toplam</p>
                     </div>
                   </div>
-                  <Badge className="bg-blue-100 text-blue-700">
+                  <Badge className="bg-[#0f2042]/20 text-[#0f2042]">
                     {totalStudyHours} saat
                   </Badge>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
+                    <TrendingUp className="w-5 h-5 text-[#c89f65]" />
                     <div>
                       <p className="font-medium">Mevcut Net</p>
                       <p className="text-sm text-gray-600">Hedef: {student.targetScore || 0}</p>
                     </div>
                   </div>
-                  <Badge className="bg-purple-100 text-purple-700">
+                  <Badge className="bg-[#c89f65]/20 text-[#c89f65]">
                     {student.currentScore || 0}
                   </Badge>
                 </div>
@@ -312,15 +312,15 @@ export default async function ParentDashboard() {
               ) : (
                 <div className="space-y-3">
                   {weakSubjects.map((subject: string, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div key={index} className="flex items-center justify-between p-4 bg-[#0f2042]/10 rounded-lg border border-[#0f2042]/30">
                       <div className="flex items-center space-x-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                        <AlertTriangle className="w-5 h-5 text-[#0f2042]" />
                         <div>
                           <p className="font-medium text-gray-900">{subject}</p>
                           <p className="text-sm text-gray-600">Desteğe ihtiyaç var</p>
                         </div>
                       </div>
-                      <Badge className="bg-red-100 text-red-700">
+                      <Badge className="bg-[#c89f65]/20 text-[#c89f65]">
                         Zayıf
                       </Badge>
                     </div>
@@ -364,7 +364,7 @@ export default async function ParentDashboard() {
                           <p className="text-sm text-gray-600">Hedef</p>
                           <p className="text-xl font-bold">{exam.targetScore ?? '-'}</p>
                         </div>
-                        <Badge className={change >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                        <Badge className={change >= 0 ? 'bg-[#c89f65]/20 text-[#c89f65]' : 'bg-red-100 text-red-700'}>
                           {change >= 0 ? '+' : ''}{change}
                         </Badge>
                       </div>

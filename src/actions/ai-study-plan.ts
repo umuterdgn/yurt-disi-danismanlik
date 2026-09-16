@@ -47,6 +47,62 @@ export async function generateAIStudyPlan(examId: string) {
       return { success: false, error: 'Exam not found' };
     }
 
+    // Update Subject Analysis (Mastery Map) based on exam results and advisor comments
+    for (const subjectResult of exam.subjectResults) {
+      // Calculate proficiency level based on net score
+      let proficiency: 'WEAK' | 'MEDIUM' | 'GOOD' | 'EXCELLENT';
+      const net = subjectResult.net || 0;
+      
+      if (net < 5) {
+        proficiency = 'WEAK';
+      } else if (net < 10) {
+        proficiency = 'MEDIUM';
+      } else if (net < 15) {
+        proficiency = 'GOOD';
+      } else {
+        proficiency = 'EXCELLENT';
+      }
+
+      // Check if subject analysis exists for this subject
+      const existingAnalysis = await prisma.subjectAnalysis.findFirst({
+        where: {
+          studentProfileId: exam.studentProfileId,
+          subject: subjectResult.subjectName
+        }
+      });
+
+      if (existingAnalysis) {
+        // Update existing analysis
+        await prisma.subjectAnalysis.update({
+          where: { id: existingAnalysis.id },
+          data: {
+            proficiency,
+            progressPercent: Math.min(100, Math.round((net / 20) * 100)), // Assume 20 is max net
+            lastStudiedAt: new Date()
+          }
+        });
+      } else {
+        // Create new analysis for general subject
+        await prisma.subjectAnalysis.create({
+          data: {
+            studentProfileId: exam.studentProfileId,
+            subject: subjectResult.subjectName,
+            topic: 'Genel', // General topic for the subject
+            proficiency,
+            progressPercent: Math.min(100, Math.round((net / 20) * 100)),
+            lastStudiedAt: new Date()
+          }
+        });
+      }
+    }
+
+    // If advisor comments exist, use them to refine the analysis
+    if (exam.advisorComments) {
+      console.log('Processing advisor comments for AI analysis:', exam.advisorComments);
+      // In a real implementation, this would use AI to parse the comments and adjust the mastery map
+      // For now, we'll log it and could extend with AI integration
+    }
+
     // Analyze subject results to find weakest areas
     const subjectAnalysis = exam.subjectResults
       .map(sr => ({

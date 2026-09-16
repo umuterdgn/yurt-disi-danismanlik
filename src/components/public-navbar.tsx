@@ -14,9 +14,12 @@ export function PublicNavbar() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2">
             <Link href="/">
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="w-8 h-8 text-blue-600" />
-                <span className="text-xl font-bold text-gray-900">Nexa</span>
+              <div className="flex flex-col">
+                <div className="flex items-baseline gap-1">
+                  <span className="font-serif font-extrabold text-2xl tracking-wide text-primary">ATA</span>
+                  <span className="font-light text-xl tracking-widest text-primary/80">VISION</span>
+                </div>
+                <span className="text-[10px] tracking-widest text-muted-foreground uppercase mt-1">Eğitim Danışmanlığı</span>
               </div>
             </Link>
           </div>
@@ -65,8 +68,11 @@ export function PublicNavbar() {
           <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center space-x-2">
-                <GraduationCap className="w-6 h-6 text-blue-600" />
-                <span className="text-lg font-bold text-gray-900">Nexa</span>
+                <GraduationCap className="w-6 h-6 text-primary" />
+                <div className="flex items-baseline gap-1">
+                  <span className="font-serif font-extrabold text-lg tracking-wide text-primary">ATA</span>
+                  <span className="font-light text-base tracking-widest text-primary/80">VISION</span>
+                </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
                 <X className="w-5 h-5" />

@@ -47,37 +47,37 @@ export function CountdownTimer({ examDate, examName }: CountdownTimerProps) {
   }
 
   return (
-    <Card className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
+    <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Target className="w-8 h-8" />
+            <Target className="w-8 h-8 text-[#c89f65]" />
             <div>
               <h3 className="text-lg font-bold">{examName || 'Hedef Sınav'}</h3>
-              <p className="text-sm text-orange-100">Sınava kalan süre</p>
+              <p className="text-sm text-[#c89f65]/80">Sınava kalan süre</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Clock className="w-6 h-6" />
+            <Clock className="w-6 h-6 text-[#c89f65]" />
             <div className="flex space-x-3 text-center">
               <div>
                 <div className="text-3xl font-bold">{timeLeft.days}</div>
-                <div className="text-xs text-orange-100">Gün</div>
+                <div className="text-xs text-[#c89f65]/80">Gün</div>
               </div>
               <div className="text-2xl">:</div>
               <div>
                 <div className="text-3xl font-bold">{timeLeft.hours}</div>
-                <div className="text-xs text-orange-100">Saat</div>
+                <div className="text-xs text-[#c89f65]/80">Saat</div>
               </div>
               <div className="text-2xl">:</div>
               <div>
                 <div className="text-3xl font-bold">{timeLeft.minutes}</div>
-                <div className="text-xs text-orange-100">Dakika</div>
+                <div className="text-xs text-[#c89f65]/80">Dakika</div>
               </div>
               <div className="text-2xl">:</div>
               <div>
                 <div className="text-3xl font-bold">{timeLeft.seconds}</div>
-                <div className="text-xs text-orange-100">Saniye</div>
+                <div className="text-xs text-[#c89f65]/80">Saniye</div>
               </div>
             </div>
           </div>

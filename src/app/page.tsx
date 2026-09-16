@@ -33,7 +33,7 @@ export default function HomePage() {
                 <span className="text-blue-600"> Yapay Zeka Destekli Yeni Dönem</span>
               </h1>
               <p className="mt-6 text-lg sm:text-xl text-gray-500 max-w-2xl">
-                İster YKS, DGS ve MSÜ ile Türkiye'nin zirvesini, ister dünyanın en iyi üniversitelerini hedefleyin. Nexa'nın oyunlaştırılmış yeni nesil öğrenci paneli ve 7/24 AI eğitim koçluğu ile başarıya giden yolu baştan tasarladık.
+                İster YKS, DGS ve MSÜ ile Türkiye'nin zirvesini, ister dünyanın en iyi üniversitelerini hedefleyin. ATA VISION'ın oyunlaştırılmış yeni nesil öğrenci paneli ve 7/24 AI eğitim koçluğu ile başarıya giden yolu baştan tasarladık.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row w-full gap-4 justify-center md:justify-start">
                 <Link href="/register" className="w-full sm:w-auto">
@@ -80,11 +80,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Nexa Student Platform Section */}
+      {/* ATA VISION Student Platform Section */}
       <section className="py-20 bg-gradient-to-br from-purple-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Nexa Öğrenci Platformu</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">ATA VISION Öğrenci Platformu</h2>
             <p className="text-xl text-gray-600">Teknolojik farkımızla eğitiminizi yeni nesil bir deneyime dönüştürüyoruz</p>
           </div>
           
@@ -237,7 +237,7 @@ export default function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Neden Nexa?</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Neden ATA VISION?</h2>
             <p className="text-xl text-gray-600">Eğitim yolculuğunuzda size eşlik eden güvenilir partneriniz</p>
           </div>
           
@@ -314,7 +314,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">Yapay Zeka Destekli Eğitim Deneyimini Keşfedin</h2>
           <p className="text-xl text-blue-100 mb-8">
-            Yurt içi ve yurt dışı eğitim hedeflerinize Nexa'nın teknolojik gücüyle ulaşın. Hemen ücretsiz danışmanlık alın.
+            Yurt içi ve yurt dışı eğitim hedeflerinize ATA VISION'ın teknolojik gücüyle ulaşın. Hemen ücretsiz danışmanlık alın.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">

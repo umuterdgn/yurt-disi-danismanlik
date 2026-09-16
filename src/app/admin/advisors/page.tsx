@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Users, TrendingUp, Heart, Clock, FileText, Calendar } from "lucide-react";
+import { AddAdvisorDialog } from "@/components/add-advisor-dialog";
 
 interface AdvisorStats {
   id: string;
@@ -177,8 +178,13 @@ export default async function AdminAdvisorsPage() {
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Danışman Analitiği</h1>
-          <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Danışman Analitiği</h1>
+              <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+            </div>
+            <AddAdvisorDialog onAdvisorAdded={() => window.location.reload()} />
+          </div>
         </div>
 
         {advisorStats.length === 0 ? (

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Camera, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [advisorComments, setAdvisorComments] = useState("");
   
   // Subject scores state
   const [turkish, setTurkish] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
@@ -83,7 +85,8 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
     formData.append('social_empty', social.empty.toString());
     
     formData.append('totalNet', calculateTotalNet().toString());
-    
+    formData.append('advisorComments', advisorComments);
+
     const result = await createAdvancedExam(formData);
     
     if (result.success) {
@@ -286,6 +289,22 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
                   {calculateTotalNet().toFixed(2)}
                 </span>
               </div>
+            </div>
+
+            {/* Advisor Comments */}
+            <div>
+              <Label htmlFor="advisorComments">Danışman Yorumu ve Gözlemleri</Label>
+              <Textarea
+                id="advisorComments"
+                value={advisorComments}
+                onChange={(e) => setAdvisorComments(e.target.value)}
+                placeholder="Öğrencinin performansı, dikkat edilmesi gereken konular, öneriler..."
+                className="min-h-[100px]"
+                rows={4}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Bu yorum AI tarafından Konu Haritası (Mastery Map) güncellemesinde kullanılacaktır.
+              </p>
             </div>
           </div>
           

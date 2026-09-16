@@ -6,6 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { AddMeetingDialog } from "@/components/add-meeting-dialog";
+import { RescheduleMeetingDialog } from "@/components/reschedule-meeting-dialog";
 
 export default async function MeetingsPage() {
   const cookieStore = await cookies();
@@ -178,9 +179,16 @@ export default async function MeetingsPage() {
                           {new Date(meeting.meetingDate).toLocaleDateString('tr-TR')} - {meeting.duration} dakika
                         </p>
                       </div>
-                      <Badge className={getMotivationColor(meeting.motivationLevel)}>
-                        {getMotivationLabel(meeting.motivationLevel)}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getMotivationColor(meeting.motivationLevel)}>
+                          {getMotivationLabel(meeting.motivationLevel)}
+                        </Badge>
+                        <RescheduleMeetingDialog 
+                          meetingId={meeting.id}
+                          currentMeetingDate={meeting.meetingDate.toISOString()}
+                          studentName={meeting.studentProfile?.user?.name || 'Öğrenci'}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-3">

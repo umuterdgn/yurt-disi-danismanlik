@@ -12,6 +12,7 @@ interface UniversityMatch {
   requirements: string[];
   admissionRequirements: string[];
   ranking?: number;
+  documentCount?: number;
 }
 
 export async function matchUniversitiesWithAI(formData: {
@@ -224,7 +225,8 @@ async function performAIMatching(formData: {
           department
         ],
         admissionRequirements: uni.admissionRequirements,
-        ranking: uni.ranking
+        ranking: uni.ranking,
+        documentCount: uni.admissionRequirements.length
       };
     })
     .sort((a, b) => b.matchPercentage - a.matchPercentage)
@@ -245,7 +247,8 @@ async function performAIMatching(formData: {
         estimatedCost: "$45,000",
         requirements: ["GPA: 3.7+", "IELTS: 7.0+", department],
         admissionRequirements: ["IELTS 7.0 minimum", "SAT/ACT scores", "Personal statement", "Two teacher recommendations", "Transcripts", "Passport copy", "F-1 visa application"],
-        ranking: 15
+        ranking: 15,
+        documentCount: 7
       },
       {
         name: "University of Sydney",
@@ -259,7 +262,8 @@ async function performAIMatching(formData: {
         estimatedCost: "$32,000",
         requirements: ["GPA: 3.2+", "IELTS: 6.5+", department],
         admissionRequirements: ["IELTS 6.5 minimum", "High school transcripts", "Personal statement", "Two references", "Student visa (Subclass 500)", "Health insurance (OSHC)"],
-        ranking: 40
+        ranking: 40,
+        documentCount: 6
       }
     ];
   }

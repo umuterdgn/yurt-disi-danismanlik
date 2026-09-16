@@ -23,6 +23,7 @@ import { EfficiencyAnalysisCard } from "@/components/efficiency-analysis-card";
 import { getTimeAnalysis, getEfficiencyAnalysis, getStudySessionLogs } from "@/actions/advisor-analytics";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { UniversityMatcherForm } from "@/components/university-matcher-form";
+import { AITaskSuggestions } from "@/components/ai-task-suggestions";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -409,6 +410,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </CardContent>
               </Card>
+
+              {/* AI Task Suggestions */}
+              {student.serviceType !== 'STUDY_ABROAD' && (
+                <AITaskSuggestions studentId={id} studentName={student.user.name} />
+              )}
 
               {/* Recent Exam Trends */}
               <Card>

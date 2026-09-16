@@ -120,8 +120,8 @@ export default async function AdminStudentsPage() {
                         {student.advisor ? student.advisor.user?.name : '-'}
                       </TableCell>
                       <TableCell>
-                        <Link href={`/advisor/students/${student.id}`}>
-                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer">
+                        <Link href={`/admin/students/${student.id}`}>
+                          <Badge className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
                             Detaylar
                           </Badge>
                         </Link>

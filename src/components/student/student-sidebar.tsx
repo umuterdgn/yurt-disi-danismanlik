@@ -56,7 +56,7 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
       category: 'Eğitim Koçluğu',
       items: [
         {
-          title: 'AI Çalışma Planım',
+          title: 'Haftalık Çalışma Programım',
           href: '/student/study-plan',
           icon: Brain,
           visibleFor: ['COACHING', 'BOTH']
@@ -79,12 +79,6 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
     {
       category: 'Yurt Dışı',
       items: [
-        {
-          title: 'Seçilen Üniversiteler',
-          href: '/student/applications',
-          icon: GraduationCap,
-          visibleFor: ['STUDY_ABROAD', 'BOTH']
-        },
         {
           title: 'Niyet Mektubu AI',
           href: '/student/sop-assistant',
@@ -118,8 +112,14 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
-          <p className="text-sm text-gray-500 mt-1">Öğrenci Paneli</p>
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1">
+              <span className="font-serif font-extrabold text-3xl tracking-wide text-[#0f2042]">ATA</span>
+              <span className="font-light text-2xl tracking-widest text-[#0f2042]/80 ml-1">VISION</span>
+            </div>
+            <span className="text-[10px] tracking-widest text-[#c89f65] uppercase mt-1">Eğitim Danışmanlığı</span>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">Öğrenci Paneli</p>
         </div>
         <NotificationBell userId={userId} initialNotifications={initialNotifications} />
       </div>
@@ -144,7 +144,7 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
                         className={cn(
                           "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                           isActive(item.href)
-                            ? "bg-blue-50 text-blue-700"
+                            ? "bg-primary/10 text-primary"
                             : "text-gray-700 hover:bg-gray-100"
                         )}
                       >

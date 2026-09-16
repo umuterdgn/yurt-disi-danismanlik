@@ -41,8 +41,11 @@ export default async function CountryPage({ params }: { params: Promise<{ slug: 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <GraduationCap className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">Nexa</span>
+              <GraduationCap className="w-8 h-8 text-primary" />
+              <div className="flex items-baseline gap-1">
+                <span className="font-serif font-extrabold text-xl tracking-wide text-primary">ATA</span>
+                <span className="font-light text-lg tracking-widest text-primary/80">VISION</span>
+              </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <Link href="/" className="text-gray-700 hover:text-gray-900">Ana Sayfa</Link>
@@ -311,9 +314,12 @@ export default async function CountryPage({ params }: { params: Promise<{ slug: 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <GraduationCap className="w-8 h-8 text-blue-400" />
-                <span className="text-xl font-bold">Nexa</span>
+              <div className="flex flex-col mb-4">
+                <div className="flex items-baseline gap-1">
+                  <span className="font-serif font-extrabold text-2xl tracking-wide text-white">ATA</span>
+                  <span className="font-light text-xl tracking-widest text-white/80">VISION</span>
+                </div>
+                <span className="text-[10px] tracking-widest text-gray-400 uppercase mt-1">Eğitim Danışmanlığı</span>
               </div>
               <p className="text-gray-400">
                 Yurt dışı eğitim danışmanlığı ile geleceğinizi şekillendirin.
@@ -351,7 +357,7 @@ export default async function CountryPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Nexa Yurt Dışı Danışmanlık. Tüm hakları saklıdır.</p>
+            <p>&copy; 2024 ATA VISION Eğitim Danışmanlığı. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </footer>

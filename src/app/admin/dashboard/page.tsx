@@ -300,7 +300,7 @@ export default async function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Nexa Command Center</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">ATA VISION Command Center</h1>
         <p className="text-gray-600 mb-8">Hoş Geldiniz, {userName}</p>
         
         <AlertBanner />

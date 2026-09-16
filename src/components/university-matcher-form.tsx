@@ -30,6 +30,7 @@ interface UniversityMatch {
   requirements: string[];
   admissionRequirements: string[];
   ranking?: number;
+  documentCount?: number; // Number of required documents
 }
 
 export function UniversityMatcherForm({ studentProfile, countries, departments, students, studentId, isAdvisor = false }: UniversityMatcherFormProps) {
@@ -323,6 +324,28 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
                         </li>
                       ))}
                     </ul>
+                  </div>
+
+                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-purple-900">
+                      <Target className="w-4 h-4" />
+                      Otomatik Evrak Atama
+                    </h4>
+                    <p className="text-xs text-purple-700">
+                      Bu üniversite seçildiğinde sistem otomatik olarak {match.admissionRequirements.length} belge oluşturacak ve öğrencinin Evraklarım sayfasına ekleyecek.
+                    </p>
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {match.admissionRequirements.slice(0, 3).map((req, i) => (
+                        <Badge key={i} variant="outline" className="text-xs bg-white">
+                          {req.split(' ').slice(0, 2).join(' ')}...
+                        </Badge>
+                      ))}
+                      {match.admissionRequirements.length > 3 && (
+                        <Badge variant="outline" className="text-xs bg-white">
+                          +{match.admissionRequirements.length - 3} daha
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {isAdvisor ? (

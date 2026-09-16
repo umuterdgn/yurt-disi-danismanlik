@@ -62,9 +62,9 @@ export function WeeklyQuests({ studentId }: WeeklyQuestsProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'EASY':
-        return 'bg-green-100 text-green-700';
+        return 'bg-[#c89f65]/20 text-[#c89f65]';
       case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-[#0f2042]/20 text-[#0f2042]';
       case 'HARD':
         return 'bg-red-100 text-red-700';
       default:
@@ -167,7 +167,7 @@ export function WeeklyQuests({ studentId }: WeeklyQuestsProps) {
                     <Badge className={getDifficultyColor(quest.difficulty)}>
                       {getDifficultyLabel(quest.difficulty)}
                     </Badge>
-                    <div className="flex items-center gap-1 text-sm text-purple-600 font-medium">
+                    <div className="flex items-center gap-1 text-sm text-[#c89f65] font-medium">
                       <Star className="w-4 h-4" />
                       +{quest.xpReward} XP
                     </div>
@@ -181,7 +181,7 @@ export function WeeklyQuests({ studentId }: WeeklyQuestsProps) {
                     </span>
                     <span className="text-gray-600">{progress}%</span>
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <Progress value={progress} className="h-2 bg-[#0f2042]/20" />
                 </div>
 
                 {quest.isCompleted && quest.completedAt && (

@@ -93,7 +93,7 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
       category: 'Yurt Dışı Danışmanlık',
       items: [
         {
-          title: '🎓 Üniversite & Ülke Keşfet (AI)',
+          title: '🎓 Üniversite Keşfet (AI)',
           href: '/advisor/universities',
           icon: Sparkles,
           roles: ['ADVISOR'],
@@ -133,8 +133,14 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-blue-600">Nexa</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-1">
+            <span className="font-serif font-extrabold text-3xl tracking-wide text-[#0f2042]">ATA</span>
+            <span className="font-light text-2xl tracking-widest text-[#0f2042]/80 ml-1">VISION</span>
+          </div>
+          <span className="text-[10px] tracking-widest text-[#c89f65] uppercase mt-1">Eğitim Danışmanlığı</span>
+        </div>
+        <p className="text-sm text-gray-500 mt-2">
           {advisorType === 'COACH' ? 'Eğitim Koçluğu' : advisorType === 'CONSULTANT' ? 'Yurt Dışı Danışmanlık' : 'Danışman Paneli'}
         </p>
       </div>
@@ -159,7 +165,7 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
                         className={cn(
                           "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                           isActive(item.href)
-                            ? "bg-blue-50 text-blue-700"
+                            ? "bg-primary/10 text-primary"
                             : "text-gray-700 hover:bg-gray-100"
                         )}
                       >
@@ -179,12 +185,12 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
         <div className="flex items-center space-x-2 mb-3">
           <Badge className={cn(
             "text-xs",
-            userRole === 'SUPER_ADMIN' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+            userRole === 'SUPER_ADMIN' ? "bg-purple-100 text-purple-700" : "bg-primary/10 text-primary"
           )}>
             {userRole}
           </Badge>
           {advisorType !== 'BOTH' && (
-            <Badge className="text-xs bg-green-100 text-green-700">
+            <Badge className="text-xs bg-secondary/10 text-secondary">
               {advisorType === 'COACH' ? 'Koç' : 'Danışman'}
             </Badge>
           )}

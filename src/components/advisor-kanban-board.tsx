@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddTaskDialog } from "@/components/add-task-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Task {
   id: string;
@@ -14,6 +15,7 @@ interface Task {
   estimatedPomodoros: number;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
   studentProfile: {
+    id: string;
     user: {
       name: string;
     };
@@ -28,6 +30,7 @@ interface AdvisorKanbanBoardProps {
 
 export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
+  const [selectedStudent, setSelectedStudent] = useState<string>('all');
 
   const getPriorityColor = (priority: string) => {
     const colors: Record<string, string> = {
@@ -67,7 +70,10 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
   };
 
   const getTasksByStatus = (status: string) => {
-    return localTasks.filter(task => task.status === status);
+    const filteredTasks = selectedStudent === 'all'
+      ? localTasks
+      : localTasks.filter(task => task.studentProfile?.id === selectedStudent);
+    return filteredTasks.filter(task => task.status === status);
   };
 
   const todoTasks = getTasksByStatus('TODO');
@@ -78,7 +84,24 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
     <DragDropContext onDragEnd={onDragEnd}>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-semibold text-gray-900">Görev Panosu</CardTitle>
+          <div className="flex items-center gap-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Görev Panosu</CardTitle>
+            <div className="w-64">
+              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Öğrenci Seç / Filtrele" />
+                </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Öğrenciler</SelectItem>
+                {students.map((student) => (
+                  <SelectItem key={student.id} value={student.id}>
+                    {student.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            </div>
+          </div>
           <AddTaskDialog students={students} />
         </CardHeader>
         <CardContent>

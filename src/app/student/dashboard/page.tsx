@@ -272,85 +272,85 @@ export default async function StudentDashboard() {
 
         {/* Student Profile Summary with Gamification */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+          <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
             <CardHeader>
               <CardTitle className="text-xl font-bold">Profil Özeti</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-blue-100 mb-1">Öğrenci Adı</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Öğrenci Adı</p>
                   <p className="text-xl font-bold">{studentProfile.user.name}</p>
-                  <p className="text-sm text-blue-100">{studentProfile.grade}. Sınıf</p>
+                  <p className="text-sm text-[#c89f65]/80">{studentProfile.grade}. Sınıf</p>
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100 mb-1">Sembol</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Sembol</p>
                   <p className="text-3xl">{studentProfile.studentSymbol || '🎓'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100 mb-1">Seviye</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Seviye</p>
                   <p className="text-2xl font-bold">{level}</p>
-                  <p className="text-sm text-blue-100">XP: {studentProfile.xp || 0}</p>
+                  <p className="text-sm text-[#c89f65]/80">XP: {studentProfile.xp || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-teal-600 text-white">
+          <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
             <CardHeader>
               <CardTitle className="text-xl font-bold">Hedefler</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-green-100 mb-1">Hedef Üniversite</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Hedef Üniversite</p>
                   <p className="text-lg font-semibold">{studentProfile.targetUniversity || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-green-100 mb-1">Mevcut Puan</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Mevcut Puan</p>
                   <p className="text-2xl font-bold">{studentProfile.currentScore || 0}</p>
-                  <p className="text-sm text-green-100">İlerleme: %{progress}</p>
+                  <p className="text-sm text-[#c89f65]/80">İlerleme: %{progress}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
+          <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
             <CardHeader>
               <CardTitle className="text-xl font-bold">Günlük Seri</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <Flame className="w-12 h-12" />
+                  <Flame className="w-12 h-12 text-[#c89f65]" />
                   {(studentProfile.streak || 0) >= 7 && (
-                    <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 bg-[#c89f65] text-[#0f2042] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                       🔥
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-orange-100">Ardışık Gün</p>
+                  <p className="text-sm text-[#c89f65]/80">Ardışık Gün</p>
                   <p className="text-3xl font-bold">{studentProfile.streak || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+          <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
             <CardHeader>
               <CardTitle className="text-xl font-bold">Hedef Sınav</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <div>
-                  <p className="text-sm text-purple-100 mb-1">Sınav Türü</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Sınav Türü</p>
                   <p className="text-lg font-semibold">{studentProfile.targetExam || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-purple-100 mb-1">Sınav Tarihi</p>
+                  <p className="text-sm text-[#c89f65]/80 mb-1">Sınav Tarihi</p>
                   <p className="text-sm font-semibold">
-                    {studentProfile.examDate 
+                    {studentProfile.examDate
                       ? new Date(studentProfile.examDate).toLocaleDateString('tr-TR')
                       : '-'}
                   </p>

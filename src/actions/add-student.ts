@@ -120,13 +120,14 @@ export async function addStudent(formData: FormData) {
     try {
       newUser = await prisma.user.upsert({
         where: { id: authData.user.id },
-        update: {},
+        update: { isApproved: true }, // Ensure approval is set even in update case
         create: {
           id: authData.user.id,
           email,
           password: '', // Password is managed by Supabase Auth
           name,
-          role: 'STUDENT'
+          role: 'STUDENT',
+          isApproved: true // Auto-approve students added by advisors
         }
       });
     } catch (error) {

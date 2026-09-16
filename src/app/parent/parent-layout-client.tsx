@@ -21,9 +21,12 @@ export default function ParentLayoutClient({ children }: { children: React.React
           <Menu className="w-5 h-5" />
         </Button>
         <div className="flex items-center space-x-2">
-          <GraduationCap className="w-6 h-6 text-blue-600" />
+          <GraduationCap className="w-6 h-6 text-[#0f2042]" />
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Nexa</h1>
+            <div className="flex items-baseline gap-1">
+              <span className="font-serif font-extrabold text-xl tracking-wide text-[#0f2042]">ATA</span>
+              <span className="font-light text-lg tracking-widest text-[#0f2042]/80">VISION</span>
+            </div>
             <p className="text-xs text-gray-500">Veli Paneli</p>
           </div>
         </div>
@@ -39,8 +42,11 @@ export default function ParentLayoutClient({ children }: { children: React.React
           <div className="fixed inset-y-0 left-0 z-50 w-64 md:hidden flex flex-col bg-white border-r">
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center space-x-2">
-                <GraduationCap className="w-6 h-6 text-blue-600" />
-                <span className="text-lg font-bold text-gray-900">Nexa</span>
+                <GraduationCap className="w-6 h-6 text-[#0f2042]" />
+                <div className="flex items-baseline gap-1">
+                  <span className="font-serif font-extrabold text-lg tracking-wide text-[#0f2042]">ATA</span>
+                  <span className="font-light text-base tracking-widest text-[#0f2042]/80">VISION</span>
+                </div>
               </div>
               <Button variant="outline" size="icon" onClick={() => setMobileMenuOpen(false)}>
                 <X className="w-5 h-5" />

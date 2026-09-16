@@ -46,10 +46,10 @@ export function AIMotivationCard({ studentSymbol, currentXP, studentName }: AIMo
   }, [studentSymbol, currentXP, studentName]);
 
   return (
-    <Card className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+    <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
+          <Sparkles className="w-5 h-5 text-[#c89f65]" />
           Günün Motivasyonu
         </CardTitle>
       </CardHeader>

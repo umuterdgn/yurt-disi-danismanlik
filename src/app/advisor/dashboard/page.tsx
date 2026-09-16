@@ -123,7 +123,7 @@ export default async function AdvisorDashboard() {
         <AlertBanner />
         {userRole === 'SUPER_ADMIN' && (
           <div className="mb-6">
-            <Badge className="bg-purple-100 text-purple-700">SUPER ADMIN - Tüm Öğrenciler Görüntüleniyor</Badge>
+            <Badge className="bg-[#c89f65]/20 text-[#c89f65]">SUPER ADMIN - Tüm Öğrenciler Görüntüleniyor</Badge>
           </div>
         )}
 
@@ -143,8 +143,8 @@ export default async function AdvisorDashboard() {
               <CardTitle className="text-sm font-medium text-gray-600">Ortalama Mevcut Puan</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">
-                {transformedStudents.length > 0 
+              <div className="text-3xl font-bold text-[#c89f65]">
+                {transformedStudents.length > 0
                   ? Math.round(transformedStudents.reduce((sum, s) => sum + s.currentScore, 0) / transformedStudents.length)
                   : 0}
               </div>
@@ -156,7 +156,7 @@ export default async function AdvisorDashboard() {
               <CardTitle className="text-sm font-medium text-gray-600">Hedefe Ulaşan</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-[#0f2042]">
                 {transformedStudents.filter(s => s.currentScore >= s.targetScore).length}
               </div>
             </CardContent>
@@ -167,7 +167,7 @@ export default async function AdvisorDashboard() {
               <CardTitle className="text-sm font-medium text-gray-600">Bu Hafta Görüşme</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-600">
+              <div className="text-3xl font-bold text-[#c89f65]">
                 {transformedStudents.filter(s => {
                   if (!s.lastMeetingDate) return false;
                   const lastMeeting = new Date(s.lastMeetingDate);
@@ -240,8 +240,8 @@ export default async function AdvisorDashboard() {
                           <TableCell>
                             <div className="flex items-center space-x-2">
                               <div className="w-24 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
+                                <div
+                                  className="bg-[#c89f65] h-2 rounded-full"
                                   style={{ width: `${progress}%` }}
                                 />
                               </div>
@@ -254,9 +254,9 @@ export default async function AdvisorDashboard() {
                               : '-'}
                           </TableCell>
                           <TableCell>
-                            <Link 
+                            <Link
                               href={`/advisor/students/${student.id}`}
-                              className="text-blue-600 hover:text-blue-700 font-medium"
+                              className="text-[#c89f65] hover:text-[#c89f65]/80 font-medium"
                             >
                               Detaylar
                             </Link>

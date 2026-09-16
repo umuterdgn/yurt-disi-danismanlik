@@ -40,6 +40,7 @@ export async function createAdvancedExam(formData: FormData) {
     const examDate = formData.get('examDate') as string;
     const examType = formData.get('examType') as string;
     const totalNet = parseFloat(formData.get('totalNet') as string);
+    const advisorComments = formData.get('advisorComments') as string;
 
     // Subject scores
     const turkishCorrect = parseInt(formData.get('turkish_correct') as string) || 0;
@@ -69,7 +70,7 @@ export async function createAdvancedExam(formData: FormData) {
     const scienceNet = scienceCorrect - (scienceWrong / 4);
     const socialNet = socialCorrect - (socialWrong / 4);
 
-    // Create exam with subject results
+    // Create exam with subject results and advisor comments
     const exam = await prisma.exam.create({
       data: {
         studentProfileId,
@@ -78,6 +79,7 @@ export async function createAdvancedExam(formData: FormData) {
         totalNet,
         totalScore: totalNet * 10, // Approximate score calculation
         examType,
+        advisorComments: advisorComments || null,
         subjectResults: {
           create: [
             {

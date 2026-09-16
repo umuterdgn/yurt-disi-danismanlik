@@ -8,12 +8,12 @@ interface TrophyRoomProps {
 }
 
 const badgeConfig: Record<string, { icon: any; label: string; description: string; color: string }> = {
-  'odak_ustasi': { icon: Target, label: 'Odak Ustası', description: '10 tam Pomodoro', color: 'bg-purple-500' },
-  'gorev_canavari': { icon: Zap, label: 'Görev Canavarı', description: '50 görev tamamlandı', color: 'bg-yellow-500' },
-  'kitap_kurdu': { icon: BookOpen, label: 'Kitap Kurdu', description: '100 saat çalışma', color: 'bg-blue-500' },
-  'ates_ustasi': { icon: Flame, label: 'Ateş Ustası', description: '7 günlük streak', color: 'bg-orange-500' },
-  'yildiz_ogrenci': { icon: Star, label: 'Yıldız Öğrenci', description: '1000 XP', color: 'bg-green-500' },
-  'bilge_ustasi': { icon: Trophy, label: 'Bilge Ustası', description: '5000 XP', color: 'bg-red-500' },
+  'odak_ustasi': { icon: Target, label: 'Odak Ustası', description: '10 tam Pomodoro', color: 'bg-[#0f2042]' },
+  'gorev_canavari': { icon: Zap, label: 'Görev Canavarı', description: '50 görev tamamlandı', color: 'bg-[#c89f65]' },
+  'kitap_kurdu': { icon: BookOpen, label: 'Kitap Kurdu', description: '100 saat çalışma', color: 'bg-[#0f2042]' },
+  'ates_ustasi': { icon: Flame, label: 'Ateş Ustası', description: '7 günlük streak', color: 'bg-[#c89f65]' },
+  'yildiz_ogrenci': { icon: Star, label: 'Yıldız Öğrenci', description: '1000 XP', color: 'bg-[#0f2042]' },
+  'bilge_ustasi': { icon: Trophy, label: 'Bilge Ustası', description: '5000 XP', color: 'bg-[#c89f65]' },
 };
 
 export function TrophyRoom({ badges = [], xp = 0 }: TrophyRoomProps) {
@@ -31,18 +31,18 @@ export function TrophyRoom({ badges = [], xp = 0 }: TrophyRoomProps) {
       <CardContent>
         <div className="space-y-6">
           {/* XP Summary */}
-          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-lg">
+          <div className="bg-gradient-to-r from-[#c89f65]/20 to-[#c89f65]/10 p-4 rounded-lg border border-[#c89f65]/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Trophy className="w-8 h-8 text-yellow-600" />
+                <Trophy className="w-8 h-8 text-[#c89f65]" />
                 <div>
-                  <p className="text-sm text-yellow-700">Toplam XP</p>
-                  <p className="text-2xl font-bold text-yellow-900">{xp}</p>
+                  <p className="text-sm text-[#0f2042]">Toplam XP</p>
+                  <p className="text-2xl font-bold text-[#0f2042]">{xp}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-yellow-700">Kazanılan Rozet</p>
-                <p className="text-2xl font-bold text-yellow-900">{earnedBadges.length}/{Object.keys(badgeConfig).length}</p>
+                <p className="text-sm text-[#0f2042]">Kazanılan Rozet</p>
+                <p className="text-2xl font-bold text-[#0f2042]">{earnedBadges.length}/{Object.keys(badgeConfig).length}</p>
               </div>
             </div>
           </div>

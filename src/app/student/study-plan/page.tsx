@@ -26,7 +26,7 @@ export default async function StudentStudyPlan() {
     return <div className="p-8">Giriş yapmalısınız</div>;
   }
 
-  // Get student profile with AI-generated tasks
+  // Get student profile with system-generated tasks
   const studentProfile = await prisma.studentProfile.findUnique({
     where: {
       userId: user.id
@@ -109,37 +109,37 @@ export default async function StudentStudyPlan() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-purple-600" />
-            AI Çalışma Planım
+            <Calendar className="w-8 h-8 text-primary" />
+            Haftalık Çalışma Programım
           </h1>
           <p className="text-gray-600 mt-2">
-            AI tarafından oluşturulan kişiselleştirilmiş çalışma programınız
+            Danışmanınız ve sistem algoritmamız tarafından size özel hazırlanmış çalışma programınız
           </p>
         </div>
 
-        {/* AI Analysis Summary */}
-        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        {/* Gelişim Analizi Özeti */}
+        <Card className="mb-8 bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-600" />
-              AI Analizi
+              <Target className="w-5 h-5 text-primary" />
+              Gelişim Analiziniz
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="bg-purple-100 rounded-full p-2">
-                  <BookOpen className="w-5 h-5 text-purple-600" />
+                <div className="bg-primary/10 rounded-full p-2">
+                  <BookOpen className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Zayıf Konular Tespiti</h3>
+                  <h3 className="font-semibold text-gray-900">Gelişim Alanları</h3>
                   <p className="text-gray-600 text-sm">{analysisReason || 'Henüz deneme sonucu yok'}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
-                <div className="bg-blue-100 rounded-full p-2">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                <div className="bg-secondary/10 rounded-full p-2">
+                  <TrendingUp className="w-5 h-5 text-secondary" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Aralıklı Tekrar Sistemi</h3>
@@ -152,8 +152,8 @@ export default async function StudentStudyPlan() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Otomatik Görev Atama</h3>
-                  <p className="text-gray-600 text-sm">Toplam {studentProfile.dailyTasks.length} AI görevi atanmış durumda</p>
+                  <h3 className="font-semibold text-gray-900">Sistem Önerileri</h3>
+                  <p className="text-gray-600 text-sm">Toplam {studentProfile.dailyTasks.length} görev atanmış durumda</p>
                 </div>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default async function StudentStudyPlan() {
               <div className="text-center py-8">
                 <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                 <p className="text-gray-500 mb-4">Bugün için görev bulunmuyor</p>
-                <p className="text-sm text-gray-400">AI deneme sonuçlarına göre yeni görevler atanacak</p>
+                <p className="text-sm text-gray-400">Deneme sonuçlarına göre yeni görevler atanacak</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -270,7 +270,7 @@ export default async function StudentStudyPlan() {
                 <div className="text-center py-8">
                   <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-500 mb-4">Henüz planlanmış görev yok</p>
-                  <p className="text-sm text-gray-400">Deneme sonuçlarına göre AI otomatik görev atayacak</p>
+                  <p className="text-sm text-gray-400">Deneme sonuçlarına göre sistem otomatik görev atayacak</p>
                 </div>
               )}
             </div>

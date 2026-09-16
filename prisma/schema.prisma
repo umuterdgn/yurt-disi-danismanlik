@@ -39,6 +39,7 @@ model User {
   name       String
   role       UserRole
   isApproved Boolean  @default(false)
+  isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -95,7 +96,7 @@ model StudentProfile {
   advisorNote      String? // Danışmanın notu
   pomodoroDuration Int      @default(25) // Pomodoro süresi (dakika)
 
-  // Nexa Intelligence Layer - Student 360 & Risk Motoru
+  // ATA VISION Intelligence Layer - Student 360 & Risk Motoru
   healthScore        Int      @default(100) // Öğrenci sağlık skoru (0-100)
   riskStatus         String   @default("GREEN") // GREEN, YELLOW, RED
   applicationReadiness Int      @default(0) // Başvuru hazırlık skoru (0-100)
@@ -107,7 +108,7 @@ model StudentProfile {
   parentProfiles  ParentProfile[] @relation("StudentParents")
   parentRelations Parent[]        @relation("StudentProfile")
   
-  // Nexa Intelligence Layer - AI Recommendation
+  // ATA VISION Intelligence Layer - AI Recommendation
   aiRecommendations AIRecommendation[]
 
   // Eğitim verileri
@@ -118,7 +119,7 @@ model StudentProfile {
   applications    Application[]
   tasks           Task[]
   
-  // Nexa Intelligence Layer - Gelişmiş Deneme Motoru
+  // ATA VISION Intelligence Layer - Gelişmiş Deneme Motoru
   exams           Exam[]
   
   // Finance & Gamification
@@ -274,6 +275,7 @@ model Exam {
   totalNet          Float?
   totalScore        Float?
   examType          String? // TYT, AYT, YKS vb.
+  advisorComments   String?        @db.Text // Danışmanın yorumları ve gözlemleri
   
   // İlişkiler
   subjectResults    SubjectResult[]
@@ -480,7 +482,7 @@ model Application {
   program            String // Lisans, Yüksek Lisans, Doktora
   semester           String // Fall, Spring
   year               Int
-  status             ApplicationStatus @default(LEAD) // Nexa OS status
+  status             ApplicationStatus @default(LEAD) // ATA VISION OS status
   applicationDate    DateTime?
   decisionDate       DateTime?
   deadline           DateTime? // Application deadline
@@ -496,7 +498,7 @@ model Application {
   // Belgeler
   documents          Document[]
 
-  // Nexa Intelligence Layer - Visa Process
+  // ATA VISION Intelligence Layer - Visa Process
   visaProcesses       VisaProcess[]
 
   notes               String? @db.Text
@@ -535,8 +537,9 @@ model Document {
   expiryDate   DateTime?
   status       DocumentStatus @default(PENDING) // PENDING, APPROVED, REVISION_REQUIRED, MISSING, UPLOADED, REJECTED
   feedback     String? // Danışmanın ret/revizyon sebebi
+  responsibility String?  @default("STUDENT") // STUDENT, ADVISOR - Kimin yüklemesi gerekiyor
   
-  // Nexa Intelligence Layer - AI Check
+  // ATA VISION Intelligence Layer - AI Check
   aiCheckStatus Boolean       @default(false) // AI tarafından kontrol edildi mi?
   aiCheckDate   DateTime?
 

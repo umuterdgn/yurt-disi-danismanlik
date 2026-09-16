@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { DollarSign, AlertTriangle, TrendingUp, Clock } from "lucide-react";
+import { AddFinanceDialog } from "@/components/add-finance-dialog";
 
 interface FinanceData {
   id: string;
@@ -136,8 +137,13 @@ export default async function AdminFinancePage() {
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Finans & Muhasebe</h1>
-          <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Finans & Muhasebe</h1>
+              <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+            </div>
+            <AddFinanceDialog onFinanceAdded={() => window.location.reload()} />
+          </div>
         </div>
 
         {/* Toplam Gelir Kartları */}

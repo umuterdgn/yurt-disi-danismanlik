@@ -87,10 +87,10 @@ export function PomodoroTimer() {
   const progress = ((25 - minutes) / 25) * 100;
 
   return (
-    <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+    <Card className="bg-gradient-to-br from-[#0f2042] to-[#1a3050] text-white">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Timer className="w-5 h-5" />
+          <Timer className="w-5 h-5 text-[#c89f65]" />
           Pomodoro
         </CardTitle>
       </CardHeader>
@@ -100,9 +100,9 @@ export function PomodoroTimer() {
             {formatTime(minutes, seconds)}
           </div>
           
-          <div className="w-full bg-green-700 rounded-full h-2">
+          <div className="w-full bg-[#c89f65]/30 rounded-full h-2">
             <div 
-              className="bg-white h-2 rounded-full transition-all duration-1000"
+              className="bg-[#c89f65] h-2 rounded-full transition-all duration-1000"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -110,7 +110,7 @@ export function PomodoroTimer() {
           <div className="flex justify-center space-x-3">
             <Button
               onClick={toggleTimer}
-              className="bg-white text-green-600 hover:bg-green-50"
+              className="bg-[#c89f65] text-[#0f2042] hover:bg-[#c89f65]/90"
               size="lg"
             >
               {isActive ? (
@@ -134,7 +134,7 @@ export function PomodoroTimer() {
             <Button
               onClick={resetTimer}
               variant="outline"
-              className="bg-green-700 text-white hover:bg-green-800 border-green-500"
+              className="bg-[#0f2042]/50 text-white hover:bg-[#0f2042]/70 border-[#c89f65]"
               size="lg"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -143,7 +143,7 @@ export function PomodoroTimer() {
           </div>
           
           {isCompleted && (
-            <div className="bg-green-700 p-3 rounded-lg">
+            <div className="bg-[#c89f65]/20 p-3 rounded-lg border border-[#c89f65]">
               <p className="text-sm font-semibold">🎉 Tamamlandı! +20 XP</p>
             </div>
           )}

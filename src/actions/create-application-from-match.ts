@@ -77,16 +77,18 @@ export async function createApplicationFromMatch(params: CreateApplicationFromMa
       }
     });
 
-    // Create documents from admission requirements
+    // Create documents from admission requirements with responsibility assignment
     const documentTypes = [
-      { type: 'Pasaport', keywords: ['passport', 'pasaport'] },
-      { type: 'IELTS Belgesi', keywords: ['ielts', 'language', 'dil'] },
-      { type: 'Niyet Mektubu', keywords: ['personal', 'statement', 'motivation', 'niyet'] },
-      { type: 'CV/Özgeçmiş', keywords: ['cv', 'resume', 'özgeçmiş'] },
-      { type: 'Akademik Transkript', keywords: ['transcript', 'academic', 'akademik'] },
-      { type: 'Referans Mektubu', keywords: ['reference', 'recommendation', 'referans'] },
-      { type: 'Diploma', keywords: ['diploma', 'graduation', 'mezuniyet'] },
-      { type: 'Portfolyo', keywords: ['portfolio', 'portfolyo'] }
+      { type: 'Pasaport', keywords: ['passport', 'pasaport'], responsibility: 'STUDENT' },
+      { type: 'IELTS Belgesi', keywords: ['ielts', 'language', 'dil'], responsibility: 'STUDENT' },
+      { type: 'Niyet Mektubu', keywords: ['personal', 'statement', 'motivation', 'niyet'], responsibility: 'STUDENT' },
+      { type: 'CV/Özgeçmiş', keywords: ['cv', 'resume', 'özgeçmiş'], responsibility: 'STUDENT' },
+      { type: 'Akademik Transkript', keywords: ['transcript', 'academic', 'akademik'], responsibility: 'STUDENT' },
+      { type: 'Referans Mektubu', keywords: ['reference', 'recommendation', 'referans'], responsibility: 'ADVISOR' },
+      { type: 'Diploma', keywords: ['diploma', 'graduation', 'mezuniyet'], responsibility: 'STUDENT' },
+      { type: 'Portfolyo', keywords: ['portfolio', 'portfolyo'], responsibility: 'STUDENT' },
+      { type: 'Danışman Raporu', keywords: ['advisor', 'report', 'rapor'], responsibility: 'ADVISOR' },
+      { type: 'Mali Durum Belgesi', keywords: ['financial', 'bank', 'mali'], responsibility: 'STUDENT' }
     ];
 
     for (const requirement of admissionRequirements) {
@@ -110,7 +112,7 @@ export async function createApplicationFromMatch(params: CreateApplicationFromMa
                 documentName: `${docType.type} - ${universityName}`,
                 isUploaded: false,
                 status: 'PENDING',
-                feedback: `AI önerisi: ${requirement}`
+                feedback: `AI önerisi: ${requirement}. Sorumluluk: ${docType.responsibility === 'STUDENT' ? 'Öğrenci' : 'Danışman'}`
               }
             });
           }

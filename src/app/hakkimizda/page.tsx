@@ -21,7 +21,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">Hakkımızda</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Nexa olarak, öğrencilerin hayallerindeki eğitimi gerçeğe dönüştürmek için 
+            ATA VISION olarak, öğrencilerin hayallerindeki eğitimi gerçeğe dönüştürmek için 
             yola çıktık. Global kariyer hedeflerinize ulaşmanızda size rehberlik ediyoruz.
           </p>
         </div>
@@ -72,7 +72,7 @@ export default function AboutPage() {
             <div className="bg-white rounded-2xl p-8 shadow-lg">
               <div className="prose prose-lg max-w-none">
                 <p className="text-gray-700 leading-relaxed mb-6">
-                  Nexa'nın kuruluş hikayesi, kendi yurt dışı eğitim deneyimimizden doğdu. 
+                  ATA VISION'ın kuruluş hikayesi, kendi yurt dışı eğitim deneyimimizden doğdu. 
                   Eğitim sistemlerinin karmaşıklığını, bürokratik süreçlerin zorluklarını 
                   ve doğru bilgiye ulaşmanın ne kadar değerli olduğunu firsthand olarak tecrübe ettik.
                 </p>
