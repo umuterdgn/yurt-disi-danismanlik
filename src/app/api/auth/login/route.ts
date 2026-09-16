@@ -52,13 +52,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!user.isActive) {
-      return NextResponse.json(
-        { success: false, error: 'Hesabınız aktif değil' },
-        { status: 403 }
-      )
-    }
-
     // Update streak for students
     if (user.role === UserRole.STUDENT && user.studentProfile) {
       await updateStudentStreak(user.studentProfile.id)

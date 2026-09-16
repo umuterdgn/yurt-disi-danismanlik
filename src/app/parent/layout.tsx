@@ -45,4 +45,11 @@ export default async function ParentLayout({
   }
 
   return <ParentLayoutClient>{children}</ParentLayoutClient>;
+} catch (error) {
+  // Allow NEXT_REDIRECT errors to pass through
+  if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+    throw error;
+  }
+  console.error('Auth error in parent layout:', error);
+  redirect('/login');
 }

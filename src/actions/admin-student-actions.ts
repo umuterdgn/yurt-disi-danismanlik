@@ -16,7 +16,7 @@ export async function approveStudent(studentId: string) {
 
     await prisma.user.update({
       where: { id: student.userId },
-      data: { isApproved: true, isActive: true }
+      data: { isApproved: true }
     });
 
     revalidatePath('/admin/students/[id]');
@@ -53,9 +53,10 @@ export async function freezeStudent(studentId: string) {
       return { success: false, error: 'Öğrenci bulunamadı' };
     }
 
+    // isActive alanı kaldırıldı, sadece isApproved kullanıyoruz
     await prisma.user.update({
       where: { id: student.userId },
-      data: { isActive: false }
+      data: { isApproved: false }
     });
 
     revalidatePath('/admin/students/[id]');
@@ -77,9 +78,10 @@ export async function activateStudent(studentId: string) {
       return { success: false, error: 'Öğrenci bulunamadı' };
     }
 
+    // isActive alanı kaldırıldı, sadece isApproved kullanıyoruz
     await prisma.user.update({
       where: { id: student.userId },
-      data: { isActive: true }
+      data: { isApproved: true }
     });
 
     revalidatePath('/admin/students/[id]');

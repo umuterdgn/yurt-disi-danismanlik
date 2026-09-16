@@ -47,6 +47,10 @@ export default async function AdminLayout({
 
     return <AdminLayoutClient>{children}</AdminLayoutClient>;
   } catch (error) {
+    // Allow NEXT_REDIRECT errors to pass through
+    if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+      throw error;
+    }
     console.error('Auth error in admin layout:', error);
     redirect('/login');
   }

@@ -47,6 +47,10 @@ export default async function AdvisorLayout({
 
     return <AdvisorLayoutClient>{children}</AdvisorLayoutClient>;
   } catch (error) {
+    // Allow NEXT_REDIRECT errors to pass through
+    if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+      throw error;
+    }
     console.error('Auth error in advisor layout:', error);
     redirect('/login');
   }

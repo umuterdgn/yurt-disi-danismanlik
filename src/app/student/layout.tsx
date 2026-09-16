@@ -69,4 +69,11 @@ export default async function StudentLayout({
   }
 
   return <StudentLayoutClient userId={user.id} initialNotifications={notifications} serviceType={studentProfile?.serviceType || 'BOTH'}>{children}</StudentLayoutClient>;
+} catch (error) {
+  // Allow NEXT_REDIRECT errors to pass through
+  if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+    throw error;
+  }
+  console.error('Auth error in student layout:', error);
+  redirect('/login');
 }

@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -31,6 +31,7 @@ export default function LoginPage() {
       })
 
       if (error) {
+        console.error('LOGIN_SUPABASE_ERROR:', error)
         setError(error.message)
         setLoading(false)
         return
@@ -43,6 +44,14 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email })
         })
+
+        if (!roleResponse.ok) {
+          console.error('LOGIN_API_ERROR: Response not OK', roleResponse.status, roleResponse.statusText)
+          await supabase.auth.signOut()
+          setError('Sunucu hatası oluştu. Lütfen tekrar deneyin.')
+          setLoading(false)
+          return
+        }
 
         const roleData = await roleResponse.json()
 
@@ -78,10 +87,12 @@ export default function LoginPage() {
             'PARENT': '/parent/dashboard'
           }
           const redirectPath = redirectMap[roleData.role] || '/dashboard'
+          console.log('LOGIN_REDIRECT:', redirectPath, 'for role:', roleData.role)
           router.push(redirectPath)
           router.refresh()
         } else {
           // API error - sign out user
+          console.error('LOGIN_API_DATA_ERROR:', roleData)
           await supabase.auth.signOut()
           if (roleData.error) {
             setError(roleData.error || 'Giriş başarısız. Lütfen tekrar deneyin.')
@@ -90,11 +101,12 @@ export default function LoginPage() {
           }
         }
       } catch (roleError) {
-        console.error('Role fetch error:', roleError)
+        console.error('LOGIN_ROLE_FETCH_ERROR:', roleError)
         await supabase.auth.signOut()
         setError('Rol bilgisi alınırken bir hata oluştu. Lütfen tekrar deneyin.')
       }
     } catch (err) {
+      console.error('LOGIN_GENERAL_ERROR:', err)
       setError('Bir hata oluştu')
     } finally {
       setLoading(false)
