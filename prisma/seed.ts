@@ -19,6 +19,8 @@ async function main() {
       password: '123456',
       name: 'Test Admin',
       role: UserRole.SUPER_ADMIN,
+      isApproved: true,
+      isActive: true,
     },
   })
   console.log('✅ Super Admin kullanıcısı oluşturuldu:', superAdmin.email)
@@ -32,6 +34,8 @@ async function main() {
       password: '123456',
       name: 'Test Danışman',
       role: UserRole.ADVISOR,
+      isApproved: true,
+      isActive: true,
     },
   })
   
@@ -58,6 +62,8 @@ async function main() {
       password: '123456',
       name: 'Test Öğrenci',
       role: UserRole.STUDENT,
+      isApproved: true,
+      isActive: true,
     },
   })
   
@@ -86,6 +92,8 @@ async function main() {
       password: 'student123',
       name: 'Emre Kaya',
       role: UserRole.STUDENT,
+      isApproved: true,
+      isActive: true,
     },
   })
   
@@ -113,6 +121,8 @@ async function main() {
       password: 'student123',
       name: 'Zeynep Yıldız',
       role: UserRole.STUDENT,
+      isApproved: true,
+      isActive: true,
     },
   })
   
@@ -140,6 +150,8 @@ async function main() {
       password: 'parent123',
       name: 'Mehmet Demir',
       role: UserRole.PARENT,
+      isApproved: true,
+      isActive: true,
     },
   })
   
@@ -396,42 +408,66 @@ async function main() {
     console.log('✅ Örnek deneme sonuçları oluşturuldu')
 
   // Örnek konu etkinliği analizi
-  await prisma.subjectAnalysis.create({
-    data: {
-      studentProfileId: studentProfile.id,
-        subject: 'Matematik',
-        topic: 'Türev',
-        proficiency: ProficiencyLevel.MEDIUM,
-        progressPercent: 60,
-        lastStudiedAt: new Date(),
-        totalHours: 12,
-      }
-    })
-
-    await prisma.subjectAnalysis.create({
-      data: {
+  await prisma.subjectAnalysis.upsert({
+    where: {
+      studentProfileId_subject_topic: {
         studentProfileId: studentProfile.id,
         subject: 'Matematik',
-        topic: 'İntegral',
-        proficiency: ProficiencyLevel.WEAK,
-        progressPercent: 30,
-        lastStudiedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        totalHours: 5,
+        topic: 'Türev'
       }
-    })
+    },
+    update: {},
+    create: {
+      studentProfileId: studentProfile.id,
+      subject: 'Matematik',
+      topic: 'Türev',
+      proficiency: ProficiencyLevel.MEDIUM,
+      progressPercent: 60,
+      lastStudiedAt: new Date(),
+      totalHours: 12,
+    }
+  })
 
-    await prisma.subjectAnalysis.create({
-      data: {
+  await prisma.subjectAnalysis.upsert({
+    where: {
+      studentProfileId_subject_topic: {
+        studentProfileId: studentProfile.id,
+        subject: 'Matematik',
+        topic: 'İntegral'
+      }
+    },
+    update: {},
+    create: {
+      studentProfileId: studentProfile.id,
+      subject: 'Matematik',
+      topic: 'İntegral',
+      proficiency: ProficiencyLevel.WEAK,
+      progressPercent: 30,
+      lastStudiedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      totalHours: 5,
+    }
+  })
+
+  await prisma.subjectAnalysis.upsert({
+    where: {
+      studentProfileId_subject_topic: {
         studentProfileId: studentProfile.id,
         subject: 'Fizik',
-        topic: 'Kuvvet ve Hareket',
-        proficiency: ProficiencyLevel.GOOD,
-        progressPercent: 75,
-        lastStudiedAt: new Date(),
-        totalHours: 18,
+        topic: 'Kuvvet ve Hareket'
       }
-    })
-    console.log('✅ Örnek konu etkinliği analizi oluşturuldu')
+    },
+    update: {},
+    create: {
+      studentProfileId: studentProfile.id,
+      subject: 'Fizik',
+      topic: 'Kuvvet ve Hareket',
+      proficiency: ProficiencyLevel.GOOD,
+      progressPercent: 75,
+      lastStudiedAt: new Date(),
+      totalHours: 18,
+    }
+  })
+  console.log('✅ Örnek konu etkinliği analizi oluşturuldu')
 
   // Örnek görüşme notları
   await prisma.meetingNote.create({
