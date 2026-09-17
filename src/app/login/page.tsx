@@ -66,8 +66,18 @@ export default function LoginPage() {
         }
         const redirectPath = loginData.redirect || redirectMap[loginData.user.role] || '/dashboard'
         console.log('LOGIN_REDIRECT:', redirectPath, 'for role:', loginData.user.role)
+        
+        // Güvenilir yönlendirme için hem router.push hem window.location kullan
+        setLoading(false)
         router.push(redirectPath)
         router.refresh()
+        
+        // Yedek yönlendirme yöntemi
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.href = redirectPath
+          }
+        }, 500)
       } else {
         console.error('LOGIN_API_DATA_ERROR:', loginData)
         if (loginData.error) {
