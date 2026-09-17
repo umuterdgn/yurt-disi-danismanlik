@@ -2,13 +2,59 @@
 import "dotenv/config";
 import { PrismaClient, UserRole, ProficiencyLevel, ApplicationStatus, DocumentStatus, NotificationType } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { createClient } from '@supabase/supabase-js'
+import WebSocket from 'ws'
+
+// Polyfill WebSocket for Node.js
+(global as any).WebSocket = WebSocket
 
 const databaseUrl = process.env.DATABASE_URL || "postgresql://postgres.cgclalfcuehpmkvixaox:Hopekutay064431%21@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
 const adapter = new PrismaPg({ connectionString: databaseUrl })
 const prisma = new PrismaClient({ adapter })
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-project.supabase.co"
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "your-service-role-key"
+
+if (!supabaseUrl || !supabaseServiceKey || supabaseUrl === "https://your-project.supabase.co") {
+  console.error('❌ NEXT_PUBLIC_SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY environment değişkenleri eksik')
+  console.log('Lütfen .env.local dosyasında bu değişkenleri tanımlayın:')
+  console.log('NEXT_PUBLIC_SUPABASE_URL=your-supabase-url')
+  console.log('SUPABASE_SERVICE_ROLE_KEY=your-service-role-key')
+  console.log('Varsayılan değerler kullanılamaz, lütfen gerçek değerleri girin.')
+  process.exit(1)
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+})
+
 async function main() {
   console.log('🌱 Seed verileri oluşturuluyor...')
+
+  // Önce Supabase'deki mevcut kullanıcıları temizle
+  const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers()
+  if (listError) {
+    console.error('❌ Supabase kullanıcıları listelenirken hata:', listError)
+  } else {
+    console.log(`📋 Supabase'de ${existingUsers.users.length} kullanıcı bulundu`)
+    
+    // Test kullanıcılarını Supabase'den sil
+    const testEmails = ['admin@test.com', 'advisor@test.com', 'student@test.com', 'student2@example.com', 'student3@example.com', 'parent@example.com']
+    for (const user of existingUsers.users) {
+      if (user.email && testEmails.includes(user.email) && user.id) {
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
+        if (deleteError) {
+          console.error(`❌ ${user.email} silinirken hata:`, deleteError.message)
+        } else {
+          console.log(`🗑️  ${user.email} Supabase'den silindi`)
+        }
+      }
+    }
+  }
 
   // Super Admin kullanıcısı
   const superAdmin = await prisma.user.upsert({
@@ -25,6 +71,22 @@ async function main() {
   })
   console.log('✅ Super Admin kullanıcısı oluşturuldu:', superAdmin.email)
 
+  // Supabase'de Super Admin oluştur
+  const { data: superAdminAuth, error: superAdminError } = await supabase.auth.admin.createUser({
+    email: 'admin@test.com',
+    password: '123456',
+    email_confirm: true,
+    user_metadata: {
+      name: 'Test Admin',
+      role: 'SUPER_ADMIN'
+    }
+  })
+  if (superAdminError) {
+    console.error('❌ Super Admin Supabase auth oluşturma hatası:', superAdminError)
+  } else {
+    console.log('✅ Super Admin Supabase auth kullanıcısı oluşturuldu')
+  }
+
   // Advisor kullanıcısı
   const advisor = await prisma.user.upsert({
     where: { email: 'advisor@test.com' },
@@ -38,6 +100,23 @@ async function main() {
       isActive: true,
     },
   })
+  console.log('✅ Advisor kullanıcısı oluşturuldu:', advisor.email)
+
+  // Supabase'de Advisor oluştur
+  const { data: advisorAuth, error: advisorError } = await supabase.auth.admin.createUser({
+    email: 'advisor@test.com',
+    password: '123456',
+    email_confirm: true,
+    user_metadata: {
+      name: 'Test Danışman',
+      role: 'ADVISOR'
+    }
+  })
+  if (advisorError) {
+    console.error('❌ Advisor Supabase auth oluşturma hatası:', advisorError)
+  } else {
+    console.log('✅ Advisor Supabase auth kullanıcısı oluşturuldu')
+  }
   
   // Advisor profil oluştur
   const advisorProfile = await prisma.advisorProfile.upsert({
@@ -66,6 +145,23 @@ async function main() {
       isActive: true,
     },
   })
+  console.log('✅ Öğrenci kullanıcısı oluşturuldu:', student.email)
+
+  // Supabase'de Student oluştur
+  const { data: studentAuth, error: studentError } = await supabase.auth.admin.createUser({
+    email: 'student@test.com',
+    password: '123456',
+    email_confirm: true,
+    user_metadata: {
+      name: 'Test Öğrenci',
+      role: 'STUDENT'
+    }
+  })
+  if (studentError) {
+    console.error('❌ Student Supabase auth oluşturma hatası:', studentError)
+  } else {
+    console.log('✅ Student Supabase auth kullanıcısı oluşturuldu')
+  }
   
   // Öğrenci profil oluştur
   const studentProfile = await prisma.studentProfile.upsert({
@@ -96,6 +192,23 @@ async function main() {
       isActive: true,
     },
   })
+  console.log('✅ İkinci öğrenci oluşturuldu:', student2.email)
+
+  // Supabase'de Student2 oluştur
+  const { data: student2Auth, error: student2Error } = await supabase.auth.admin.createUser({
+    email: 'student2@example.com',
+    password: 'student123',
+    email_confirm: true,
+    user_metadata: {
+      name: 'Emre Kaya',
+      role: 'STUDENT'
+    }
+  })
+  if (student2Error) {
+    console.error('❌ Student2 Supabase auth oluşturma hatası:', student2Error)
+  } else {
+    console.log('✅ Student2 Supabase auth kullanıcısı oluşturuldu')
+  }
   
   const studentProfile2 = await prisma.studentProfile.upsert({
     where: { userId: student2.id },
@@ -110,7 +223,7 @@ async function main() {
       advisorId: advisorProfile.id,
     }
   })
-  console.log('✅ İkinci öğrenci oluşturuldu:', student2.email)
+  console.log('✅ İkinci öğrenci profili oluşturuldu')
 
   // Üçüncü öğrenci
   const student3 = await prisma.user.upsert({
@@ -125,6 +238,23 @@ async function main() {
       isActive: true,
     },
   })
+  console.log('✅ Üçüncü öğrenci oluşturuldu:', student3.email)
+
+  // Supabase'de Student3 oluştur
+  const { data: student3Auth, error: student3Error } = await supabase.auth.admin.createUser({
+    email: 'student3@example.com',
+    password: 'student123',
+    email_confirm: true,
+    user_metadata: {
+      name: 'Zeynep Yıldız',
+      role: 'STUDENT'
+    }
+  })
+  if (student3Error) {
+    console.error('❌ Student3 Supabase auth oluşturma hatası:', student3Error)
+  } else {
+    console.log('✅ Student3 Supabase auth kullanıcısı oluşturuldu')
+  }
   
   const studentProfile3 = await prisma.studentProfile.upsert({
     where: { userId: student3.id },
@@ -154,6 +284,23 @@ async function main() {
       isActive: true,
     },
   })
+  console.log('✅ Veli kullanıcısı oluşturuldu:', parent.email)
+
+  // Supabase'de Parent oluştur
+  const { data: parentAuth, error: parentError } = await supabase.auth.admin.createUser({
+    email: 'parent@example.com',
+    password: 'parent123',
+    email_confirm: true,
+    user_metadata: {
+      name: 'Mehmet Demir',
+      role: 'PARENT'
+    }
+  })
+  if (parentError) {
+    console.error('❌ Parent Supabase auth oluşturma hatası:', parentError)
+  } else {
+    console.log('✅ Parent Supabase auth kullanıcısı oluşturuldu')
+  }
   
   // Veli profil oluştur
   const parentProfile = await prisma.parentProfile.upsert({

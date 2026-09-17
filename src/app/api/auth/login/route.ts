@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 import { updateStudentStreak } from '@/actions/admin'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,40 +53,11 @@ export async function POST(request: NextRequest) {
       await updateStudentStreak(user.studentProfile.id)
     }
 
-    // Supabase kullanıcı kontrolü
-    let supabaseUser
-    try {
-      const { data: existingUser } = await supabase.auth.admin.getUserById(user.id)
-      if (!existingUser.user) {
-        // Supabase'de kullanıcı yoksa oluştur
-        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-          email: user.email,
-          password: user.password,
-          email_confirm: true,
-          user_metadata: {
-            name: user.name,
-            role: user.role
-          }
-        })
-
-        if (createError) {
-          console.error('Supabase user creation error:', createError)
-          return NextResponse.json(
-            { success: false, error: 'Kullanıcı oluşturma hatası' },
-            { status: 500 }
-          )
-        }
-        supabaseUser = newUser.user
-      } else {
-        supabaseUser = existingUser.user
-      }
-    } catch (supabaseError) {
-      console.error('Supabase auth error:', supabaseError)
-      return NextResponse.json(
-        { success: false, error: 'Auth hatası' },
-        { status: 500 }
-      )
-    }
+    // Session cookie oluştur
+    const cookieStore = await cookies()
+    cookieStore.set('user_id', user.id)
+    cookieStore.set('user_email', user.email)
+    cookieStore.set('user_role', user.role)
 
     // Kullanıcı bilgilerini hazırla (şifre hariç)
     const { password: _, ...userWithoutPassword } = user

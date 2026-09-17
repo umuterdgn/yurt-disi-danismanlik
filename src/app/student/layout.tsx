@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -10,70 +9,66 @@ export default async function StudentLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
+
+    if (!userId || !userRole) {
+      redirect('/login');
     }
-  );
 
-  const { data: { user } } = await supabase.auth.getUser();
+    // Role check
+    if (userRole !== 'STUDENT') {
+      redirect('/login');
+    }
 
-  if (!user?.email) {
+    // Verify user exists in database
+    let dbUser = null;
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, email: true, name: true }
+      });
+    } catch (error) {
+      console.error('Prisma error in student layout:', error);
+      redirect('/login');
+    }
+
+    if (!dbUser || dbUser.role !== 'STUDENT') {
+      redirect('/login');
+    }
+
+    // Get student profile with serviceType
+    let studentProfile = null;
+    try {
+      studentProfile = await prisma.studentProfile.findUnique({
+        where: { userId: userId },
+        select: { serviceType: true }
+      });
+    } catch (error) {
+      console.error('Error fetching student profile:', error);
+    }
+
+    // Get user notifications
+    let notifications: Notification[] = [];
+    try {
+      notifications = await prisma.notification.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      });
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+
+    return <StudentLayoutClient userId={userId} initialNotifications={notifications} serviceType={studentProfile?.serviceType || 'BOTH'}>{children}</StudentLayoutClient>;
+  } catch (error) {
+    // Allow NEXT_REDIRECT errors to pass through
+    if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+      throw error;
+    }
+    console.error('Auth error in student layout:', error);
     redirect('/login');
   }
-
-  // Role check with Prisma
-  let dbUser = null;
-  try {
-    dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      select: { role: true }
-    });
-  } catch (error) {
-    console.error('Prisma error in student layout:', error);
-    redirect('/login');
-  }
-
-  if (!dbUser || dbUser.role !== 'STUDENT') {
-    redirect('/login');
-  }
-
-  // Get student profile with serviceType
-  let studentProfile = null;
-  try {
-    studentProfile = await prisma.studentProfile.findUnique({
-      where: { userId: user.id },
-      select: { serviceType: true }
-    });
-  } catch (error) {
-    console.error('Error fetching student profile:', error);
-  }
-
-  // Get user notifications
-  let notifications: Notification[] = [];
-  try {
-    notifications = await prisma.notification.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-  }
-
-  return <StudentLayoutClient userId={user.id} initialNotifications={notifications} serviceType={studentProfile?.serviceType || 'BOTH'}>{children}</StudentLayoutClient>;
-} catch (error) {
-  // Allow NEXT_REDIRECT errors to pass through
-  if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
-    throw error;
-  }
-  console.error('Auth error in student layout:', error);
-  redirect('/login');
 }

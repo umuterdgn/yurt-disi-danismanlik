@@ -3,19 +3,20 @@
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@supabase/supabase-js";
 
 export function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-      );
-
-      await supabase.auth.signOut();
+      // Clear cookies
+      document.cookie = 'user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'user_email=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      
+      // Clear localStorage
+      localStorage.removeItem('auth_user');
+      
       router.push("/login");
       router.refresh();
     } catch (error) {

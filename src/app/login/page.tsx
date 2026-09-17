@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,90 +19,62 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+      // Doğrudan login API'sini kullan
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
       })
 
-      if (error) {
-        console.error('LOGIN_SUPABASE_ERROR:', error)
-        setError(error.message)
+      if (!loginResponse.ok) {
+        const errorData = await loginResponse.json()
+        console.error('LOGIN_API_ERROR:', errorData)
+        setError(errorData.error || 'Giriş başarısız. Lütfen tekrar deneyin.')
         setLoading(false)
         return
       }
 
-      // Kullanıcının rolünü Prisma'dan al
-      try {
-        const roleResponse = await fetch('/api/auth/user-role', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email })
-        })
+      const loginData = await loginResponse.json()
 
-        if (!roleResponse.ok) {
-          console.error('LOGIN_API_ERROR: Response not OK', roleResponse.status, roleResponse.statusText)
-          await supabase.auth.signOut()
-          setError('Sunucu hatası oluştu. Lütfen tekrar deneyin.')
-          setLoading(false)
-          return
+      if (loginData.success && loginData.user) {
+        // Kullanıcı bilgisini localStorage'a kaydet
+        localStorage.setItem('auth_user', JSON.stringify(loginData.user))
+
+        // Update streak for students
+        if (loginData.user.role === 'STUDENT') {
+          try {
+            await fetch('/api/auth/update-streak', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: formData.email })
+            })
+          } catch (streakError) {
+            console.error('Streak update error:', streakError)
+            // Don't block login if streak update fails
+          }
         }
 
-        const roleData = await roleResponse.json()
-
-        if (roleData.success && roleData.role) {
-          // Check if user is approved (only for STUDENT role)
-          if (roleData.role === 'STUDENT' && roleData.isApproved === false) {
-            // Sign out the user since they're not approved
-            await supabase.auth.signOut()
-            setError('Hesabınız başarıyla oluşturuldu. Ancak giriş yapabilmek için yönetici onayınız beklenmektedir.')
-            setLoading(false)
-            return
-          }
-
-          // Update streak for students
-          if (roleData.role === 'STUDENT') {
-            try {
-              await fetch('/api/auth/update-streak', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email })
-              })
-            } catch (streakError) {
-              console.error('Streak update error:', streakError)
-              // Don't block login if streak update fails
-            }
-          }
-
-          // Role göre yönlendirme
-          const redirectMap: Record<string, string> = {
-            'SUPER_ADMIN': '/admin/dashboard',
-            'ADVISOR': '/advisor/dashboard',
-            'STUDENT': '/student/dashboard',
-            'PARENT': '/parent/dashboard'
-          }
-          const redirectPath = redirectMap[roleData.role] || '/dashboard'
-          console.log('LOGIN_REDIRECT:', redirectPath, 'for role:', roleData.role)
-          router.push(redirectPath)
-          router.refresh()
+        // Role göre yönlendirme
+        const redirectMap: Record<string, string> = {
+          'SUPER_ADMIN': '/admin/dashboard',
+          'ADVISOR': '/advisor/dashboard',
+          'STUDENT': '/student/dashboard',
+          'PARENT': '/parent/dashboard'
+        }
+        const redirectPath = loginData.redirect || redirectMap[loginData.user.role] || '/dashboard'
+        console.log('LOGIN_REDIRECT:', redirectPath, 'for role:', loginData.user.role)
+        router.push(redirectPath)
+        router.refresh()
+      } else {
+        console.error('LOGIN_API_DATA_ERROR:', loginData)
+        if (loginData.error) {
+          setError(loginData.error || 'Giriş başarısız. Lütfen tekrar deneyin.')
         } else {
-          // API error - sign out user
-          console.error('LOGIN_API_DATA_ERROR:', roleData)
-          await supabase.auth.signOut()
-          if (roleData.error) {
-            setError(roleData.error || 'Giriş başarısız. Lütfen tekrar deneyin.')
-          } else {
-            setError('Giriş başarısız. Lütfen tekrar deneyin.')
-          }
+          setError('Giriş başarısız. Lütfen tekrar deneyin.')
         }
-      } catch (roleError) {
-        console.error('LOGIN_ROLE_FETCH_ERROR:', roleError)
-        await supabase.auth.signOut()
-        setError('Rol bilgisi alınırken bir hata oluştu. Lütfen tekrar deneyin.')
       }
     } catch (err) {
       console.error('LOGIN_GENERAL_ERROR:', err)

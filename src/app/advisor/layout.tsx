@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -11,30 +10,24 @@ export default async function AdvisorLayout({
 }) {
   try {
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user?.email) {
+    if (!userId || !userRole) {
       redirect('/login');
     }
 
-    // Role check with Prisma
+    // Role check
+    if (userRole !== 'ADVISOR') {
+      redirect('/login');
+    }
+
+    // Verify user exists in database
     let dbUser = null;
     try {
       dbUser = await prisma.user.findUnique({
-        where: { email: user.email },
-        select: { role: true }
+        where: { id: userId },
+        select: { role: true, email: true, name: true }
       });
     } catch (error) {
       console.error('Prisma error in advisor layout:', error);
