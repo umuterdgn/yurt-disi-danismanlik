@@ -1,48 +1,22 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  // Edge uyumlu Supabase Client oluşturma
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  // ÖNEMLİ: Middleware içinde getSession() yerine getUser() kullanılmalıdır
-  const { data: { user } } = await supabase.auth.getUser()
-
   const url = request.nextUrl.clone()
   const protectedPaths = ['/dashboard', '/student', '/advisor', '/parent', '/admin']
 
   // API rotalarını middleware kontrolünden hariç tut
   if (url.pathname.startsWith('/api')) {
-    return supabaseResponse
+    return NextResponse.next()
   }
 
   const isProtectedPath = protectedPaths.some((path) => url.pathname.startsWith(path))
 
+  // Custom authentication cookies kontrolü
+  const userId = request.cookies.get('user_id')?.value
+  const userRole = request.cookies.get('user_role')?.value
+
   // Kullanıcı giriş yapmamışsa ve korumalı bir sayfaya girmeye çalışıyorsa login'e yönlendir
-  if (isProtectedPath && !user) {
+  if (isProtectedPath && !userId) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
@@ -50,7 +24,7 @@ export async function middleware(request: NextRequest) {
   // Rol kontrolü layout component'lerine taşındı (Edge Runtime uyumluluğu için)
   // Middleware sadece temel oturum kontrolü yapar
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 // Middleware'in çalışacağı dosya yollarını (matcher) belirliyoruz

@@ -55,9 +55,27 @@ export async function POST(request: NextRequest) {
 
     // Session cookie oluştur
     const cookieStore = await cookies()
-    cookieStore.set('user_id', user.id)
-    cookieStore.set('user_email', user.email)
-    cookieStore.set('user_role', user.role)
+    cookieStore.set('user_id', user.id, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
+    cookieStore.set('user_email', user.email, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
+    cookieStore.set('user_role', user.role, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
 
     // Kullanıcı bilgilerini hazırla (şifre hariç)
     const { password: _, ...userWithoutPassword } = user
