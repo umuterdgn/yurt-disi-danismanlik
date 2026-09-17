@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle, Power, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { approveStudent, rejectStudent, freezeStudent, activateStudent } from "@/actions/admin-student-actions";
@@ -12,11 +13,13 @@ interface AdminStudentActionsProps {
 }
 
 export function AdminStudentActions({ studentId, isApproved, isActive }: AdminStudentActionsProps) {
+  const router = useRouter();
+  
   const handleApprove = async () => {
     const result = await approveStudent(studentId);
     if (result.success) {
       toast.success(result.message);
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }
@@ -27,7 +30,7 @@ export function AdminStudentActions({ studentId, isApproved, isActive }: AdminSt
       const result = await rejectStudent(studentId);
       if (result.success) {
         toast.success(result.message);
-        window.location.href = '/admin/students';
+        router.push('/admin/students');
       } else {
         toast.error(result.error);
       }
@@ -39,7 +42,7 @@ export function AdminStudentActions({ studentId, isApproved, isActive }: AdminSt
       const result = await freezeStudent(studentId);
       if (result.success) {
         toast.success(result.message);
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error(result.error);
       }
@@ -50,7 +53,7 @@ export function AdminStudentActions({ studentId, isApproved, isActive }: AdminSt
     const result = await activateStudent(studentId);
     if (result.success) {
       toast.success(result.message);
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

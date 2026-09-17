@@ -10,11 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
-interface AddAdvisorDialogProps {
-  onAdvisorAdded?: () => void;
-}
-
-export function AddAdvisorDialog({ onAdvisorAdded }: AddAdvisorDialogProps = {}) {
+export function AddAdvisorDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,10 +57,6 @@ export function AddAdvisorDialog({ onAdvisorAdded }: AddAdvisorDialogProps = {})
         maxStudents: '20'
       });
       router.refresh();
-      
-      if (onAdvisorAdded) {
-        onAdvisorAdded();
-      }
     } catch (error) {
       console.error('Error creating advisor:', error);
       toast.error('Danışman oluşturulurken hata oluştu');

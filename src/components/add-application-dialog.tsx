@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ interface AddApplicationDialogProps {
 }
 
 export function AddApplicationDialog({ students, universities }: AddApplicationDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +31,7 @@ export function AddApplicationDialog({ students, universities }: AddApplicationD
     if (result.success) {
       toast.success("Başvuru başarıyla eklendi!");
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error || "Bir hata oluştu");
       setError(result.error || "Bir hata oluştu");

@@ -16,11 +16,7 @@ interface Student {
   email: string;
 }
 
-interface AddFinanceDialogProps {
-  onFinanceAdded?: () => void;
-}
-
-export function AddFinanceDialog({ onFinanceAdded }: AddFinanceDialogProps = {}) {
+export function AddFinanceDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,10 +82,6 @@ export function AddFinanceDialog({ onFinanceAdded }: AddFinanceDialogProps = {})
         installmentInterval: '30'
       });
       router.refresh();
-      
-      if (onFinanceAdded) {
-        onFinanceAdded();
-      }
     } catch (error) {
       console.error('Error creating finance record:', error);
       toast.error('Finans kaydı oluşturulurken hata oluştu');

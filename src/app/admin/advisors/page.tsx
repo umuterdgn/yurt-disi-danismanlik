@@ -183,7 +183,7 @@ export default async function AdminAdvisorsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Danışman Analitiği</h1>
               <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
             </div>
-            <AddAdvisorDialog onAdvisorAdded={() => window.location.reload()} />
+            <AddAdvisorDialog />
           </div>
         </div>
 
