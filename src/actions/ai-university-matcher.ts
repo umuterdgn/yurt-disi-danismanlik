@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { createServerClient } from '@supabase/ssr';
+import Groq from 'groq-sdk';
 
 interface UniversityMatch {
   name: string;
@@ -13,6 +14,8 @@ interface UniversityMatch {
   admissionRequirements: string[];
   ranking?: number;
   documentCount?: number;
+  comparison?: string; // Comparison with other options
+  alternatives?: string[]; // Alternative universities
 }
 
 export async function matchUniversitiesWithAI(formData: {
@@ -21,6 +24,7 @@ export async function matchUniversitiesWithAI(formData: {
   ieltsScore: string;
   targetCountry: string;
   department: string;
+  socialSkills?: string;
 }) {
   try {
     const cookieStore = await cookies();
@@ -42,7 +46,7 @@ export async function matchUniversitiesWithAI(formData: {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // AI University Matching Logic
+    // AI University Matching Logic using Groq
     const matches = await performAIMatching(formData);
 
     return {
@@ -56,23 +60,139 @@ export async function matchUniversitiesWithAI(formData: {
   }
 }
 
-// Mock AI University Matching Function
-// In production, this would integrate with Groq AI or similar service
+// AI University Matching Function using Groq
 async function performAIMatching(formData: {
   budget: string;
   gpa: string;
   ieltsScore: string;
   targetCountry: string;
   department: string;
+  socialSkills?: string;
 }): Promise<UniversityMatch[]> {
-  // Simulate AI processing time
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  try {
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+
+    // Check if multiple countries are specified for comparison
+    const countries = formData.targetCountry.split(',').map(c => c.trim()).filter(c => c);
+    const isComparison = countries.length > 1;
+
+    const prompt = `
+Sen bir yurt dışı eğitim danışmanlık uzmanısın. Aşağıdaki öğrenci profilini analiz et ve en uygun üniversiteleri öner:
+
+Öğrenci Profili:
+- Yıllık Bütçe: ${formData.budget} $
+- Not Ortalaması (GPA): ${formData.gpa}
+- IELTS Puanı: ${formData.ieltsScore}
+- Hedef Ülke(ler): ${formData.targetCountry}
+- Bölüm/Program: ${formData.department}
+${formData.socialSkills ? `- Sosyal Yetenekler & Ekstra Başarılar: ${formData.socialSkills}` : ''}
+
+${isComparison ? `
+ÖZEL İSTEM: Bu öğrenci ${countries.length} farklı ülke karşılaştırması yapıyor (${countries.join(', ')}). 
+Lütfen her ülke için en iyi üniversiteyi öner ve bunları şu kriterlere göre karşılaştır:
+- Bütçe uygunluğu
+- Kabul şartları
+- Akademik kalite
+- Yaşam maliyeti
+- Vize kolaylığı
+` : ''}
+
+Lütfen şu formatta JSON döndür:
+{
+  "universities": [
+    {
+      "name": "Üniversite Adı",
+      "country": "Ülke Adı",
+      "matchPercentage": 85,
+      "reasons": ["Neden önerildiği", "Diğer nedenler"],
+      "estimatedCost": "$30,000",
+      "requirements": ["GPA 3.5", "IELTS 7.0"],
+      "admissionRequirements": ["Kabul şartı 1", "Kabul şartı 2", "Kabul şartı 3"],
+      "ranking": 10,
+      "comparison": "Diğer ülkelerle karşılaştırma (eğer varsa)",
+      "alternatives": ["Alternatif üniversite 1", "Alternatif üniversite 2"]
+    }
+  ]
+}
+
+Her üniversite için:
+- Gerçek dünya üniversiteleri kullanın
+- Kabul şartlarını madde işaretli liste olarak belirtin
+- Eğer karşılaştırma varsa, bütçe ve avantajları karşılaştırın
+- En az 2 alternatif üniversite önerin
+- Sosyal yetenekleri kabul ihtimali hesaplamasında kullanın
+`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: 'system',
+          content: 'Sen uzman bir yurt dışı eğitim danışmanısın. Gerçek üniversite verileri ve kabul şartları hakkında bilgi sahibisin. Türkçe yanıt ver ve JSON formatında çıktı üret.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      max_tokens: 2048,
+      response_format: { type: "json_object" }
+    });
+
+    const aiResponse = chatCompletion.choices[0]?.message?.content;
+    if (!aiResponse) {
+      throw new Error('No response from AI');
+    }
+
+    const aiData = JSON.parse(aiResponse);
+    
+    if (!aiData.universities || !Array.isArray(aiData.universities)) {
+      throw new Error('Invalid AI response format');
+    }
+
+    return aiData.universities.map((uni: any) => ({
+      name: uni.name,
+      country: uni.country,
+      matchPercentage: uni.matchPercentage || 75,
+      reasons: uni.reasons || ['Genel profil uyumu'],
+      estimatedCost: uni.estimatedCost || '$25,000',
+      requirements: uni.requirements || ['GPA gereksinimi', 'IELTS gereksinimi'],
+      admissionRequirements: uni.admissionRequirements || ['Transkript', 'Kişisel beyan'],
+      ranking: uni.ranking,
+      comparison: uni.comparison,
+      alternatives: uni.alternatives || [],
+      documentCount: uni.admissionRequirements?.length || 5
+    }));
+
+  } catch (error) {
+    console.error('Groq AI error:', error);
+    
+    // Fallback to mock data if AI fails
+    return await getFallbackMatches(formData);
+  }
+}
+
+// Fallback function when AI fails
+async function getFallbackMatches(formData: {
+  budget: string;
+  gpa: string;
+  ieltsScore: string;
+  targetCountry: string;
+  department: string;
+  socialSkills?: string;
+}): Promise<UniversityMatch[]> {
+  // Simulate processing time
+  await new Promise(resolve => setTimeout(resolve, 1500));
 
   const budget = parseInt(formData.budget) || 25000;
   const gpa = parseFloat(formData.gpa) || 3.0;
   const ieltsScore = parseFloat(formData.ieltsScore) || 6.0;
   const targetCountry = formData.targetCountry;
   const department = formData.department;
+  const socialSkills = formData.socialSkills || '';
 
   // Mock university database with real universities and admission requirements
   const universityDatabase = [
@@ -210,8 +330,21 @@ async function performAIMatching(formData: {
         reasons.push("İyi dünya sıralamasına sahip");
       }
 
-      // Convert score to percentage
-      const matchPercentage = Math.min(100, Math.round(score));
+      // Social skills bonus (15 points)
+      if (socialSkills) {
+        const socialBonus = 15;
+        score += socialBonus;
+        reasons.push("Sosyal yetenekler ve ekstra başarılar kabul şansınızı artırıyor");
+      }
+
+      // Convert score to percentage (max 115 points to account for social skills bonus)
+      const matchPercentage = Math.min(100, Math.round((score / 115) * 100));
+
+      // Find alternatives from same country
+      const alternatives = universityDatabase
+        .filter(u => u.country === uni.country && u.name !== uni.name)
+        .slice(0, 2)
+        .map(u => u.name);
 
       return {
         name: uni.name,
@@ -226,7 +359,9 @@ async function performAIMatching(formData: {
         ],
         admissionRequirements: uni.admissionRequirements,
         ranking: uni.ranking,
-        documentCount: uni.admissionRequirements.length
+        documentCount: uni.admissionRequirements.length,
+        comparison: `${uni.country} için maliyet ${uni.averageCost.toLocaleString()}$. İyi değer sunan ${uni.ranking}. sıralamada.`,
+        alternatives: alternatives.length > 0 ? alternatives : ['Alternatif bulunamadı']
       };
     })
     .sort((a, b) => b.matchPercentage - a.matchPercentage)
@@ -248,7 +383,9 @@ async function performAIMatching(formData: {
         requirements: ["GPA: 3.7+", "IELTS: 7.0+", department],
         admissionRequirements: ["IELTS 7.0 minimum", "SAT/ACT scores", "Personal statement", "Two teacher recommendations", "Transcripts", "Passport copy", "F-1 visa application"],
         ranking: 15,
-        documentCount: 7
+        documentCount: 7,
+        comparison: "Amerika için yüksek kalite ama maliyetli. İlk 20 sıralamada.",
+        alternatives: ["University of California, Los Angeles", "Stanford University"]
       },
       {
         name: "University of Sydney",
@@ -263,7 +400,9 @@ async function performAIMatching(formData: {
         requirements: ["GPA: 3.2+", "IELTS: 6.5+", department],
         admissionRequirements: ["IELTS 6.5 minimum", "High school transcripts", "Personal statement", "Two references", "Student visa (Subclass 500)", "Health insurance (OSHC)"],
         ranking: 40,
-        documentCount: 6
+        documentCount: 6,
+        comparison: "Avustralya için orta maliyet. İyi yaşam koşulları.",
+        alternatives: ["University of Melbourne", "Australian National University"]
       }
     ];
   }

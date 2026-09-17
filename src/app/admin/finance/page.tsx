@@ -142,7 +142,7 @@ export default async function AdminFinancePage() {
               <h1 className="text-3xl font-bold text-gray-900">Finans & Muhasebe</h1>
               <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
             </div>
-            <AddFinanceDialog onFinanceAdded={() => window.location.reload()} />
+            <AddFinanceDialog />
           </div>
         </div>
 

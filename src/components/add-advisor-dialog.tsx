@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,8 @@ interface AddAdvisorDialogProps {
   onAdvisorAdded?: () => void;
 }
 
-export function AddAdvisorDialog({ onAdvisorAdded }: AddAdvisorDialogProps) {
+export function AddAdvisorDialog({ onAdvisorAdded }: AddAdvisorDialogProps = {}) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,7 +60,8 @@ export function AddAdvisorDialog({ onAdvisorAdded }: AddAdvisorDialogProps) {
         experience: '',
         maxStudents: '20'
       });
-
+      router.refresh();
+      
       if (onAdvisorAdded) {
         onAdvisorAdded();
       }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,8 @@ interface AddFinanceDialogProps {
   onFinanceAdded?: () => void;
 }
 
-export function AddFinanceDialog({ onFinanceAdded }: AddFinanceDialogProps) {
+export function AddFinanceDialog({ onFinanceAdded }: AddFinanceDialogProps = {}) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
@@ -83,7 +85,8 @@ export function AddFinanceDialog({ onFinanceAdded }: AddFinanceDialogProps) {
         installmentCount: '3',
         installmentInterval: '30'
       });
-
+      router.refresh();
+      
       if (onFinanceAdded) {
         onFinanceAdded();
       }

@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, MapPin, DollarSign, GraduationCap, Star, CheckCircle, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, Sparkles, MapPin, DollarSign, GraduationCap, Star, CheckCircle, Target, User } from "lucide-react";
 import { toast } from "sonner";
 import { matchUniversitiesWithAI } from "@/actions/ai-university-matcher";
 import { createApplicationFromMatch } from "@/actions/create-application-from-match";
@@ -31,6 +32,8 @@ interface UniversityMatch {
   admissionRequirements: string[];
   ranking?: number;
   documentCount?: number; // Number of required documents
+  comparison?: string; // Comparison with other options
+  alternatives?: string[]; // Alternative universities
 }
 
 export function UniversityMatcherForm({ studentProfile, countries, departments, students, studentId, isAdvisor = false }: UniversityMatcherFormProps) {
@@ -38,12 +41,16 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
   const [matches, setMatches] = useState<UniversityMatch[]>([]);
   const [creatingApplication, setCreatingApplication] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState(studentId || '');
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<UniversityMatch | null>(null);
+  const [assignmentStudentId, setAssignmentStudentId] = useState('');
   const [formData, setFormData] = useState({
     budget: studentProfile?.applications?.[0]?.estimatedBudget?.toString() || '',
     gpa: '',
     ieltsScore: studentProfile?.applications?.[0]?.languageScore?.toString() || '',
     targetCountry: '',
-    department: studentProfile?.applications?.[0]?.program || ''
+    department: studentProfile?.applications?.[0]?.program || '',
+    socialSkills: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +58,10 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
     setLoading(true);
 
     try {
-      const result = await matchUniversitiesWithAI(formData);
+      const result = await matchUniversitiesWithAI({
+        ...formData,
+        socialSkills: formData.socialSkills // Include social skills in the request
+      });
       
       if (result.success && result.matches) {
         setMatches(result.matches);
@@ -115,21 +125,62 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
     }
   };
 
+  const handleAssignToStudent = (match: UniversityMatch) => {
+    setSelectedMatch(match);
+    setAssignmentModalOpen(true);
+  };
+
+  const handleStudentAssignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedMatch || !assignmentStudentId) {
+      toast.error('Lütfen bir öğrenci seçin');
+      return;
+    }
+
+    setCreatingApplication(selectedMatch.name);
+    
+    try {
+      const result = await createApplicationFromMatch({
+        studentProfileId: assignmentStudentId,
+        universityName: selectedMatch.name,
+        country: selectedMatch.country,
+        estimatedCost: selectedMatch.estimatedCost,
+        admissionRequirements: selectedMatch.admissionRequirements,
+        program: formData.department
+      });
+
+      if (result.success) {
+        toast.success(`${selectedMatch.name} öğrenciye atandı! Başvuru ve evraklar otomatik oluşturuldu.`);
+        setAssignmentModalOpen(false);
+        setAssignmentStudentId('');
+        setSelectedMatch(null);
+      } else {
+        toast.error(result.error || 'Başvuru oluşturulurken bir hata oluştu');
+      }
+    } catch (error) {
+      toast.error('Bir hata oluştu');
+    } finally {
+      setCreatingApplication(null);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
         {isAdvisor && students && students.length > 0 && (
           <div>
-            <Label htmlFor="student">Öğrenci Seç</Label>
+            <Label htmlFor="student">Öğrenci Seç (Opsiyonel)</Label>
             <Select
               value={selectedStudentId}
               onValueChange={setSelectedStudentId}
-              required
             >
               <SelectTrigger id="student">
-                <SelectValue placeholder="Öğrenci seçin" />
+                <SelectValue placeholder="Serbest araştırma veya öğrenci seçin" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Serbest Araştırma</SelectItem>
                 {students.map((student) => (
                   <SelectItem key={student.id} value={student.id}>
                     {student.user.name} - {student.grade}. Sınıf
@@ -183,43 +234,39 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
         </div>
 
         <div>
-          <Label htmlFor="targetCountry">Hedef Ülke</Label>
-          <Select
+          <Label htmlFor="targetCountry">Hedef Ülke (Serbest Metin)</Label>
+          <Input
+            id="targetCountry"
+            placeholder="Örn: Amerika Birleşik Devletleri, İngiltere, Almanya"
             value={formData.targetCountry}
-            onValueChange={(value) => setFormData({ ...formData, targetCountry: value })}
+            onChange={(e) => setFormData({ ...formData, targetCountry: e.target.value })}
             required
-          >
-            <SelectTrigger id="targetCountry">
-              <SelectValue placeholder="Ülke seçin" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((country) => (
-                <SelectItem key={country.id} value={country.name}>
-                  {country.flag} {country.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
+          <p className="text-xs text-gray-500 mt-1">Herhangi bir dünya ülkesini yazabilirsiniz</p>
         </div>
 
         <div>
-          <Label htmlFor="department">Bölüm/Program</Label>
-          <Select
+          <Label htmlFor="department">Bölüm/Program (Serbest Metin)</Label>
+          <Input
+            id="department"
+            placeholder="Örn: Bilgisayar Mühendisliği, İşletme, Tıp"
             value={formData.department}
-            onValueChange={(value) => setFormData({ ...formData, department: value })}
+            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
             required
-          >
-            <SelectTrigger id="department">
-              <SelectValue placeholder="Bölüm seçin" />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept} value={dept}>
-                  {dept}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
+          <p className="text-xs text-gray-500 mt-1">Herhangi bir bölüm veya program yazabilirsiniz</p>
+        </div>
+
+        <div>
+          <Label htmlFor="socialSkills">Sosyal Yetenekler & Ekstra Başarılar</Label>
+          <textarea
+            id="socialSkills"
+            placeholder="Örn: Milli sporcu, sanat ödülü, B2 İngilizce, liderlik deneyimi, gönüllü çalışma..."
+            value={formData.socialSkills}
+            onChange={(e) => setFormData({ ...formData, socialSkills: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[100px] text-sm"
+          />
+          <p className="text-xs text-gray-500 mt-1">Bu bilgiler AI tarafından kabul ihtimali hesaplamasında kullanılacaktır</p>
         </div>
 
         <Button 
@@ -314,17 +361,43 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
                   <div>
                     <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      Kabul Şartları
+                      Kesin Kabul Şartları
                     </h4>
                     <ul className="space-y-1">
                       {match.admissionRequirements.map((req, i) => (
                         <li key={i} className="text-sm flex items-start gap-2">
                           <span className="text-blue-600 mt-1">•</span>
-                          <span>{req}</span>
+                          <span className="font-medium">{req}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
+
+                  {match.comparison && (
+                    <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                      <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-orange-900">
+                        <Target className="w-4 h-4" />
+                        Kıyaslama Analizi
+                      </h4>
+                      <p className="text-xs text-orange-700">{match.comparison}</p>
+                    </div>
+                  )}
+
+                  {match.alternatives && match.alternatives.length > 0 && (
+                    <div className="bg-teal-50 rounded-lg p-3 border border-teal-200">
+                      <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-teal-900">
+                        <GraduationCap className="w-4 h-4" />
+                        Alternatif/Muadil Üniversiteler
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {match.alternatives.map((alt, i) => (
+                          <Badge key={i} variant="outline" className="text-xs bg-white border-teal-300">
+                            {alt}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
                     <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-purple-900">
@@ -349,23 +422,45 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
                   </div>
 
                   {isAdvisor ? (
-                    <Button
-                      onClick={() => handleSelectAsTarget(match)}
-                      disabled={creatingApplication === match.name || !selectedStudentId}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                    >
-                      {creatingApplication === match.name ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Oluşturuluyor...
-                        </>
+                    <div className="space-y-2">
+                      {selectedStudentId ? (
+                        <Button
+                          onClick={() => handleSelectAsTarget(match)}
+                          disabled={creatingApplication === match.name}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          {creatingApplication === match.name ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Oluşturuluyor...
+                            </>
+                          ) : (
+                            <>
+                              <Target className="w-4 h-4 mr-2" />
+                              Seçilen Öğrenciye Ata
+                            </>
+                          )}
+                        </Button>
                       ) : (
-                        <>
-                          <Target className="w-4 h-4 mr-2" />
-                          Öğrenci Hedefi Olarak Ata
-                        </>
+                        <Button
+                          onClick={() => handleAssignToStudent(match)}
+                          disabled={creatingApplication === match.name}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                        >
+                          {creatingApplication === match.name ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Oluşturuluyor...
+                            </>
+                          ) : (
+                            <>
+                              <User className="w-4 h-4 mr-2" />
+                              Bu Hedefi Bir Öğrenciye Ata
+                            </>
+                          )}
+                        </Button>
                       )}
-                    </Button>
+                    </div>
                   ) : null}
                 </div>
               </CardContent>
@@ -373,6 +468,70 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
           ))}
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Student Assignment Modal */}
+      {assignmentModalOpen && selectedMatch && (
+        <Dialog open={assignmentModalOpen} onOpenChange={setAssignmentModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Öğrenciye Ata</DialogTitle>
+              <p className="text-sm text-gray-600">
+                {selectedMatch.name} ({selectedMatch.country}) hedefini bir öğrenciye atayın
+              </p>
+            </DialogHeader>
+            <form onSubmit={handleStudentAssignment}>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="assignmentStudent">Öğrenci Seç</Label>
+                  <Select
+                    value={assignmentStudentId}
+                    onValueChange={setAssignmentStudentId}
+                  >
+                    <SelectTrigger id="assignmentStudent">
+                      <SelectValue placeholder="Öğrenci seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students && students.map((student) => (
+                        <SelectItem key={student.id} value={student.id}>
+                          {student.user.name} - {student.grade}. Sınıf
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAssignmentModalOpen(false);
+                    setAssignmentStudentId('');
+                    setSelectedMatch(null);
+                  }}
+                >
+                  İptal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={creatingApplication === selectedMatch.name || !assignmentStudentId}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {creatingApplication === selectedMatch.name ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Oluşturuluyor...
+                    </>
+                  ) : (
+                    'Ata ve Başvuru Oluştur'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
