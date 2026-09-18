@@ -152,7 +152,7 @@ Her üniversite için:
       messages: [
         {
           role: 'system',
-          content: 'Sen uzman bir yurt dışı eğitim danışmanısın. Gerçek üniversite verileri ve kabul şartları hakkında bilgi sahibisin. Türkçe yanıt ver ve JSON formatında çıktı üret.'
+          content: 'Sen uzman bir yurt dışı eğitim danışmanısın. Gerçek üniversite verileri ve kabul şartları hakkında bilgi sahibisin. Türkçe yanıt ver ve JSON formatında çıktı üret. You MUST return the output strictly in JSON format.'
         },
         {
           role: 'user',

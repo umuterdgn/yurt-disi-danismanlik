@@ -38,6 +38,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
+    // Get advisor profile if user is an advisor
+    const advisorProfile = await prisma.advisorProfile.findUnique({
+      where: { userId: dbUser.id },
+      select: { id: true }
+    });
+
     // Check access: SUPER_ADMIN or assigned ADVISOR
     const student = await prisma.studentProfile.findUnique({
       where: { id: studentProfileId }
@@ -47,8 +53,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
 
-    if (dbUser.role !== 'SUPER_ADMIN' && student.advisorId !== dbUser.id) {
-      return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
+    // Check if user is SUPER_ADMIN or the assigned advisor
+    const isSuperAdmin = dbUser.role === 'SUPER_ADMIN';
+    const isAssignedAdvisor = advisorProfile && student.advisorId === advisorProfile.id;
+    
+    console.log("Access check:", { isSuperAdmin, isAssignedAdvisor, advisorProfileId: advisorProfile?.id, studentAdvisorId: student.advisorId });
+
+    if (!isSuperAdmin && !isAssignedAdvisor) {
+      return NextResponse.json({ success: false, error: 'Access denied - You must be SUPER_ADMIN or the assigned advisor' }, { status: 403 });
     }
 
     // Create task

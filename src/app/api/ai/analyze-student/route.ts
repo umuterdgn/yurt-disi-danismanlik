@@ -52,7 +52,7 @@ Raporu profesyonel, destekleyici ve uygulanabilir bir dilde yaz.
           content: prompt
         }
       ],
-      model: 'llama3-8b-8192',
+      model: 'llama-3.1-70b-versatile',
       temperature: 0.7,
       max_tokens: 2048,
     });

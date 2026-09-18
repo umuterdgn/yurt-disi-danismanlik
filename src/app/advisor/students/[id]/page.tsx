@@ -45,9 +45,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // Get student data
   const student = await prisma.studentProfile.findUnique({
     where: { id },
-    select: {
-      id: true,
-      serviceType: true,
+    include: {
       user: {
         include: {
           auditLogs: {
@@ -57,6 +55,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         }
       },
       advisor: {
+        include: {
+          user: true
+        }
+      },
+      parentProfiles: {
         include: {
           user: true
         }
@@ -80,6 +83,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       dailyTasks: {
         orderBy: { createdAt: 'desc' }
       },
+      tasks: {
+        orderBy: { createdAt: 'desc' }
+      },
       aiRecommendations: {
         where: { isResolved: false },
         orderBy: { createdAt: 'desc' }
@@ -91,17 +97,30 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         orderBy: { date: 'desc' },
         take: 3
       },
-      school: true,
-      grade: true,
-      targetUniversity: true,
-      targetScore: true,
-      currentScore: true,
-      targetExam: true,
-      examDate: true,
-      advisorNote: true,
-      healthScore: true,
-      riskStatus: true,
-      applicationReadiness: true
+      examResults: {
+        orderBy: { examDate: 'desc' },
+        take: 5
+      },
+      subjectAnalysis: {
+        orderBy: { subject: 'asc' }
+      },
+      financePackage: {
+        include: {
+          installments: {
+            orderBy: { dueDate: 'asc' }
+          }
+        }
+      },
+      studySessions: {
+        orderBy: { startTime: 'desc' },
+        take: 10
+      },
+      questProgress: {
+        include: {
+          quest: true
+        },
+        orderBy: { createdAt: 'desc' }
+      }
     }
   });
 
@@ -110,10 +129,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   }
 
   // Get subject analysis
-  const subjectAnalysis = await prisma.subjectAnalysis.findMany({
-    where: { studentProfileId: id },
-    orderBy: { subject: 'asc' }
-  });
+  const subjectAnalysis = student.subjectAnalysis || [];
 
   // Get countries for university matcher
   const countries = await prisma.country.findMany({
@@ -313,21 +329,51 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                         <p><span className="text-gray-600">Ad Soyad:</span> {student.user.name}</p>
                         <p><span className="text-gray-600">E-posta:</span> {student.user.email}</p>
                         <p><span className="text-gray-600">Sınıf:</span> {student.grade}</p>
-                        <p><span className="text-gray-600">Okul:</span> {student.school}</p>
+                        <p><span className="text-gray-600">Okul:</span> {student.school || '-'}</p>
                       </div>
                     </div>
                     <div>
                       <h3 className="font-semibold mb-3">Hedefler</h3>
                       <div className="space-y-2">
-                        <p><span className="text-gray-600">Hedef Üniversite:</span> {student.targetUniversity}</p>
-                        <p><span className="text-gray-600">Hedef Puan:</span> {student.targetScore}</p>
-                        <p><span className="text-gray-600">Mevcut Puan:</span> {student.currentScore}</p>
+                        <p><span className="text-gray-600">Hedef Üniversite:</span> {student.targetUniversity || '-'}</p>
+                        <p><span className="text-gray-600">Hedef Puan:</span> {student.targetScore || '-'}</p>
+                        <p><span className="text-gray-600">Mevcut Puan:</span> {student.currentScore || '-'}</p>
                         <p><span className="text-gray-600">Hedef Sınav:</span> {student.targetExam || '-'}</p>
                         <p><span className="text-gray-600">Sınav Tarihi:</span> {student.examDate ? new Date(student.examDate).toLocaleDateString('tr-TR') : '-'}</p>
                         <p><span className="text-gray-600">Danışman:</span> {student.advisor?.user?.name || 'Atanmamış'}</p>
                       </div>
                     </div>
                   </div>
+
+                  {/* Parent Information */}
+                  {student.parentProfiles && student.parentProfiles.length > 0 && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h3 className="font-semibold mb-3">Veli Bilgileri</h3>
+                      <div className="space-y-2">
+                        {student.parentProfiles.map((parent: any) => (
+                          <div key={parent.id} className="bg-gray-50 p-3 rounded">
+                            <p><span className="text-gray-600">Ad Soyad:</span> {parent.user?.name || '-'}</p>
+                            <p><span className="text-gray-600">E-posta:</span> {parent.user?.email || '-'}</p>
+                            <p><span className="text-gray-600">Telefon:</span> {parent.phone || '-'}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Finance Package */}
+                  {student.financePackage && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h3 className="font-semibold mb-3">Finansal Bilgiler</h3>
+                      <div className="bg-blue-50 p-3 rounded">
+                        <p><span className="text-gray-600">Paket Adı:</span> {student.financePackage.packageName}</p>
+                        <p><span className="text-gray-600">Toplam Tutar:</span> {student.financePackage.totalAmount} {student.financePackage.currency}</p>
+                        <p><span className="text-gray-600">Ödenen:</span> {student.financePackage.paidAmount} {student.financePackage.currency}</p>
+                        <p><span className="text-gray-600">Kalan:</span> {student.financePackage.totalAmount - student.financePackage.paidAmount} {student.financePackage.currency}</p>
+                        <p><span className="text-gray-600">Durum:</span> <Badge>{student.financePackage.status}</Badge></p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -422,7 +468,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <CardTitle>Son Deneme Netleri</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {student.exams.length === 0 ? (
+                  {student.exams.length === 0 && (!student.examResults || student.examResults.length === 0) ? (
                     <p className="text-gray-500 text-center py-8">Henüz deneme sonucu yok.</p>
                   ) : (
                     <div className="space-y-4">
@@ -459,6 +505,31 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                           )}
                         </div>
                       ))}
+                      {student.examResults && student.examResults.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                          <h5 className="text-sm font-medium mb-2">Geçmiş Deneme Sonuçları:</h5>
+                          <div className="space-y-2">
+                            {student.examResults.map((exam: any) => (
+                              <div key={exam.id} className="border rounded-lg p-3 bg-gray-50">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-medium text-sm">{exam.examName}</span>
+                                  <span className="text-xs text-gray-600">{exam.examType}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mt-2">
+                                  <div>
+                                    <span className="text-xs text-gray-600">Hedef:</span>
+                                    <span className="ml-1 font-bold text-green-600">{exam.targetScore}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-600">Gerçekleşen:</span>
+                                    <span className="ml-1 font-bold text-blue-600">{exam.actualScore || '-'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

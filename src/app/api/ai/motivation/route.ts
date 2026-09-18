@@ -51,7 +51,7 @@ Lütfen şu kurallara uyan bir mesaj oluştur:
           content: prompt
         }
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-70b-versatile',
       temperature: 0.8,
       max_tokens: 150,
     });

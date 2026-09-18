@@ -66,14 +66,14 @@ ${notes}
       messages: [
         {
           role: "system",
-          content: "Sen bir eğitim danışmanlık asistanısın. Görüşme notlarını analiz edip özet, kararlar ve aksiyonlar çıkarırsın."
+          content: "Sen bir eğitim danışmanlık asistanısın. Görüşme notlarını analiz edip özet, kararlar ve aksiyonlar çıkarırsın. You MUST return the output strictly in JSON format."
         },
         {
           role: "user",
           content: prompt
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-70b-versatile",
       temperature: 0.5,
       max_tokens: 1000,
       response_format: { type: "json_object" }
