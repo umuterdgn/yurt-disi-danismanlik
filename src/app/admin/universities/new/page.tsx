@@ -1,4 +1,7 @@
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,62 +10,73 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Building2 } from "lucide-react";
 import Link from "next/link";
-import { revalidatePath } from "next/cache";
+import { toast } from "sonner";
 
-export default async function NewUniversityPage() {
-  const countries = await prisma.country.findMany({
-    orderBy: { name: 'asc' }
-  });
+export default function NewUniversityPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [countries, setCountries] = useState<any[]>([]);
 
-  async function createUniversity(formData: FormData) {
-    'use server';
-
-    const name = formData.get('name') as string;
-    const countryId = formData.get('countryId') as string;
-    const city = formData.get('city') as string;
-    const baseScore = formData.get('baseScore') as string;
-    const ranking = formData.get('ranking') as string;
-    const type = formData.get('type') as string;
-    const tuitionFees = formData.get('tuitionFees') as string;
-    const languageRequirement = formData.get('languageRequirement') as string;
-    const requiredScore = formData.get('requiredScore') as string;
-    const website = formData.get('website') as string;
-    const description = formData.get('description') as string;
-    const departments = formData.get('departments') as string;
-    const applicationDeadline = formData.get('applicationDeadline') as string;
-    const requirements = formData.get('requirements') as string;
-
-    if (!name || !countryId) {
-      return { success: false, error: 'Üniversite adı ve ülke seçimi zorunludur' };
-    }
-
-    try {
-      await prisma.university.create({
-        data: {
-          name,
-          countryId,
-          city: city || null,
-          baseScore: baseScore ? parseFloat(baseScore) : null,
-          ranking: ranking ? parseInt(ranking) : null,
-          type: type || null,
-          tuitionFees: tuitionFees ? parseFloat(tuitionFees) : null,
-          languageRequirement: languageRequirement || null,
-          requiredScore: requiredScore ? parseFloat(requiredScore) : null,
-          website: website || null,
-          description: description || null,
-          departments: departments ? departments.split(',').map(d => d.trim()) : [],
-          applicationDeadline: applicationDeadline ? new Date(applicationDeadline) : null,
-          requirements: requirements || null
+  // Fetch countries on component mount
+  useEffect(() => {
+    async function fetchCountries() {
+      try {
+        const response = await fetch('/api/admin/countries');
+        if (response.ok) {
+          const data = await response.json();
+          setCountries(data.countries || []);
         }
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      }
+    }
+    fetchCountries();
+  }, []);
+
+  async function handleSubmit(formData: FormData) {
+    setLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch('/api/admin/universities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.get('name'),
+          countryId: formData.get('countryId'),
+          city: formData.get('city'),
+          baseScore: formData.get('baseScore'),
+          ranking: formData.get('ranking'),
+          type: formData.get('type'),
+          tuitionFees: formData.get('tuitionFees'),
+          languageRequirement: formData.get('languageRequirement'),
+          requiredScore: formData.get('requiredScore'),
+          website: formData.get('website'),
+          description: formData.get('description'),
+          departments: formData.get('departments'),
+          applicationDeadline: formData.get('applicationDeadline'),
+          requirements: formData.get('requirements')
+        })
       });
 
-      revalidatePath('/admin/universities');
-      revalidatePath('/advisor/universities');
-
-      return { success: true };
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success("Üniversite başarıyla eklendi!");
+        router.push('/admin/universities');
+      } else {
+        toast.error(result.error || "Bir hata oluştu");
+        setError(result.error || "Bir hata oluştu");
+        setLoading(false);
+      }
     } catch (error) {
       console.error('Error creating university:', error);
-      return { success: false, error: 'Üniversite oluşturulurken bir hata oluştu' };
+      toast.error("Üniversite oluşturulurken bir hata oluştu");
+      setError("Üniversite oluşturulurken bir hata oluştu");
+      setLoading(false);
     }
   }
 
@@ -90,7 +104,7 @@ export default async function NewUniversityPage() {
             <CardTitle>Üniversite Bilgileri</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={createUniversity} className="space-y-6">
+            <form action={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Üniversite Adı *</Label>
@@ -244,11 +258,17 @@ export default async function NewUniversityPage() {
                 />
               </div>
 
+              {error && (
+                <div className="text-sm text-red-600 mb-4">{error}</div>
+              )}
+
               <div className="flex justify-end gap-3">
                 <Link href="/admin/universities">
                   <Button variant="outline">İptal</Button>
                 </Link>
-                <Button type="submit">Üniversite Ekle</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Ekleniyor..." : "Üniversite Ekle"}
+                </Button>
               </div>
             </form>
           </CardContent>

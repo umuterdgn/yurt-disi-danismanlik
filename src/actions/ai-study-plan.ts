@@ -144,9 +144,12 @@ export async function generateAIStudyPlan(examId: string) {
             title: taskTitle,
             description: taskDescription,
             subject: subject.subjectName,
-            taskType: 'Soru Çözme',
+            topic: 'Genel',
+            taskType: 'TEST',
             targetQuantity: 40, // Default 40 questions
             completedQuantity: 0,
+            correctCount: 0,
+            wrongCount: 0,
             isCompleted: false,
             taskDate: dueDates[i],
             priority: subject.net < 5 ? 'high' : 'medium'

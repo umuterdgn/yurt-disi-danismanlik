@@ -88,7 +88,7 @@ async function performAIMatching(formData: {
     const sanitizedIELTS = hasIELTS ? formData.ieltsScore.replace(/[${}]/g, '') : 'Belirtilmedi';
     const sanitizedCountry = hasCountry ? formData.targetCountry.replace(/[${}]/g, '') : 'Belirtilmedi';
     const sanitizedDepartment = hasDepartment ? formData.department.replace(/[${}]/g, '') : 'Belirtilmedi';
-    const sanitizedSocialSkills = hasSocialSkills ? formData.socialSkills.replace(/[${}]/g, '') : '';
+    const sanitizedSocialSkills = hasSocialSkills && formData.socialSkills ? formData.socialSkills.replace(/[${}]/g, '') : '';
 
     // Check if multiple countries are specified for comparison
     const countries = sanitizedCountry.split(',').map(c => c.trim()).filter(c => c);

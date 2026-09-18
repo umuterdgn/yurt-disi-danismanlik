@@ -196,9 +196,9 @@ export async function createExamResult(formData: FormData) {
       return { success: false, error: 'User not found' }
     }
 
-    // Check if user has Advisor or Admin role
-    if (dbUser.role !== 'ADVISOR' && dbUser.role !== 'ADMIN') {
-      return { success: false, error: 'Unauthorized: Only Advisors and Admins can create exams' }
+    // Check if user has Advisor or Super Admin role
+    if (dbUser.role !== 'ADVISOR' && dbUser.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Unauthorized: Only Advisors and Super Admins can create exams' }
     }
 
     const studentProfileId = formData.get('studentProfileId') as string

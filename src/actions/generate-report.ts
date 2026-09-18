@@ -34,18 +34,18 @@ export async function generateWeeklyReport(studentId: string) {
     );
     const completedTasks = weeklyTasks.filter(task => task.isCompleted);
     
-    // Calculate total study hours
+    // Calculate total study hours (based on READING, VIDEO tasks)
     const totalStudyHours = weeklyTasks.reduce((sum, task) => {
-      if (task.taskType === 'saat') {
+      if (task.taskType === 'READING' || task.taskType === 'VIDEO') {
         return sum + task.completedQuantity;
       }
       return sum;
     }, 0);
 
-    // Calculate solved questions
+    // Calculate solved questions (based on TEST, PRACTICE, EXAM tasks)
     const solvedQuestions = weeklyTasks.reduce((sum, task) => {
-      if (task.taskType === 'soru') {
-        return sum + task.completedQuantity;
+      if (task.taskType === 'TEST' || task.taskType === 'PRACTICE' || task.taskType === 'EXAM') {
+        return sum + (task.correctCount || 0) + (task.wrongCount || 0);
       }
       return sum;
     }, 0);
