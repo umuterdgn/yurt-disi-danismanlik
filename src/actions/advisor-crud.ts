@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { NotificationType } from '@prisma/client'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 
 // Create Document for Student
 export async function createDocument(formData: FormData) {
@@ -167,6 +169,38 @@ export async function createMeetingNote(formData: FormData) {
 // Create Exam Result
 export async function createExamResult(formData: FormData) {
   try {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user?.email) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email }
+    })
+
+    if (!dbUser) {
+      return { success: false, error: 'User not found' }
+    }
+
+    // Check if user has Advisor or Admin role
+    if (dbUser.role !== 'ADVISOR' && dbUser.role !== 'ADMIN') {
+      return { success: false, error: 'Unauthorized: Only Advisors and Admins can create exams' }
+    }
+
     const studentProfileId = formData.get('studentProfileId') as string
     const examName = formData.get('examName') as string
     const examType = formData.get('examType') as string
@@ -179,7 +213,12 @@ export async function createExamResult(formData: FormData) {
     const socialScore = formData.get('socialScore') ? parseFloat(formData.get('socialScore') as string) : null
     const notes = formData.get('notes') as string
 
-    if (!studentProfileId || !examName || !examType || !examDate || !targetScore) {
+    // Enhanced validation for studentProfileId
+    if (!studentProfileId || studentProfileId === 'undefined' || studentProfileId === 'null' || studentProfileId.trim() === '') {
+      return { success: false, error: 'Geçerli bir öğrenci profili seçilmelidir' }
+    }
+
+    if (!examName || !examType || !examDate || !targetScore) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' }
     }
 
@@ -207,6 +246,17 @@ export async function createExamResult(formData: FormData) {
         scienceScore,
         socialScore,
         notes: notes || null
+      }
+    })
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        userId: dbUser.id,
+        action: 'EXAM_CREATED',
+        entityType: 'ExamResult',
+        entityId: examResult.id,
+        details: `Exam result created: ${examName} for student ${studentProfileId}`
       }
     })
 

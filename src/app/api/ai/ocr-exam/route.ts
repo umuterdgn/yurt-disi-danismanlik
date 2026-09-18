@@ -24,11 +24,15 @@ export async function POST(request: NextRequest) {
         model: 'llama-3.2-11b-vision-preview',
         messages: [
           {
+            role: 'system',
+            content: 'You are an AI assistant that extracts exam scores from images. You MUST return the output strictly in JSON format.'
+          },
+          {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Bu görseldeki sınav sonuç belgesinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar. 
+                text: `Bu görseldeki sınav sonuç belgesinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
 Lütfen şu JSON formatında yanıt ver:
 {
   "scores": {
@@ -50,7 +54,8 @@ Sadece JSON formatında yanıt ver, başka açıklama ekleme.`
           }
         ],
         temperature: 0.1,
-        max_tokens: 500
+        max_tokens: 500,
+        response_format: { type: 'json_object' }
       })
     });
 

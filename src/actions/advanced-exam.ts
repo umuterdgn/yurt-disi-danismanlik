@@ -34,6 +34,11 @@ export async function createAdvancedExam(formData: FormData) {
       return { success: false, error: 'User not found' };
     }
 
+    // Check if user has Advisor or Admin role
+    if (dbUser.role !== 'ADVISOR' && dbUser.role !== 'ADMIN') {
+      return { success: false, error: 'Unauthorized: Only Advisors and Admins can create exams' };
+    }
+
     // Get form data
     const studentProfileId = formData.get('studentProfileId') as string;
     const examName = formData.get('examName') as string;
@@ -41,6 +46,20 @@ export async function createAdvancedExam(formData: FormData) {
     const examType = formData.get('examType') as string;
     const totalNet = parseFloat(formData.get('totalNet') as string);
     const advisorComments = formData.get('advisorComments') as string;
+
+    // Enhanced validation for studentProfileId
+    if (!studentProfileId || studentProfileId === 'undefined' || studentProfileId === 'null' || studentProfileId.trim() === '') {
+      return { success: false, error: 'Geçerli bir öğrenci profili seçilmelidir' };
+    }
+
+    // Verify student profile exists in database
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentProfileId }
+    });
+
+    if (!studentProfile) {
+      return { success: false, error: 'Seçilen öğrenci profili bulunamadı' };
+    }
 
     // Subject scores
     const turkishCorrect = parseInt(formData.get('turkish_correct') as string) || 0;
