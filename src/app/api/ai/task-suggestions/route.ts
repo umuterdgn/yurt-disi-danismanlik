@@ -123,13 +123,50 @@ function buildGapFocusedPrompt(student: any, currentScore: number, targetScore: 
     )
     .join('\n');
 
+  // Analyze completed tasks and topics
+  const completedTasks = student.dailyTasks || [];
+  const tasksBySubject = completedTasks.reduce((acc: any, task: any) => {
+    if (!acc[task.subject]) {
+      acc[task.subject] = {
+        total: 0,
+        completed: 0,
+        topics: []
+      };
+    }
+    acc[task.subject].total += task.targetQuantity || 1;
+    acc[task.subject].completed += task.completedQuantity || 0;
+    if (task.topic && !acc[task.subject].topics.includes(task.topic)) {
+      acc[task.subject].topics.push(task.topic);
+    }
+    return acc;
+  }, {});
+
+  const taskAnalysis = Object.entries(tasksBySubject)
+    .map(([subject, data]: [string, any]) => 
+      `${subject}: ${data.completed}/${data.total} görev tamamlandı. Çalışılan konular: ${data.topics.length > 0 ? data.topics.join(', ') : 'Henüz konu belirtilmemiş'}`
+    )
+    .join('\n');
+
+  // Identify subjects with exam data but no tasks, and vice versa
+  const subjectsWithExams = Object.keys(subjectPerformance);
+  const subjectsWithTasks = Object.keys(tasksBySubject);
+  const subjectsWithExamsNoTasks = subjectsWithExams.filter(s => !subjectsWithTasks.includes(s));
+  const subjectsWithTasksNoExams = subjectsWithTasks.filter(s => !subjectsWithExams.includes(s));
+
   return `
 Öğrencinin Sınıfı: ${student.grade}. Bu sınıfın müfredatına ve öğrencinin Konu Hakimiyet verilerine bak.
 
 Öğrencinin mevcut puanı ${currentScore}, hedef puanı ${targetScore}. Aradaki ${scoreGap.toFixed(2)} puanlık farkı kapatmak için, son denemelerdeki yanlışlarına bakarak EN HIZLI net getirecek, düzeltmesi KESİN ve KOLAY olan konuları önceliklendir.
 
-Öğrenci Performans Analizi:
+Öğrenci Performans Analizi (Deneme Verileri):
 ${subjectAnalysis}
+
+Görev Tamamlama Analizi:
+${taskAnalysis}
+
+KRİTİK VERİ EKSİKLİKLERİ:
+${subjectsWithExamsNoTasks.length > 0 ? `Deneme verisi var ama görev çalışması yok: ${subjectsWithExamsNoTasks.join(', ')}. Bu derslerde deneme sonuçlarına göre öncelikli görev ekleyin.` : 'Tüm derslerde deneme ve görev verisi dengeli.'}
+${subjectsWithTasksNoExams.length > 0 ? `Görev çalışması var ama deneme verisi yok: ${subjectsWithTasksNoExams.join(', ')}. Bu derslerde çalışılan konuları test etmek için branş denemesi çözün.` : ''}
 
 RESMİ YKS MÜFREDAT (Ders ve Konu Listeleri):
 ${Object.entries(YKS_CURRICULUM).map(([subject, topics]) => `${subject}: ${topics.slice(0, 5).join(', ')}...`).join('\n')}
@@ -141,6 +178,12 @@ MÜFREDAT AI KURALLARI:
 - Görev türünü kesin olarak belirt: TEST, REVIEW, READING, VIDEO, PRACTICE, PROJECT, EXAM, OTHER.
 
 Görev açıklamasında öğrencinin o konuyu NEDEN yanlış yaptığını (Örn: İşlem hatası, formül eksikliği, kavram yanlışlığı, dikkatsizlik) analiz et ve farkı kapatmak için stratejik adımlar öner.
+
+ÖZEL TAVSİYE FORMATI:
+- Genel "temel konulara çalışın" demek yerine spesifik öneriler ver
+- Örnek: "Optik konusundaki 1 görevi tamamladın ama deneme verisi eksik, önce bir branş denemesi çöz"
+- Örnek: "Türev konusunda 3 görev tamamlandı ama denemede 5 yanlış var, formül tekrarı yap"
+- Örnek: "Paragraf konusunda görev yok ama denemede başarılı, yeni bir konuya geç"
 
 KESİN KURAL: Öğrencinin mevcut puanı ${currentScore}, hedef puanı ${targetScore}. Aradaki ${scoreGap.toFixed(2)} puanlık farkı kapatmak için önceliklendir.
 
@@ -158,6 +201,24 @@ Görev önerileri şu formatta olmalı:
 function generateGapBasedSuggestions(student: any, scoreGap: number, subjectPerformance: any) {
   const suggestions = [];
   
+  // Analyze completed tasks and topics
+  const completedTasks = student.dailyTasks || [];
+  const tasksBySubject = completedTasks.reduce((acc: any, task: any) => {
+    if (!acc[task.subject]) {
+      acc[task.subject] = {
+        total: 0,
+        completed: 0,
+        topics: []
+      };
+    }
+    acc[task.subject].total += task.targetQuantity || 1;
+    acc[task.subject].completed += task.completedQuantity || 0;
+    if (task.topic && !acc[task.subject].topics.includes(task.topic)) {
+      acc[task.subject].topics.push(task.topic);
+    }
+    return acc;
+  }, {});
+
   // Identify weak subjects that could provide quick net gains
   const weakSubjects = Object.entries(subjectPerformance)
     .filter(([_, data]: [string, any]) => data.performance === 'WEAK' || data.performance === 'MEDIUM')
@@ -169,19 +230,72 @@ function generateGapBasedSuggestions(student: any, scoreGap: number, subjectPerf
       const potentialGain = Math.min(5, data.totalWrong * 0.75); // Estimate potential net gain
       const priority = scoreGap > 50 ? 'high' : (scoreGap > 20 ? 'medium' : 'low');
       
-      // Determine task type based on performance
+      const taskData = tasksBySubject[subject] || { total: 0, completed: 0, topics: [] };
+      
+      // Determine task type and description based on performance and task data
       let taskType = 'TEST';
       let taskTitle = `${subject} - Hızlı Net Kazanımı`;
-      let taskDescription = `Son denemelerde ${data.totalWrong} yanlış yaptığınız ${subject} dersinde en çok hata yapılan konuları tekrar edin. Tahmini net kazancı: +${potentialGain.toFixed(2)}`;
+      let taskDescription = '';
+      let errorAnalysis = '';
+      let strategicSteps: string[] = [];
       
       if (data.performance === 'WEAK') {
-        taskType = 'REVIEW';
-        taskTitle = `${subject} - Konu Tekrarı`;
-        taskDescription = `${subject} dersinde başarı oranı düşük (%${data.averageNet.toFixed(1)}). Önce konu tekrarı yapın, ardından soru çözün.`;
+        if (taskData.total === 0) {
+          taskType = 'REVIEW';
+          taskTitle = `${subject} - Temel Konu Çalışması`;
+          taskDescription = `${subject} dersinde ${data.totalWrong} yanlış var ama henüz görev çalışması yok. Önce temel konuları öğrenip deneme çözün.`;
+          errorAnalysis = 'Temel kavram eksikliği ve hiçbir çalışma yapılmamış';
+          strategicSteps = [
+            'Konu anlatım videosu izleyin',
+            'Temel kavramları tekrar edin',
+            'Formül ve teoremleri öğrenin',
+            'Basit örneklerle başlayın',
+            'Konu bitince branş denemesi çözün'
+          ];
+        } else if (taskData.topics.length === 0) {
+          taskType = 'REVIEW';
+          taskTitle = `${subject} - Konu Belirleme`;
+          taskDescription = `${subject} dersinde ${taskData.completed}/${taskData.total} görev tamamlandı ama konu belirtilmemiş. Görevlere konu ekleyerek daha detaylı çalışın.`;
+          errorAnalysis = 'Çalışma var ama konu takibi yok';
+          strategicSteps = [
+            'Görevlere konu ekleyin',
+            'Çalıştığınız konuları belirleyin',
+            'Konu bazlı çalışma planı yapın'
+          ];
+        } else {
+          taskType = 'REVIEW';
+          taskTitle = `${subject} - ${taskData.topics.slice(0, 2).join(' ve ')} Konu Tekrarı`;
+          taskDescription = `${subject} dersinde ${taskData.topics.slice(0, 2).join(' ve ')} konularında ${taskData.completed} görev tamamladınız ama denemede ${data.totalWrong} yanlış var. Bu konuları tekrar edin.`;
+          errorAnalysis = 'Çalışılan konularda bile kavram eksikliği';
+          strategicSteps = [
+            `${taskData.topics.slice(0, 2).join(' ve ')} konularını tekrar edin`,
+            'Yanlış soruların çözümlerini inceleyin',
+            'Formüller pekiştirin',
+            'Yeni bir deneme çözün'
+          ];
+        }
       } else if (data.performance === 'MEDIUM') {
-        taskType = 'PRACTICE';
-        taskTitle = `${subject} - Pratik Çalışma`;
-        taskDescription = `${subject} dersinde performansınız orta düzeyde. Temel soru çözümü ve konu tekrarı kombinasyonu önerilir.`;
+        if (taskData.total === 0) {
+          taskType = 'PRACTICE';
+          taskTitle = `${subject} - Pratik Soru Çözümü`;
+          taskDescription = `${subject} dersinde deneme performansınız orta ama görev çalışması yok. Soru çözümü ile deneme başarınızı artırın.`;
+          errorAnalysis = 'Pratik yetersizliği';
+          strategicSteps = [
+            'Temel soru çözümü yapın',
+            'Konu tekrarı ile soru çözümü kombinasyonu',
+            'Kendinizi test edin'
+          ];
+        } else {
+          taskType = 'PRACTICE';
+          taskTitle = `${subject} - ${taskData.topics.slice(0, 2).join(' ve ')} Pratik`;
+          taskDescription = `${subject} dersinde ${taskData.topics.slice(0, 2).join(' ve ')} konularında ${taskData.completed} görev tamamlandı. Performansınızı artırmak için daha fazla pratik yapın.`;
+          errorAnalysis = 'İşlem hatası ve pratik yetersizliği';
+          strategicSteps = [
+            'Yanlış soruların çözümlerini detaylı inceleyin',
+            'Hata yapılan konuların formüllerini tekrar edin',
+            'Benzer soru tiplerinden pratik yapın'
+          ];
+        }
       }
       
       suggestions.push({
@@ -189,24 +303,41 @@ function generateGapBasedSuggestions(student: any, scoreGap: number, subjectPerf
         title: taskTitle,
         description: taskDescription,
         subject: subject,
-        estimatedPomodoros: Math.ceil(data.totalWrong / 3),
+        estimatedPomodoros: Math.ceil(data.totalWrong / 3) + 1,
         priority: priority,
         suggestedDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
         gapContribution: potentialGain,
-        errorAnalysis: data.performance === 'WEAK' ? 'Kavram eksikliği ve temel bilgi yetersizliği' : 'İşlem hatası ve pratik yetersizliği',
-        strategicSteps: data.performance === 'WEAK' ? [
-          'Konu anlatım videosu izleyin',
-          'Temel kavramları tekrar edin',
-          'Formül ve teoremleri öğrenin',
-          'Basit örneklerle başlayın'
-        ] : [
-          'Yanlış soruların çözümlerini detaylı inceleyin',
-          'Hata yapılan konuların formüllerini tekrar edin',
-          'Benzer soru tiplerinden pratik yapın'
-        ],
+        errorAnalysis: errorAnalysis,
+        strategicSteps: strategicSteps,
         // Add custom fields for mastery system
         taskType: taskType,
-        topic: subject // Use subject as topic for now
+        topic: taskData.topics.length > 0 ? taskData.topics[0] : subject // Use first topic or subject
+      });
+    });
+  }
+
+  // Add suggestions for subjects with tasks but no exam data
+  const subjectsWithTasksNoExams = Object.keys(tasksBySubject).filter(subject => !subjectPerformance[subject]);
+  if (subjectsWithTasksNoExams.length > 0 && suggestions.length < 3) {
+    subjectsWithTasksNoExams.slice(0, 2).forEach((subject, index) => {
+      const taskData = tasksBySubject[subject];
+      suggestions.push({
+        id: `task-no-exam-${index + 1}`,
+        title: `${subject} - Deneme Çözümü`,
+        description: `${subject} dersinde ${taskData.completed}/${taskData.total} görev tamamlandı ama deneme verisi yok. Çalışılan konuları test etmek için branş denemesi çözün.`,
+        subject: subject,
+        estimatedPomodoros: 2,
+        priority: 'medium',
+        suggestedDate: new Date(Date.now() + (suggestions.length + 1) * 24 * 60 * 60 * 1000).toISOString(),
+        gapContribution: 0,
+        errorAnalysis: 'Çalışma var ama performans testi yok',
+        strategicSteps: [
+          'Branş denemesi çözün',
+          'Çalışılan konuları test edin',
+          'Performansınızı ölçün'
+        ],
+        taskType: 'EXAM',
+        topic: taskData.topics.length > 0 ? taskData.topics[0] : subject
       });
     });
   }

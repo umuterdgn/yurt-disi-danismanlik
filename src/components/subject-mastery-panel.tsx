@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart3, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { SUBJECTS } from "@/constants/curriculum";
 
 interface SubjectResult {
   subjectName: string;
@@ -58,12 +59,18 @@ export function SubjectMasteryPanel({
     return Math.round(weightedMastery);
   };
 
-  // Get all unique subjects
+  // Get all unique subjects from official curriculum only
   const allSubjects = Array.from(new Set([
     ...subjectResults.map(sr => sr.subjectName),
     ...dailyTasks.map(dt => dt.subject),
     ...subjectAnalysis.map(sa => sa.subject)
-  ]));
+  ])).filter(subject => {
+    // Filter out 'Genel', undefined, and subjects not in official curriculum
+    return subject && 
+           subject !== 'Genel' && 
+           subject !== 'undefined' && 
+           SUBJECTS.includes(subject);
+  });
 
   // Group by subject with mastery data
   const subjectMasteryData = allSubjects.map(subject => {
@@ -72,24 +79,33 @@ export function SubjectMasteryPanel({
     const taskData = dailyTasks.filter(dt => dt.subject === subject);
     const analysisData = subjectAnalysis.find(sa => sa.subject === subject);
     
+    // Check if subject has meaningful data
+    const hasExamData = examData.length > 0;
+    const hasTaskData = taskData.length > 0;
+    const hasAnalysisData = analysisData !== undefined;
+    const hasNoData = !hasExamData && !hasTaskData && !hasAnalysisData;
+    
     return {
       subject,
       mastery,
       examCount: examData.length,
       taskCount: taskData.length,
       proficiency: analysisData?.proficiency || null,
-      topics: taskData.map(dt => dt.topic).filter(Boolean)
+      topics: taskData.map(dt => dt.topic).filter(Boolean),
+      hasNoData // Flag for empty state
     };
   }).sort((a, b) => a.mastery - b.mastery); // Sort by mastery (lowest first)
 
-  const getMasteryColor = (mastery: number) => {
+  const getMasteryColor = (mastery: number, hasNoData: boolean) => {
+    if (hasNoData) return 'bg-gray-400'; // Gray for no data
     if (mastery >= 80) return 'bg-green-500';
     if (mastery >= 60) return 'bg-blue-500';
     if (mastery >= 40) return 'bg-yellow-500';
     return 'bg-red-500';
   };
 
-  const getMasteryLabel = (mastery: number) => {
+  const getMasteryLabel = (mastery: number, hasNoData: boolean) => {
+    if (hasNoData) return 'Veri Bekleniyor';
     if (mastery >= 80) return 'Mükemmel';
     if (mastery >= 60) return 'İyi';
     if (mastery >= 40) return 'Orta';
@@ -120,8 +136,8 @@ export function SubjectMasteryPanel({
     ? Math.round(subjectMasteryData.reduce((sum, data) => sum + data.mastery, 0) / subjectMasteryData.length)
     : 0;
 
-  const weakSubjects = subjectMasteryData.filter(data => data.mastery < 50);
-  const strongSubjects = subjectMasteryData.filter(data => data.mastery >= 70);
+  const weakSubjects = subjectMasteryData.filter(data => data.mastery < 50 && !data.hasNoData);
+  const strongSubjects = subjectMasteryData.filter(data => data.mastery >= 70 && !data.hasNoData);
 
   return (
     <div className="space-y-6">
@@ -197,15 +213,17 @@ export function SubjectMasteryPanel({
                         </Badge>
                       )}
                       <Badge variant="outline" className="text-xs">
-                        {getMasteryLabel(data.mastery)}
+                        {getMasteryLabel(data.mastery, data.hasNoData)}
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-bold text-gray-900">{data.mastery}%</span>
+                      <span className="text-2xl font-bold text-gray-900">
+                        {data.hasNoData ? 'Veri Bekleniyor' : `${data.mastery}%`}
+                      </span>
                     </div>
                   </div>
                   
-                  <Progress value={data.mastery} className={getMasteryColor(data.mastery)} />
+                  <Progress value={data.hasNoData ? 0 : data.mastery} className={getMasteryColor(data.mastery, data.hasNoData)} />
                   
                   <div className="grid grid-cols-3 gap-4 text-xs text-gray-600">
                     <div>
@@ -215,21 +233,21 @@ export function SubjectMasteryPanel({
                       <span className="font-medium">Görev:</span> {data.taskCount} görev
                     </div>
                     <div>
-                      <span className="font-medium">Konular:</span> {data.topics.length > 0 ? data.topics.slice(0, 3).join(', ') : 'Belirtilmemiş'}
+                      <span className="font-medium">Konular:</span> {data.topics.length > 0 ? `${data.topics.length} konu` : 'Henüz konu eklenmedi'}
                     </div>
                   </div>
 
-                  {/* Topic breakdown if available */}
+                  {/* Topic breakdown with badges */}
                   {data.topics.length > 0 && (
                     <div className="mt-2 pt-2 border-t">
                       <div className="flex flex-wrap gap-2">
                         {data.topics.slice(0, 5).map((topic, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <Badge key={index} variant="outline" className="text-xs bg-blue-50 border-blue-200">
                             {topic}
                           </Badge>
                         ))}
                         {data.topics.length > 5 && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs bg-gray-50 border-gray-200">
                             +{data.topics.length - 5} daha
                           </Badge>
                         )}
@@ -261,8 +279,21 @@ export function SubjectMasteryPanel({
                     <Badge className="bg-red-100 text-red-700">{data.mastery}% Hakimiyet</Badge>
                   </div>
                   <p className="text-sm text-gray-700">
-                    Bu derste hakimiyet düşük. Temel konulara odaklanarak net artışı hedefleyin. 
-                    {data.topics.length > 0 && ` Özellikle ${data.topics.slice(0, 2).join(' ve ')} konularına çalışın.`}
+                    {data.examCount === 0 && data.taskCount === 0 && (
+                      `Bu ders için henüz deneme veya görev verisi yok. Önce temel konulara çalışıp bir deneme çözerek başlangıç seviyenizi belirleyin.`
+                    )}
+                    {data.examCount === 0 && data.taskCount > 0 && (
+                      `${data.taskCount} görev tamamlandı ancak deneme verisi eksik. Çalıştığınız konuları pekiştirmek için bir branş denemesi çözün.`
+                    )}
+                    {data.examCount > 0 && data.taskCount === 0 && (
+                      `${data.examCount} deneme çözüldü ama görev çalışması yok. Deneme sonuçlarına göre en çok hata yapılan konulara öncelikli görev ekleyin.`
+                    )}
+                    {data.examCount > 0 && data.taskCount > 0 && data.topics.length > 0 && (
+                      `${data.topics.slice(0, 2).join(' ve ')} konularında ${data.taskCount} görev tamamladınız. Deneme performansınızı artırmak için bu konuları tekrar edip yeni bir deneme çözün.`
+                    )}
+                    {data.examCount > 0 && data.taskCount > 0 && data.topics.length === 0 && (
+                      `${data.examCount} deneme ve ${data.taskCount} görev tamamlandı ancak konu belirtilmemiş. Görevlere konu ekleyerek daha detaylı analiz yapın.`
+                    )}
                   </p>
                 </div>
               ))}
