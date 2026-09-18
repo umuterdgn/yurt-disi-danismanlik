@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 import { updateStudentStreak } from '@/actions/admin'
 import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +54,87 @@ export async function POST(request: NextRequest) {
       await updateStudentStreak(user.studentProfile.id)
     }
 
-    // Session cookie oluştur
+    // AUTO-SYNC: Create Supabase Auth session for user if it doesn't exist
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+        
+        // Check if user exists in Supabase Auth
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+        
+        if (!listError && users) {
+          const supabaseUser = users.find(u => u.email === email)
+          
+          if (!supabaseUser) {
+            // User exists in Prisma but not in Supabase Auth - create them
+            console.log("AUTO-SYNC: Creating Supabase Auth user for", email)
+            
+            const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  prisma_user_id: user.id,
+                  role: user.role
+                }
+              }
+            })
+            
+            if (signUpError) {
+              console.error("AUTO-SYNC_SIGNUP_ERROR:", signUpError)
+              // Don't fail login if Supabase sync fails, just log it
+            } else {
+              console.log("AUTO-SYNC: Successfully created Supabase Auth user for", email)
+            }
+          }
+        }
+        
+        // Sign in to Supabase to create session
+        const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+          email,
+          password
+        })
+        
+        if (signInError) {
+          console.error("SUPABASE_SIGNIN_ERROR:", signInError)
+          // Don't fail login if Supabase sign-in fails, just log it
+        } else if (signInData.session) {
+          // Set Supabase session cookies
+          const cookieStore = await cookies()
+          
+          const session = signInData.session
+          const accessToken = session.access_token
+          const refreshToken = session.refresh_token
+          
+          // Set Supabase auth cookies
+          cookieStore.set('sb-access-token', accessToken, {
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7 // 7 days
+          })
+          
+          cookieStore.set('sb-refresh-token', refreshToken, {
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7 // 7 days
+          })
+          
+          console.log("AUTO-SYNC: Successfully created Supabase session for", email)
+        }
+      }
+    } catch (supabaseError) {
+      console.error("AUTO-SYNC_ERROR:", supabaseError)
+      // Don't fail login if Supabase sync fails, just log it
+    }
+
+    // Session cookie oluştur (legacy - for backward compatibility)
     const cookieStore = await cookies()
     cookieStore.set('user_id', user.id, {
       path: '/',
