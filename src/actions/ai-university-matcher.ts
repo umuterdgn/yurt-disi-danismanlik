@@ -159,7 +159,7 @@ Her üniversite için:
           content: prompt
         }
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-70b-versatile',
       temperature: 0.7,
       max_tokens: 2048,
       response_format: { type: "json_object" }

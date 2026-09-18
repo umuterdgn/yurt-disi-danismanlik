@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { TaskStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentProfileId, title, description, subject, taskType, targetQuantity, estimatedPomodoros, priority, taskDate } = body;
+    const { studentProfileId, title, description, subject, taskType, targetQuantity, estimatedPomodoros, priority, taskDate, status } = body;
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -51,6 +52,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Create task
+    console.log("TASK_PAYLOAD:", {
+      studentProfileId,
+      title,
+      description,
+      subject,
+      taskType: taskType || 'Soru çözme',
+      targetQuantity: targetQuantity || (estimatedPomodoros ? estimatedPomodoros * 25 : 25),
+      estimatedPomodoros: estimatedPomodoros || 1,
+      completedQuantity: 0,
+      isCompleted: false,
+      priority: priority || 'medium',
+      taskDate: taskDate ? new Date(taskDate) : new Date(),
+      status: status || 'TODO'
+    });
+
     const task = await prisma.dailyTask.create({
       data: {
         studentProfileId,
@@ -63,7 +79,8 @@ export async function POST(request: NextRequest) {
         completedQuantity: 0,
         isCompleted: false,
         priority: priority || 'medium',
-        taskDate: taskDate ? new Date(taskDate) : new Date()
+        taskDate: taskDate ? new Date(taskDate) : new Date(),
+        status: TaskStatus.TODO
       }
     });
 

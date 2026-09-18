@@ -1,3 +1,4 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -11,20 +12,42 @@ export async function middleware(request: NextRequest) {
 
   const isProtectedPath = protectedPaths.some((path) => url.pathname.startsWith(path))
 
-  // Custom authentication cookies kontrolü
-  const userId = request.cookies.get('user_id')?.value
-  const userRole = request.cookies.get('user_role')?.value
+  // Create response that will handle cookies
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  // Supabase client oluştur with proper cookie management
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { session } } = await supabase.auth.getSession()
 
   // Kullanıcı giriş yapmamışsa ve korumalı bir sayfaya girmeye çalışıyorsa login'e yönlendir
-  if (isProtectedPath && !userId) {
+  if (isProtectedPath && !session) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Rol kontrolü layout component'lerine taşındı (Edge Runtime uyumluluğu için)
-  // Middleware sadece temel oturum kontrolü yapar
-
-  return NextResponse.next()
+  // Response with cookie management
+  return response
 }
 
 // Middleware'in çalışacağı dosya yollarını (matcher) belirliyoruz

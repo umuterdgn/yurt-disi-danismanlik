@@ -70,19 +70,24 @@ export function AITaskSuggestions({ studentId, studentName }: AITaskSuggestionsP
 
   const approveTask = async (suggestion: AITaskSuggestion) => {
     try {
+      const taskData = {
+        studentProfileId: studentId,
+        title: suggestion.title,
+        description: suggestion.description,
+        subject: suggestion.subject,
+        taskType: 'Soru çözme',
+        targetQuantity: suggestion.estimatedPomodoros * 25, // Convert pomodoros to minutes
+        estimatedPomodoros: suggestion.estimatedPomodoros,
+        priority: suggestion.priority,
+        taskDate: suggestion.suggestedDate
+      };
+
+      console.log("Sending task data:", taskData);
+
       const response = await fetch('/api/advisor/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentProfileId: studentId,
-          title: suggestion.title,
-          description: suggestion.description,
-          subject: suggestion.subject,
-          taskType: 'Soru çözme',
-          targetQuantity: suggestion.estimatedPomodoros * 25, // Convert pomodoros to minutes
-          priority: suggestion.priority,
-          taskDate: suggestion.suggestedDate
-        })
+        body: JSON.stringify(taskData)
       });
 
       if (!response.ok) {
