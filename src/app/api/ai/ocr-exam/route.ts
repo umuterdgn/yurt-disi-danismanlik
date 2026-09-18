@@ -16,8 +16,7 @@ export async function POST(req: Request) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
-      generationConfig: { responseMimeType: "application/json" },
+      model: "gemini-1.5-pro"
     });
 
     // Görselleri Gemini'ın İSTEDİĞİ formata çevir (Prefix temizleme ÇOK KRİTİK)
@@ -40,7 +39,7 @@ export async function POST(req: Request) {
       };
     });
 
-    const prompt = "You are an expert exam OCR system. Analyze the provided exam images and extract the correct, incorrect, and blank scores for each subject (Turkish, Math, Science, Social). You MUST return ONLY a valid JSON object in this exact format: {\"scores\": {\"turkish\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"math\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"science\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"social\": {\"correct\": number, \"wrong\": number, \"empty\": number}}}. Do not include markdown formatting. If a subject has no data, set all values to 0.";
+    const prompt = "You are an expert exam OCR system. Analyze the provided exam images and extract the correct, incorrect, and blank scores for each subject (Turkish, Math, Science, Social). You MUST return ONLY a valid JSON object in this exact format: {\"scores\": {\"turkish\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"math\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"science\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"social\": {\"correct\": number, \"wrong\": number, \"empty\": number}}}. Do not include markdown formatting. If a subject has no data, set all values to 0. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown blocks like ```json. Just return the raw parsable JSON string.";
 
     const result = await model.generateContent([prompt, ...imageParts]);
     const responseText = result.response.text();
