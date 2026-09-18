@@ -2,18 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { image } = await request.json();
+    const { images } = await request.json();
 
-    if (!image) {
-      return NextResponse.json({ error: 'Image data is required' }, { status: 400 });
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return NextResponse.json({ error: 'Image data is required as an array' }, { status: 400 });
     }
 
     const groqApiKey = process.env.GROQ_API_KEY;
     if (!groqApiKey) {
+      console.error("OCR_ERROR: Groq API key is not configured");
       return NextResponse.json({ error: 'Groq API key is not configured' }, { status: 500 });
     }
 
-    // Call Groq Vision API
+    // Prepare image content for Groq Vision API
+    const imageContent = images.map((image: string) => ({
+      type: 'image_url' as const,
+      image_url: {
+        url: image
+      }
+    }));
+
+    // Call Groq Vision API with multiple images
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -25,14 +34,14 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that outputs strictly in JSON format. You are an AI assistant that extracts exam scores from images. You MUST return the output strictly in JSON format.'
+            content: 'You are a helpful assistant that outputs strictly in JSON format. Sen bir AI assistant that extracts exam scores from images. You MUST return the output strictly in JSON format.'
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Bu görseldeki sınav sonuç belgesinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
+                text: `Bu görsellerdeki sınav sonuç belgelerinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
 Lütfen şu JSON formatında yanıt ver:
 {
   "scores": {
@@ -42,14 +51,9 @@ Lütfen şu JSON formatında yanıt ver:
     "social": { "correct": number, "wrong": number, "empty": number }
   }
 }
-Sadece JSON formatında yanıt ver, başka açıklama ekleme.`
+Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir. Sadece JSON formatında yanıt ver, başka açıklama ekleme.`
               },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: image
-                }
-              }
+              ...imageContent
             ]
           }
         ],
@@ -61,14 +65,15 @@ Sadece JSON formatında yanıt ver, başka açıklama ekleme.`
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Groq API Error:', error);
-      return NextResponse.json({ error: 'Failed to process image with Groq API' }, { status: 500 });
+      console.error("OCR_ERROR: Groq API Error:", error);
+      return NextResponse.json({ error: `Failed to process image with Groq API: ${error}` }, { status: 500 });
     }
 
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
+      console.error("OCR_ERROR: No response from Groq API");
       return NextResponse.json({ error: 'No response from Groq API' }, { status: 500 });
     }
 
@@ -83,13 +88,13 @@ Sadece JSON formatında yanıt ver, başka açıklama ekleme.`
       const parsedData = JSON.parse(jsonMatch[0]);
       return NextResponse.json({ success: true, scores: parsedData.scores });
     } catch (parseError) {
-      console.error('JSON Parse Error:', parseError);
-      console.error('Raw content:', content);
-      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+      console.error("OCR_ERROR: JSON Parse Error:", parseError);
+      console.error("OCR_ERROR: Raw content:", content);
+      return NextResponse.json({ error: `Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}` }, { status: 500 });
     }
 
   } catch (error) {
-    console.error('OCR Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("OCR_ERROR:", error);
+    return NextResponse.json({ error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` }, { status: 500 });
   }
 }
