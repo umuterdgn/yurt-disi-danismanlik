@@ -446,6 +446,7 @@ model University {
   tuitionFees         Float? // Yıllık ücret
   languageRequirement String? // IELTS, TOEFL vb.
   requiredScore       Float?
+  baseScore           Float? // Geçen Yılki Taban Puanı (YKS için)
   website             String?
   description         String?   @db.Text
   departments         String[] // Bölümler

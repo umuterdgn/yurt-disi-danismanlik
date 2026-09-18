@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,40 @@ export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [universities, setUniversities] = useState<any[]>([]);
+  const [selectedUniversity, setSelectedUniversity] = useState("");
+  const [targetScore, setTargetScore] = useState<number>(0);
   const router = useRouter();
+
+  // Fetch universities when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchUniversities();
+    }
+  }, [open]);
+
+  async function fetchUniversities() {
+    try {
+      const response = await fetch('/api/admin/universities');
+      if (response.ok) {
+        const data = await response.json();
+        setUniversities(data.universities || []);
+      }
+    } catch (error) {
+      console.error('Error fetching universities:', error);
+    }
+  }
+
+  // Handle university selection - auto-fill target score
+  function handleUniversityChange(universityId: string) {
+    setSelectedUniversity(universityId);
+    const university = universities.find(u => u.id === universityId);
+    if (university && university.baseScore) {
+      setTargetScore(university.baseScore);
+    } else {
+      setTargetScore(0);
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -123,11 +156,33 @@ export function AddStudentDialog() {
               <Label htmlFor="targetUniversity" className="md:text-right">
                 Hedef Üniversite
               </Label>
+              <Select name="targetUniversity" onValueChange={handleUniversityChange}>
+                <SelectTrigger className="col-span-1 md:col-span-3">
+                  <SelectValue placeholder="Üniversite seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {universities.map((university) => (
+                    <SelectItem key={university.id} value={university.name}>
+                      {university.name} {university.baseScore && `(Taban: ${university.baseScore})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+              <Label htmlFor="targetScore" className="md:text-right">
+                Hedef Puan (Otomatik)
+              </Label>
               <Input
-                id="targetUniversity"
-                name="targetUniversity"
-                placeholder="Örn: Varşova Üniversitesi"
+                id="targetScore"
+                name="targetScore"
+                type="number"
+                step="0.01"
+                value={targetScore}
+                onChange={(e) => setTargetScore(parseFloat(e.target.value) || 0)}
+                placeholder="Üniversite taban puanı"
                 className="col-span-1 md:col-span-3"
+                readOnly
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">

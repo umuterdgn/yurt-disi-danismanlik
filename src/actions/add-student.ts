@@ -13,6 +13,7 @@ export async function addStudent(formData: FormData) {
     const password = formData.get('password') as string;
     const grade = formData.get('grade') as string;
     const targetUniversity = formData.get('targetUniversity') as string;
+    const targetScore = formData.get('targetScore') as string;
     const studentSymbol = formData.get('studentSymbol') as string;
     const serviceType = formData.get('serviceType') as string || 'BOTH';
 
@@ -144,7 +145,7 @@ export async function addStudent(formData: FormData) {
           advisorId: advisor.id,
           grade,
           targetUniversity: targetUniversity || null,
-          targetScore: 0,
+          targetScore: targetScore ? parseFloat(targetScore) : 0,
           currentScore: 0,
           school: '',
           studentSymbol: studentSymbol || '🎓',

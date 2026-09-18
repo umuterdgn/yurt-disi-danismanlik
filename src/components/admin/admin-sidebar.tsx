@@ -22,7 +22,8 @@ import {
   PieChart,
   Building2,
   UserPlus,
-  ShieldCheck
+  ShieldCheck,
+  GraduationCap
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -73,6 +74,11 @@ export default function AdminSidebar() {
     {
       category: "Sistem",
       items: [
+        {
+          title: "Üniversite & Ülke DB",
+          icon: GraduationCap,
+          href: "/admin/universities",
+        },
         {
           title: "Otomasyonlar & Workflow",
           icon: Zap,
