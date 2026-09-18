@@ -204,7 +204,7 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
         </div>
 
         <div>
-          <Label htmlFor="gpa">Not Ortalaması (GPA)</Label>
+          <Label htmlFor="gpa">Not Ortalaması (GPA) <span className="text-gray-400">(Opsiyonel)</span></Label>
           <Input
             id="gpa"
             type="number"
@@ -214,12 +214,11 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
             placeholder="Örn: 3.5"
             value={formData.gpa}
             onChange={(e) => setFormData({ ...formData, gpa: e.target.value })}
-            required
           />
         </div>
 
         <div>
-          <Label htmlFor="ieltsScore">IELTS Puanı</Label>
+          <Label htmlFor="ieltsScore">IELTS Puanı <span className="text-gray-400">(Opsiyonel)</span></Label>
           <Input
             id="ieltsScore"
             type="number"
@@ -229,7 +228,6 @@ export function UniversityMatcherForm({ studentProfile, countries, departments, 
             placeholder="Örn: 6.5"
             value={formData.ieltsScore}
             onChange={(e) => setFormData({ ...formData, ieltsScore: e.target.value })}
-            required
           />
         </div>
 
