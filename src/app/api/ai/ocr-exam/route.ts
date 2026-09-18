@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Configuration
 const MAX_IMAGES = 5;
@@ -12,70 +13,45 @@ function getBase64SizeMB(base64String: string): number {
   return (base64Data.length * 0.75) / (1024 * 1024);
 }
 
-async function callGroqVisionAPI(groqApiKey: string, imageContent: any[]) {
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${groqApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that extracts exam scores from images. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.'
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Bu görsellerdeki sınav sonuç belgelerinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
-Lütfen şu JSON formatında yanıt ver:
-{
-  "scores": {
-    "turkish": { "correct": number, "wrong": number, "empty": number },
-    "math": { "correct": number, "wrong": number, "empty": number },
-    "science": { "correct": number, "wrong": number, "empty": number },
-    "social": { "correct": number, "wrong": number, "empty": number }
+// Function to clean base64 and convert to Gemini inlineData format
+function convertToGeminiInlineData(base64Image: string) {
+  // Remove data URL prefix
+  let cleanBase64 = base64Image;
+  if (base64Image.startsWith('data:image/')) {
+    cleanBase64 = base64Image.split(',')[1];
   }
-}
-Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.`
-            },
-            ...imageContent
-          ]
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 500
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("GROQ_VISION_ERROR:", errorText);
-    try {
-      const errorJson = JSON.parse(errorText);
-      console.error("GROQ_VISION_ERROR_DETAILS:", errorJson);
-    } catch (e) {
-      // Error text wasn't JSON
+  
+  // Detect mime type from original data URL or default to jpeg
+  let mimeType = 'image/jpeg';
+  if (base64Image.startsWith('data:image/png')) {
+    mimeType = 'image/png';
+  } else if (base64Image.startsWith('data:image/webp')) {
+    mimeType = 'image/webp';
+  }
+  
+  return {
+    inlineData: {
+      data: cleanBase64,
+      mimeType: mimeType
     }
-    throw new Error(`Groq API error: ${errorText}`);
-  }
-
-  return response.json();
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for Gemini API key
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("OCR_ERROR: GEMINI_API_KEY is not configured");
+      return NextResponse.json({ error: 'OCR işlemi için GEMINI_API_KEY yapılandırması gereklidir' }, { status: 500 });
+    }
+
     const { images } = await request.json();
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json({ error: 'Image data is required as an array' }, { status: 400 });
     }
 
-    // Enforce maximum 5 images limit
+    // Enforce maximum 5 images limit for Vercel compatibility
     const processedImages = images.slice(0, MAX_IMAGES);
     if (images.length > MAX_IMAGES) {
       console.log(`OCR_API: Limited to ${MAX_IMAGES} images from ${images.length} provided`);
@@ -100,58 +76,48 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      console.error("OCR_ERROR: Groq API key is not configured");
-      return NextResponse.json({ error: 'Groq API key is not configured' }, { status: 500 });
-    }
-
-    // Prepare image content for Groq Vision API with proper base64 prefix validation
-    const imageContent = processedImages.map((image: string) => {
-      // Ensure base64 has proper prefix
-      let imageUrl = image;
-      if (!image.startsWith('data:image/')) {
-        // If missing prefix, assume JPEG
-        imageUrl = `data:image/jpeg;base64,${image}`;
+    // Initialize Gemini client
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        responseMimeType: "application/json"
       }
-      return {
-        type: 'image_url' as const,
-        image_url: {
-          url: imageUrl
-        }
-      };
     });
 
-    console.log("OCR_API: Processing", processedImages.length, "images with Llama 4 Scout model. Total size:", totalSizeMB.toFixed(2), "MB");
+    // Convert images to Gemini inlineData format
+    const geminiImages = processedImages.map(image => convertToGeminiInlineData(image));
 
-    // Call Groq Vision API with Llama 4 Scout model
-    const data = await callGroqVisionAPI(groqApiKey, imageContent);
+    // Prepare the prompt
+    const prompt = `Bu görsellerdeki sınav sonuç belgelerinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
+Lütfen şu JSON formatında yanıt ver:
+{
+  "scores": {
+    "turkish": { "correct": number, "wrong": number, "empty": number },
+    "math": { "correct": number, "wrong": number, "empty": number },
+    "science": { "correct": number, "wrong": number, "empty": number },
+    "social": { "correct": number, "wrong": number, "empty": number }
+  }
+}
+Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir.`;
 
-    const content = data.choices[0]?.message?.content;
+    console.log("OCR_API: Processing", processedImages.length, "images with Gemini 1.5 Flash model. Total size:", totalSizeMB.toFixed(2), "MB");
+
+    // Call Gemini API with images
+    const result = await model.generateContent([prompt, ...geminiImages]);
+    const response = result.response;
+    const content = response.text();
 
     if (!content) {
-      console.error("OCR_ERROR: No response from Groq API");
-      return NextResponse.json({ error: 'No response from Groq API' }, { status: 500 });
+      console.error("OCR_ERROR: No response from Gemini API");
+      return NextResponse.json({ error: 'No response from Gemini API' }, { status: 500 });
     }
 
-    console.log("OCR_API: Raw response from Groq:", content.substring(0, 200));
+    console.log("OCR_API: Raw response from Gemini:", content.substring(0, 200));
 
-    // Manual JSON parsing - remove markdown blocks
+    // Parse JSON response (should be clean JSON due to responseMimeType)
     try {
-      // Remove markdown code blocks if present (with or without language tag)
-      let cleanedContent = content
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .replace(/```\w*\n?/g, '')
-        .trim();
-
-      // Extract JSON from the response (in case there's extra text)
-      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
-      }
-
-      const parsedData = JSON.parse(jsonMatch[0]);
+      const parsedData = JSON.parse(content);
       console.log("OCR_API: Successfully parsed JSON scores");
       return NextResponse.json({ success: true, scores: parsedData.scores });
     } catch (parseError) {
@@ -161,9 +127,9 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error("GROQ_VISION_ERROR:", error);
+    console.error("GEMINI_VISION_ERROR:", error);
     if (error && typeof error === 'object' && 'error' in error) {
-      console.error("GROQ_VISION_ERROR_DETAILS:", (error as any).error);
+      console.error("GEMINI_VISION_ERROR_DETAILS:", (error as any).error);
     }
     return NextResponse.json({ error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` }, { status: 500 });
   }
