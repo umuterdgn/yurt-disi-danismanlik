@@ -98,17 +98,33 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+              <Label htmlFor="topic" className="md:text-right">
+                İlgili Konu
+              </Label>
+              <Input
+                id="topic"
+                name="topic"
+                placeholder="Örn: Türev, İntegral"
+                className="col-span-1 md:col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="taskType" className="md:text-right">
-                Görev Tipi
+                Görev Türü
               </Label>
               <Select name="taskType" required>
                 <SelectTrigger className="col-span-1 md:col-span-3">
-                  <SelectValue placeholder="Görev tipi seçin" />
+                  <SelectValue placeholder="Görev türü seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="saat">Saat</SelectItem>
-                  <SelectItem value="soru">Soru</SelectItem>
-                  <SelectItem value="sayfa">Sayfa</SelectItem>
+                  <SelectItem value="TEST">Test / Soru Çözümü</SelectItem>
+                  <SelectItem value="REVIEW">Konu Tekrarı</SelectItem>
+                  <SelectItem value="READING">Okuma</SelectItem>
+                  <SelectItem value="VIDEO">Video İzleme</SelectItem>
+                  <SelectItem value="PRACTICE">Pratik</SelectItem>
+                  <SelectItem value="PROJECT">Proje</SelectItem>
+                  <SelectItem value="EXAM">Deneme</SelectItem>
+                  <SelectItem value="OTHER">Diğer</SelectItem>
                 </SelectContent>
               </Select>
             </div>

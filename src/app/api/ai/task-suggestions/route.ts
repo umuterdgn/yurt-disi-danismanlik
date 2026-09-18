@@ -53,7 +53,11 @@ export async function GET(request: NextRequest) {
     const suggestions = generateGapBasedSuggestions(student, scoreGap, recentSubjectPerformance);
 
     return NextResponse.json({ 
-      suggestions,
+      suggestions: suggestions.map(s => ({
+        ...s,
+        // Ensure taskType is included in the response
+        taskType: s.taskType || 'OTHER'
+      })),
       gapAnalysis: {
         currentScore,
         targetScore,
@@ -119,10 +123,18 @@ function buildGapFocusedPrompt(student: any, currentScore: number, targetScore: 
     .join('\n');
 
   return `
+Öğrencinin Sınıfı: ${student.grade}. Bu sınıfın müfredatına ve öğrencinin Konu Hakimiyet verilerine bak.
+
 Öğrencinin mevcut puanı ${currentScore}, hedef puanı ${targetScore}. Aradaki ${scoreGap.toFixed(2)} puanlık farkı kapatmak için, son denemelerdeki yanlışlarına bakarak EN HIZLI net getirecek, düzeltmesi KESİN ve KOLAY olan konuları önceliklendir.
 
 Öğrenci Performans Analizi:
 ${subjectAnalysis}
+
+MÜFREDAT AI KURALLARI:
+- Eğer bir konuda başarı %50'nin altındaysa ona soru çözümü DEĞİL, 'Konu Tekrarı' (REVIEW) görevi öner.
+- Eğer %50-70 arasındaysa önce temel soru çözümü, sonra konu tekrarı öner.
+- Eğer %70 üzerindeyse zorluk derecesi yüksek 'Test' (TEST) görevi öner.
+- Görev türünü kesin olarak belirt: TEST, REVIEW, READING, VIDEO, PRACTICE, PROJECT, EXAM, OTHER.
 
 Görev açıklamasında öğrencinin o konuyu NEDEN yanlış yaptığını (Örn: İşlem hatası, formül eksikliği, kavram yanlışlığı, dikkatsizlik) analiz et ve farkı kapatmak için stratejik adımlar öner.
 
@@ -130,11 +142,12 @@ KESİN KURAL: Öğrencinin mevcut puanı ${currentScore}, hedef puanı ${targetS
 
 Görev önerileri şu formatta olmalı:
 1. Konu adı
-2. Öncelik seviyesi (high/medium/low) - gap'a katkısına göre
-3. Tahmini net kazancı
-4. Neden yanlış yapıldığı analizi
-5. Stratejik düzeltme adımları
-6. Tahmini çalışma süresi (Pomodoro)
+2. Görev türü (TEST, REVIEW, READING, vb.)
+3. Öncelik seviyesi (high/medium/low) - gap'a katkısına göre
+4. Tahmini net kazancı
+5. Neden yanlış yapıldığı analizi
+6. Stratejik düzeltme adımları
+7. Tahmini çalışma süresi (Pomodoro)
 `;
 }
 
@@ -146,27 +159,50 @@ function generateGapBasedSuggestions(student: any, scoreGap: number, subjectPerf
     .filter(([_, data]: [string, any]) => data.performance === 'WEAK' || data.performance === 'MEDIUM')
     .sort((a, b) => (a[1] as any).totalWrong - (b[1] as any).totalWrong);
 
-  // Generate suggestions based on gap and weak subjects
+  // Generate suggestions based on gap and weak subjects with mastery-based task types
   if (weakSubjects.length > 0) {
     weakSubjects.slice(0, 3).forEach(([subject, data]: [string, any], index: number) => {
       const potentialGain = Math.min(5, data.totalWrong * 0.75); // Estimate potential net gain
       const priority = scoreGap > 50 ? 'high' : (scoreGap > 20 ? 'medium' : 'low');
       
+      // Determine task type based on performance
+      let taskType = 'TEST';
+      let taskTitle = `${subject} - Hızlı Net Kazanımı`;
+      let taskDescription = `Son denemelerde ${data.totalWrong} yanlış yaptığınız ${subject} dersinde en çok hata yapılan konuları tekrar edin. Tahmini net kazancı: +${potentialGain.toFixed(2)}`;
+      
+      if (data.performance === 'WEAK') {
+        taskType = 'REVIEW';
+        taskTitle = `${subject} - Konu Tekrarı`;
+        taskDescription = `${subject} dersinde başarı oranı düşük (%${data.averageNet.toFixed(1)}). Önce konu tekrarı yapın, ardından soru çözün.`;
+      } else if (data.performance === 'MEDIUM') {
+        taskType = 'PRACTICE';
+        taskTitle = `${subject} - Pratik Çalışma`;
+        taskDescription = `${subject} dersinde performansınız orta düzeyde. Temel soru çözümü ve konu tekrarı kombinasyonu önerilir.`;
+      }
+      
       suggestions.push({
         id: `gap-${index + 1}`,
-        title: `${subject} - Hızlı Net Kazanımı`,
-        description: `Son denemelerde ${data.totalWrong} yanlış yaptığınız ${subject} dersinde en çok hata yapılan konuları tekrar edin. Tahmini net kazancı: +${potentialGain.toFixed(2)}`,
+        title: taskTitle,
+        description: taskDescription,
         subject: subject,
         estimatedPomodoros: Math.ceil(data.totalWrong / 3),
         priority: priority,
         suggestedDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
         gapContribution: potentialGain,
-        errorAnalysis: 'İşlem hatası ve formül eksikliği üzerine odaklanın',
-        strategicSteps: [
+        errorAnalysis: data.performance === 'WEAK' ? 'Kavram eksikliği ve temel bilgi yetersizliği' : 'İşlem hatası ve pratik yetersizliği',
+        strategicSteps: data.performance === 'WEAK' ? [
+          'Konu anlatım videosu izleyin',
+          'Temel kavramları tekrar edin',
+          'Formül ve teoremleri öğrenin',
+          'Basit örneklerle başlayın'
+        ] : [
           'Yanlış soruların çözümlerini detaylı inceleyin',
           'Hata yapılan konuların formüllerini tekrar edin',
           'Benzer soru tiplerinden pratik yapın'
-        ]
+        ],
+        // Add custom fields for mastery system
+        taskType: taskType,
+        topic: subject // Use subject as topic for now
       });
     });
   }
@@ -187,7 +223,10 @@ function generateGapBasedSuggestions(student: any, scoreGap: number, subjectPerf
         'Yanlış soruları konu bazında sınıflandırın',
         'Hata türlerini belirleyin (işlem, kavram, dikkatsizlik)',
         'Her hata türü için özel düzeltme stratejisi geliştirin'
-      ]
+      ],
+      // Add custom fields for mastery system
+      taskType: 'REVIEW',
+      topic: 'Genel Analiz'
     });
   }
 

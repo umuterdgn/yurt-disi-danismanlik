@@ -10,6 +10,7 @@ export async function addTask(formData: FormData) {
     const studentProfileId = formData.get('studentProfileId') as string;
     const title = formData.get('title') as string;
     const subject = formData.get('subject') as string;
+    const topic = formData.get('topic') as string;
     const taskType = formData.get('taskType') as string;
     const estimatedPomodoros = parseInt(formData.get('estimatedPomodoros') as string);
     const priority = formData.get('priority') as string;
@@ -30,16 +31,19 @@ export async function addTask(formData: FormData) {
       return { success: false, error: 'Öğrenci profili bulunamadı' };
     }
 
-    // Create task
+    // Create task with new fields
     const task = await prisma.dailyTask.create({
       data: {
         studentProfileId,
         title,
         subject,
-        taskType,
+        topic: topic || null,
+        taskType: taskType as any, // Convert to TaskType enum
         targetQuantity: estimatedPomodoros, // Keep targetQuantity for compatibility
         estimatedPomodoros,
         completedQuantity: 0,
+        correctCount: 0,
+        wrongCount: 0,
         priority,
         taskDate: new Date(taskDate),
         isCompleted: false,

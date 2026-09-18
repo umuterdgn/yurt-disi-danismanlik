@@ -32,6 +32,17 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskType {
+  TEST
+  REVIEW
+  READING
+  VIDEO
+  PRACTICE
+  PROJECT
+  EXAM
+  OTHER
+}
+
 model User {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -200,10 +211,13 @@ model DailyTask {
   title             String
   description       String?
   subject           String // Matematik, Fizik vb.
-  taskType          String // Soru çözme, Video izleme, Deneme vb.
+  topic             String? // Türev, İntegral vb. (İlgili konu)
+  taskType          TaskType @default(OTHER) // TEST, REVIEW, READING, VIDEO, PRACTICE, PROJECT, EXAM, OTHER
   targetQuantity    Int // 40 soru, 2 saat vb.
   estimatedPomodoros Int      @default(0) // Tahmini Pomodoro sayısı
   completedQuantity Int      @default(0)
+  correctCount      Int?     @default(0) // Doğru sayısı (TEST görevleri için)
+  wrongCount        Int?     @default(0) // Yanlış sayısı (TEST görevleri için)
   isCompleted       Boolean  @default(false)
   taskDate          DateTime
   priority          String   @default("medium") // low, medium, high
