@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash-latest',
       generationConfig: {
         responseMimeType: "application/json"
       }
@@ -101,7 +101,7 @@ Lütfen şu JSON formatında yanıt ver:
 }
 Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir.`;
 
-    console.log("OCR_API: Processing", processedImages.length, "images with Gemini 1.5 Flash model. Total size:", totalSizeMB.toFixed(2), "MB");
+    console.log("OCR_API: Processing", processedImages.length, "images with Gemini 1.5 Flash Latest model. Total size:", totalSizeMB.toFixed(2), "MB");
 
     // Call Gemini API with images
     const result = await model.generateContent([prompt, ...geminiImages]);
