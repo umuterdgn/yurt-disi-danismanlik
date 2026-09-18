@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentProfileId, title, description, subject, taskType, targetQuantity, priority, taskDate } = body;
+    const { studentProfileId, title, description, subject, taskType, targetQuantity, estimatedPomodoros, priority, taskDate } = body;
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -57,12 +57,13 @@ export async function POST(request: NextRequest) {
         title,
         description,
         subject,
-        taskType,
-        targetQuantity,
+        taskType: taskType || 'Soru çözme',
+        targetQuantity: targetQuantity || (estimatedPomodoros ? estimatedPomodoros * 25 : 25), // Default to 25 minutes if not provided
+        estimatedPomodoros: estimatedPomodoros || 1,
         completedQuantity: 0,
         isCompleted: false,
-        priority,
-        taskDate: new Date(taskDate)
+        priority: priority || 'medium',
+        taskDate: taskDate ? new Date(taskDate) : new Date()
       }
     });
 
@@ -73,6 +74,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, task });
   } catch (error) {
     console.error('Error creating task:', error);
-    return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Bir hata oluştu', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

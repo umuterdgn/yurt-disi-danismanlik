@@ -30,11 +30,54 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
   const [math, setMath] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
   const [science, setScience] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
   const [social, setSocial] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const handleOCRClick = () => {
-    if (toast && toast.info) {
-      toast.info("OCR özelliği yakında aktif olacak! Şimdilik manuel giriş kullanın.");
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageFile(file);
+    setOcrLoading(true);
+
+    try {
+      // Convert image to base64
+      const base64 = await fileToBase64(file);
+
+      // Send to Groq Vision API
+      const response = await fetch('/api/ai/ocr-exam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 })
+      });
+
+      if (!response.ok) throw new Error('OCR processing failed');
+
+      const data = await response.json();
+
+      // Update form with extracted data
+      if (data.scores) {
+        if (data.scores.turkish) setTurkish(data.scores.turkish);
+        if (data.scores.math) setMath(data.scores.math);
+        if (data.scores.science) setScience(data.scores.science);
+        if (data.scores.social) setSocial(data.scores.social);
+        toast.success('Görsel başarıyla işlendi!');
+      }
+    } catch (error) {
+      console.error('OCR Error:', error);
+      toast.error('Görsel işlenirken hata oluştu');
+    } finally {
+      setOcrLoading(false);
     }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleSubjectChange = (subject: string, field: keyof SubjectScores, value: string) => {
@@ -168,17 +211,33 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
           </DialogDescription>
         </DialogHeader>
         
-        {/* OCR Button Placeholder */}
+        {/* OCR Upload Section */}
         <div className="flex justify-center mb-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleOCRClick}
-            className="w-full border-dashed"
-          >
-            <Camera className="w-4 h-4 mr-2" />
-            📷 Fotoğraftan Oku / Yükle (Yakında)
-          </Button>
+          <div className="w-full">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={ocrLoading}
+              className="hidden"
+              id="ocr-upload"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => document.getElementById('ocr-upload')?.click()}
+              disabled={ocrLoading}
+              className="w-full border-dashed"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              {ocrLoading ? 'İşleniyor...' : '📷 Fotoğraftan Oku / Yükle'}
+            </Button>
+            {imageFile && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Seçilen: {imageFile.name}
+              </p>
+            )}
+          </div>
         </div>
 
         <form action={handleSubmit}>

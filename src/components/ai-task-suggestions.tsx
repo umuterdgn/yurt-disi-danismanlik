@@ -74,17 +74,22 @@ export function AITaskSuggestions({ studentId, studentName }: AITaskSuggestionsP
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentId,
+          studentProfileId: studentId,
           title: suggestion.title,
           description: suggestion.description,
           subject: suggestion.subject,
-          estimatedPomodoros: suggestion.estimatedPomodoros,
+          taskType: 'Soru çözme',
+          targetQuantity: suggestion.estimatedPomodoros * 25, // Convert pomodoros to minutes
           priority: suggestion.priority,
           taskDate: suggestion.suggestedDate
         })
       });
 
-      if (!response.ok) throw new Error("Failed to create task");
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error:", errorData);
+        throw new Error(errorData.error || "Failed to create task");
+      }
 
       toast.success("Görev öğrenciye eklendi!");
       setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
