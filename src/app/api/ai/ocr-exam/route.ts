@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
     // Görselleri Gemini'ın İSTEDİĞİ formata çevir (Prefix temizleme ÇOK KRİTİK)
     const imageParts = images.slice(0, 5).map((imgData: string) => {
-      const matches = imgData.match(/^data:(.+);base64,(.+)$/);
+      const matches = imgData.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
       if (matches && matches.length === 3) {
         return {
           inlineData: {
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
           },
         };
       }
+      // Fallback: assume it's already clean base64
       return {
         inlineData: {
           mimeType: "image/jpeg",
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       };
     });
 
-    const prompt = "You are an expert exam OCR system. Analyze the provided exam images and extract the correct, incorrect, and blank scores for each subject (Turkish, Math, Science, Social). You MUST return ONLY a valid JSON object in this exact format: {\"scores\": {\"turkish\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"math\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"science\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"social\": {\"correct\": number, \"wrong\": number, \"empty\": number}}}. Do not include markdown formatting.";
+    const prompt = "You are an expert exam OCR system. Analyze the provided exam images and extract the correct, incorrect, and blank scores for each subject (Turkish, Math, Science, Social). You MUST return ONLY a valid JSON object in this exact format: {\"scores\": {\"turkish\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"math\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"science\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"social\": {\"correct\": number, \"wrong\": number, \"empty\": number}}}. Do not include markdown formatting. If a subject has no data, set all values to 0.";
 
     const result = await model.generateContent([prompt, ...imageParts]);
     const responseText = result.response.text();

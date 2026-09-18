@@ -47,61 +47,12 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
     setOpen(newOpen);
   };
 
-  // Client-side image compression to prevent 413 errors
-  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+  const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
       const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        img.src = e.target?.result as string;
-      };
-      
-      reader.onerror = error => reject(error);
       reader.readAsDataURL(file);
-      
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        if (!ctx) {
-          reject(new Error('Canvas context not available'));
-          return;
-        }
-        
-        // Calculate new dimensions
-        let width = img.width;
-        let height = img.height;
-        
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw and compress
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to compressed base64
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Canvas to blob failed'));
-              return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = error => reject(error);
-            reader.readAsDataURL(blob);
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-      
-      img.onerror = error => reject(error);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
     });
   };
 
@@ -113,16 +64,16 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
     setOcrLoading(true);
 
     try {
-      // Compress all images to prevent 413 errors
-      const compressedImages = await Promise.all(
-        files.map(file => compressImage(file, 800, 0.7))
+      // Convert images to base64 without compression for Gemini API
+      const base64Images = await Promise.all(
+        files.map(file => fileToBase64(file))
       );
 
-      // Send to Groq Vision API
+      // Send to Gemini Vision API
       const response = await fetch('/api/ai/ocr-exam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: compressedImages })
+        body: JSON.stringify({ images: base64Images })
       });
 
       if (!response.ok) {
@@ -305,7 +256,7 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
             </Button>
             {imageFiles.length > 0 && (
               <p className="text-xs text-gray-500 mt-2 text-center">
-                Seçilen: {imageFiles.length} fotoğraf (otomatik sıkıştırılacak)
+                Seçilen: {imageFiles.length} fotoğraf
               </p>
             )}
           </div>
