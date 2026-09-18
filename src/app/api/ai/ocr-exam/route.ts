@@ -20,11 +20,11 @@ async function callGroqVisionAPI(groqApiKey: string, imageContent: any[]) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'qwen/qwen3.6-27b',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that extracts exam scores from images. Return only valid JSON data.'
+          content: 'You are a helpful assistant that extracts exam scores from images. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.'
         },
         {
           role: 'user',
@@ -41,15 +41,14 @@ Lütfen şu JSON formatında yanıt ver:
     "social": { "correct": number, "wrong": number, "empty": number }
   }
 }
-Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir.`
+Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.`
             },
             ...imageContent
           ]
         }
       ],
       temperature: 0.1,
-      max_tokens: 500,
-      response_format: { type: 'json_object' }
+      max_tokens: 500
     })
   });
 
@@ -76,16 +75,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image data is required as an array' }, { status: 400 });
     }
 
-    // Validate image count
+    // Enforce maximum 5 images limit
+    const processedImages = images.slice(0, MAX_IMAGES);
     if (images.length > MAX_IMAGES) {
-      return NextResponse.json({ 
-        error: `Too many images. Maximum ${MAX_IMAGES} images allowed per request.` 
-      }, { status: 400 });
+      console.log(`OCR_API: Limited to ${MAX_IMAGES} images from ${images.length} provided`);
     }
 
     // Validate total image size
     let totalSizeMB = 0;
-    for (const image of images) {
+    for (const image of processedImages) {
       const imageSizeMB = getBase64SizeMB(image);
       totalSizeMB += imageSizeMB;
       
@@ -109,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare image content for Groq Vision API with proper base64 prefix validation
-    const imageContent = images.map((image: string) => {
+    const imageContent = processedImages.map((image: string) => {
       // Ensure base64 has proper prefix
       let imageUrl = image;
       if (!image.startsWith('data:image/')) {
@@ -124,9 +122,9 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    console.log("OCR_API: Processing", images.length, "images with Qwen model. Total size:", totalSizeMB.toFixed(2), "MB");
+    console.log("OCR_API: Processing", processedImages.length, "images with Llama 4 Scout model. Total size:", totalSizeMB.toFixed(2), "MB");
 
-    // Call Groq Vision API with Qwen model
+    // Call Groq Vision API with Llama 4 Scout model
     const data = await callGroqVisionAPI(groqApiKey, imageContent);
 
     const content = data.choices[0]?.message?.content;
@@ -138,9 +136,22 @@ export async function POST(request: NextRequest) {
 
     console.log("OCR_API: Raw response from Groq:", content.substring(0, 200));
 
-    // Parse JSON response (should be clean JSON due to response_format)
+    // Manual JSON parsing - remove markdown blocks
     try {
-      const parsedData = JSON.parse(content);
+      // Remove markdown code blocks if present (with or without language tag)
+      let cleanedContent = content
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .replace(/```\w*\n?/g, '')
+        .trim();
+
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+
+      const parsedData = JSON.parse(jsonMatch[0]);
       console.log("OCR_API: Successfully parsed JSON scores");
       return NextResponse.json({ success: true, scores: parsedData.scores });
     } catch (parseError) {
