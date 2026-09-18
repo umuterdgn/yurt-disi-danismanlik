@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Fallback model list - try primary first, then fallbacks
-const VISION_MODELS = [
-  'llama-3.2-90b-vision-instruct',
-  'llama-3.2-11b-vision-instruct'
-];
+// Configuration
+const MAX_IMAGES = 5;
+const MAX_IMAGE_SIZE_MB = 20;
 
-async function callGroqVisionAPI(groqApiKey: string, imageContent: any[], model: string) {
+// Function to calculate base64 string size in MB
+function getBase64SizeMB(base64String: string): number {
+  // Remove data URL prefix if present
+  const base64Data = base64String.split(',')[1] || base64String;
+  // Base64 size = original size * 4/3, divide by 1024^2 for MB
+  return (base64Data.length * 0.75) / (1024 * 1024);
+}
+
+async function callGroqVisionAPI(groqApiKey: string, imageContent: any[]) {
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -14,11 +20,11 @@ async function callGroqVisionAPI(groqApiKey: string, imageContent: any[], model:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: model,
+      model: 'qwen/qwen3.6-27b',
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that extracts exam scores from images. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.'
+          content: 'You are a helpful assistant that extracts exam scores from images. Return only valid JSON data.'
         },
         {
           role: 'user',
@@ -35,27 +41,28 @@ Lütfen şu JSON formatında yanıt ver:
     "social": { "correct": number, "wrong": number, "empty": number }
   }
 }
-Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.`
+Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir.`
             },
             ...imageContent
           ]
         }
       ],
       temperature: 0.1,
-      max_tokens: 500
+      max_tokens: 500,
+      response_format: { type: 'json_object' }
     })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`GROQ_VISION_ERROR (${model}):`, errorText);
+    console.error("GROQ_VISION_ERROR:", errorText);
     try {
       const errorJson = JSON.parse(errorText);
-      console.error(`GROQ_VISION_ERROR_DETAILS (${model}):`, errorJson);
+      console.error("GROQ_VISION_ERROR_DETAILS:", errorJson);
     } catch (e) {
       // Error text wasn't JSON
     }
-    throw new Error(`Groq API error with model ${model}: ${errorText}`);
+    throw new Error(`Groq API error: ${errorText}`);
   }
 
   return response.json();
@@ -67,6 +74,32 @@ export async function POST(request: NextRequest) {
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json({ error: 'Image data is required as an array' }, { status: 400 });
+    }
+
+    // Validate image count
+    if (images.length > MAX_IMAGES) {
+      return NextResponse.json({ 
+        error: `Too many images. Maximum ${MAX_IMAGES} images allowed per request.` 
+      }, { status: 400 });
+    }
+
+    // Validate total image size
+    let totalSizeMB = 0;
+    for (const image of images) {
+      const imageSizeMB = getBase64SizeMB(image);
+      totalSizeMB += imageSizeMB;
+      
+      if (imageSizeMB > MAX_IMAGE_SIZE_MB) {
+        return NextResponse.json({ 
+          error: `Single image too large. Maximum ${MAX_IMAGE_SIZE_MB}MB per image.` 
+        }, { status: 400 });
+      }
+    }
+
+    if (totalSizeMB > MAX_IMAGE_SIZE_MB) {
+      return NextResponse.json({ 
+        error: `Total image size too large. Maximum ${MAX_IMAGE_SIZE_MB}MB total allowed. Current: ${totalSizeMB.toFixed(2)}MB` 
+      }, { status: 400 });
     }
 
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -91,29 +124,10 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    console.log("OCR_API: Processing", images.length, "images with Groq Vision");
+    console.log("OCR_API: Processing", images.length, "images with Qwen model. Total size:", totalSizeMB.toFixed(2), "MB");
 
-    // Try models with fallback mechanism
-    let lastError: Error | null = null;
-    let data: any = null;
-
-    for (const model of VISION_MODELS) {
-      try {
-        console.log(`OCR_API: Trying model: ${model}`);
-        data = await callGroqVisionAPI(groqApiKey, imageContent, model);
-        console.log(`OCR_API: Successfully used model: ${model}`);
-        break; // Success - exit the loop
-      } catch (error) {
-        console.log(`OCR_API: Model ${model} failed, trying next...`);
-        lastError = error instanceof Error ? error : new Error(String(error));
-        // Continue to next model
-      }
-    }
-
-    if (!data) {
-      // All models failed
-      throw lastError || new Error('All Groq vision models failed');
-    }
+    // Call Groq Vision API with Qwen model
+    const data = await callGroqVisionAPI(groqApiKey, imageContent);
 
     const content = data.choices[0]?.message?.content;
 
@@ -124,22 +138,9 @@ export async function POST(request: NextRequest) {
 
     console.log("OCR_API: Raw response from Groq:", content.substring(0, 200));
 
-    // Manual JSON parsing - remove markdown blocks
+    // Parse JSON response (should be clean JSON due to response_format)
     try {
-      // Remove markdown code blocks if present (with or without language tag)
-      let cleanedContent = content
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .replace(/```\w*\n?/g, '')
-        .trim();
-
-      // Extract JSON from the response (in case there's extra text)
-      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
-      }
-
-      const parsedData = JSON.parse(jsonMatch[0]);
+      const parsedData = JSON.parse(content);
       console.log("OCR_API: Successfully parsed JSON scores");
       return NextResponse.json({ success: true, scores: parsedData.scores });
     } catch (parseError) {
