@@ -1,5 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Fallback model list - try primary first, then fallbacks
+const VISION_MODELS = [
+  'llama-3.2-90b-vision-instruct',
+  'llama-3.2-11b-vision-instruct'
+];
+
+async function callGroqVisionAPI(groqApiKey: string, imageContent: any[], model: string) {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${groqApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that extracts exam scores from images. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.'
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Bu görsellerdeki sınav sonuç belgelerinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
+Lütfen şu JSON formatında yanıt ver:
+{
+  "scores": {
+    "turkish": { "correct": number, "wrong": number, "empty": number },
+    "math": { "correct": number, "wrong": number, "empty": number },
+    "science": { "correct": number, "wrong": number, "empty": number },
+    "social": { "correct": number, "wrong": number, "empty": number }
+  }
+}
+Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.`
+            },
+            ...imageContent
+          ]
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 500
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`GROQ_VISION_ERROR (${model}):`, errorText);
+    try {
+      const errorJson = JSON.parse(errorText);
+      console.error(`GROQ_VISION_ERROR_DETAILS (${model}):`, errorJson);
+    } catch (e) {
+      // Error text wasn't JSON
+    }
+    throw new Error(`Groq API error with model ${model}: ${errorText}`);
+  }
+
+  return response.json();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { images } = await request.json();
@@ -32,60 +93,28 @@ export async function POST(request: NextRequest) {
 
     console.log("OCR_API: Processing", images.length, "images with Groq Vision");
 
-    // Call Groq Vision API with multiple images - NO response_format for vision models
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.2-90b-vision-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that extracts exam scores from images. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.'
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Bu görsellerdeki sınav sonuç belgelerinden Türkçe, Matematik, Fen Bilimleri ve Sosyal Bilimler derslerinin doğru, yanlış ve boş sayılarını çıkar.
-Lütfen şu JSON formatında yanıt ver:
-{
-  "scores": {
-    "turkish": { "correct": number, "wrong": number, "empty": number },
-    "math": { "correct": number, "wrong": number, "empty": number },
-    "science": { "correct": number, "wrong": number, "empty": number },
-    "social": { "correct": number, "wrong": number, "empty": number }
-  }
-}
-Birden fazla görsel varsa, hepsini analiz et ve sonuçları birleştir. You MUST return ONLY a valid raw JSON object. Do not wrap it in markdown code blocks. Just the raw JSON.`
-              },
-              ...imageContent
-            ]
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 500
-        // REMOVED: response_format: { type: 'json_object' } - Vision models don't support this
-      })
-    });
+    // Try models with fallback mechanism
+    let lastError: Error | null = null;
+    let data: any = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("GROQ_VISION_ERROR:", errorText);
+    for (const model of VISION_MODELS) {
       try {
-        const errorJson = JSON.parse(errorText);
-        console.error("GROQ_VISION_ERROR_DETAILS:", errorJson);
-      } catch (e) {
-        // Error text wasn't JSON
+        console.log(`OCR_API: Trying model: ${model}`);
+        data = await callGroqVisionAPI(groqApiKey, imageContent, model);
+        console.log(`OCR_API: Successfully used model: ${model}`);
+        break; // Success - exit the loop
+      } catch (error) {
+        console.log(`OCR_API: Model ${model} failed, trying next...`);
+        lastError = error instanceof Error ? error : new Error(String(error));
+        // Continue to next model
       }
-      return NextResponse.json({ error: `Failed to process image with Groq API: ${errorText}` }, { status: 500 });
     }
 
-    const data = await response.json();
+    if (!data) {
+      // All models failed
+      throw lastError || new Error('All Groq vision models failed');
+    }
+
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
