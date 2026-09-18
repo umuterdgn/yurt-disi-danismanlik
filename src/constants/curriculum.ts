@@ -1,7 +1,7 @@
 // Türkiye YKS Müfredat Sabitleri
 // Konu Hakimiyeti ve AI Görev Önericisi için kullanılır
 
-export const YKS_CURRICULUM = {
+export const YKS_CURRICULUM: Record<string, string[]> = {
   "Türkçe": [
     "Sözcükte Anlam",
     "Cümlede Anlam",
@@ -343,10 +343,10 @@ export const YKS_CURRICULUM = {
     "Pronunciation",
     "Intonation"
   ]
-} as const;
+};
 
 export const SUBJECTS = Object.keys(YKS_CURRICULUM);
 
 export function getTopicsForSubject(subject: string): string[] {
-  return YKS_CURRICULUM[subject as keyof typeof YKS_CURRICULUM] || [];
+  return YKS_CURRICULUM[subject] || [];
 }
