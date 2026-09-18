@@ -45,14 +45,14 @@ Raporu profesyonel, destekleyici ve uygulanabilir bir dilde yaz.
       messages: [
         {
           role: 'system',
-          content: 'Sen uzman bir eğitim koçusun ve öğrenci performans analizi konusunda uzmanlaşmışsın.'
+          content: 'You are a helpful assistant that outputs strictly in JSON format. Sen uzman bir eğitim koçusun ve öğrenci performans analizi konusunda uzmanlaşmışsın.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama3-70b-8192',
       temperature: 0.7,
       max_tokens: 2048,
     });

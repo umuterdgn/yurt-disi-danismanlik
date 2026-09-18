@@ -71,7 +71,7 @@ export async function generateWeeklyReport(studentId: string) {
     // Prepare data for AI
     const reportData = {
       studentName: student.user.name,
-      targetUniversity: student.targetUniversity,
+      targetUniversities: student.targetUniversities,
       targetScore: student.targetScore,
       currentScore: student.currentScore,
       weeklyStats: {
@@ -96,7 +96,7 @@ Sen bir eğitim koçlusun. Aşağıdaki öğrenci verilerine dayanarak haftalık
 
 Öğrenci Bilgileri:
 - İsim: ${reportData.studentName}
-- Hedef Üniversite: ${reportData.targetUniversity}
+- Hedef Üniversite: ${reportData.targetUniversities?.join(', ') || 'Belirtilmedi'}
 - Hedef Puan: ${reportData.targetScore}
 - Mevcut Puan: ${reportData.currentScore}
 

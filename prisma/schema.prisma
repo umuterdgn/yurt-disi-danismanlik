@@ -26,6 +26,13 @@ enum ServiceType {
   BOTH
 }
 
+enum YKSDomain {
+  SAYISAL
+  SOZEL
+  ESIT_AGIRLIK
+  DIL
+}
+
 enum TaskStatus {
   TODO
   IN_PROGRESS
@@ -91,7 +98,8 @@ model StudentProfile {
   // Temel bilgiler
   grade            String // 9, 10, 11, 12 sınıf
   school           String?
-  targetUniversity String?
+  domain           YKSDomain? // YKS Alanı: SAYISAL, SOZEL, ESIT_AGIRLIK, DIL
+  targetUniversities String[] // Çoklu hedef üniversite
   targetScore      Float? // Hedef puan (TYT/AYT)
   currentScore     Float? // Mevcut puan
   serviceType      ServiceType @default(BOTH) // Hizmet türü: Eğitim Koçluğu, Yurt Dışı Danışmanlık, İkisi Birlikte
@@ -141,6 +149,9 @@ model StudentProfile {
   
   // Quest Progress
   questProgress   QuestProgress[]
+
+  // Psychologial Tracking
+  weeklyCheckIns WeeklyCheckIn[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -684,6 +695,27 @@ enum AIRecommendationType {
   RISK
   ACADEMIC
   APPLICATION
+}
+
+// ============================================
+// PSIKOLOJIK TAKIP VE RISK ANALIZI
+// ============================================
+
+model WeeklyCheckIn {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  stressLevel      Int            // 1-5 scale (1=Çok Düşük, 5=Çok Yüksek)
+  motivationLevel  Int            // 1-5 scale (1=Çok Düşük, 5=Çok Yüksek)
+  notes            String?        @db.Text // İsteğe bağlı notlar
+  weekNumber       Int            // Hafta numarası (1-52)
+  year             Int            // Yıl
+
+  createdAt        DateTime       @default(now())
+
+  @@unique([studentProfileId, weekNumber, year])
+  @@map("weekly_check_ins")
 }
 
 model AuditLog {

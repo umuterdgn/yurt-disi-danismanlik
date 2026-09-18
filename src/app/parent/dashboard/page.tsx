@@ -177,7 +177,7 @@ export default async function ParentDashboard() {
               </div>
               <div>
                 <p className="text-sm text-[#c89f65]/80 mb-1">Hedef Üniversite</p>
-                <p className="text-lg font-semibold">{student.targetUniversity || '-'}</p>
+                <p className="text-lg font-semibold">{student.targetUniversities?.join(', ') || '-'}</p>
                 <p className="text-sm text-[#c89f65]/80 mt-1">Danışman: {student.advisor?.user?.name || 'Atanmamış'}</p>
               </div>
             </div>

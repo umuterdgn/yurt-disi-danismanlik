@@ -72,7 +72,7 @@ export async function GET(
       id: student.id,
       name: student.user.name,
       grade: student.grade,
-      targetUniversity: student.targetUniversity,
+      targetUniversities: student.targetUniversities,
       currentScore: student.currentScore,
       targetScore: student.targetScore
     };

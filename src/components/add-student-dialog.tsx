@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { addStudent } from "@/actions/add-student";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -32,8 +33,10 @@ export function AddStudentDialog() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [universities, setUniversities] = useState<any[]>([]);
-  const [selectedUniversity, setSelectedUniversity] = useState("");
+  const [selectedUniversities, setSelectedUniversities] = useState<string[]>([]);
   const [targetScore, setTargetScore] = useState<number>(0);
+  const [grade, setGrade] = useState<string>("");
+  const [domain, setDomain] = useState<string>("");
   const router = useRouter();
 
   // Fetch universities when dialog opens
@@ -55,20 +58,30 @@ export function AddStudentDialog() {
     }
   }
 
-  // Handle university selection - auto-fill target score
-  function handleUniversityChange(universityId: string) {
-    setSelectedUniversity(universityId);
-    const university = universities.find(u => u.id === universityId);
-    if (university && university.baseScore) {
-      setTargetScore(university.baseScore);
-    } else {
-      setTargetScore(0);
-    }
+  // Handle university selection - multi-select with auto-fill target score
+  function handleUniversityToggle(universityName: string) {
+    setSelectedUniversities(prev => {
+      const newSelection = prev.includes(universityName)
+        ? prev.filter(u => u !== universityName)
+        : [...prev, universityName];
+      
+      // Auto-fill target score based on highest base score
+      const maxScore = universities
+        .filter(u => newSelection.includes(u.name))
+        .reduce((max, u) => Math.max(max, u.baseScore || 0), 0);
+      setTargetScore(maxScore);
+      
+      return newSelection;
+    });
   }
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError("");
+    
+    // Add selected universities and domain to form data
+    formData.append('targetUniversities', JSON.stringify(selectedUniversities));
+    formData.append('domain', domain);
     
     const result = await addStudent(formData);
     
@@ -144,31 +157,75 @@ export function AddStudentDialog() {
               <Label htmlFor="grade" className="md:text-right">
                 Sınıf
               </Label>
-              <Input
-                id="grade"
-                name="grade"
-                placeholder="Örn: 12"
-                className="col-span-1 md:col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-              <Label htmlFor="targetUniversity" className="md:text-right">
-                Hedef Üniversite
-              </Label>
-              <Select name="targetUniversity" onValueChange={handleUniversityChange}>
+              <Select name="grade" onValueChange={setGrade} required>
                 <SelectTrigger className="col-span-1 md:col-span-3">
-                  <SelectValue placeholder="Üniversite seçin" />
+                  <SelectValue placeholder="Sınıf seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  {universities.map((university) => (
-                    <SelectItem key={university.id} value={university.name}>
-                      {university.name} {university.baseScore && `(Taban: ${university.baseScore})`}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="9">9. Sınıf</SelectItem>
+                  <SelectItem value="10">10. Sınıf</SelectItem>
+                  <SelectItem value="11">11. Sınıf</SelectItem>
+                  <SelectItem value="12">12. Sınıf</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+              <Label htmlFor="domain" className="md:text-right">
+                YKS Alanı
+              </Label>
+              <Select name="domain" onValueChange={setDomain} required>
+                <SelectTrigger className="col-span-1 md:col-span-3">
+                  <SelectValue placeholder="Alan seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SAYISAL">Sayısal</SelectItem>
+                  <SelectItem value="SOZEL">Sözel</SelectItem>
+                  <SelectItem value="ESIT_AGIRLIK">Eşit Ağırlık</SelectItem>
+                  <SelectItem value="DIL">Dil</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Show University field only for 12th grade students */}
+            {grade === '12' && (
+              <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-4">
+                <Label htmlFor="targetUniversities" className="md:text-right pt-2">
+                  Hedef Üniversiteler
+                </Label>
+                <div className="col-span-1 md:col-span-3 space-y-2">
+                  <div className="max-h-40 overflow-y-auto border rounded p-2">
+                    {universities.length === 0 ? (
+                      <p className="text-sm text-gray-500">Üniversite yükleniyor...</p>
+                    ) : (
+                      universities.map((university) => (
+                        <div key={university.id} className="flex items-center space-x-2 py-1">
+                          <Checkbox
+                            id={`university-${university.id}`}
+                            checked={selectedUniversities.includes(university.name)}
+                            onCheckedChange={() => handleUniversityToggle(university.name)}
+                          />
+                          <Label
+                            htmlFor={`university-${university.id}`}
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {university.name}
+                            {university.baseScore && (
+                              <span className="text-xs text-gray-500 ml-2">
+                                (Taban: {university.baseScore})
+                              </span>
+                            )}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {selectedUniversities.length > 0 && (
+                    <p className="text-xs text-gray-600">
+                      Seçilen: {selectedUniversities.join(', ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="targetScore" className="md:text-right">
                 Hedef Puan (Otomatik)

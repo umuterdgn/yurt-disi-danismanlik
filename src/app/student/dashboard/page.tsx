@@ -25,6 +25,7 @@ import { ApplicationReadinessScore } from "@/components/application-readiness-sc
 import { DocumentChecklist } from "@/components/document-checklist";
 import { MyJourney } from "@/components/my-journey";
 import { WeeklyQuests } from "@/components/weekly-quests";
+import { WeeklyCheckInDialog } from "@/components/weekly-check-in-dialog";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -90,6 +91,10 @@ export default async function StudentDashboard() {
             visaProcesses: true
           },
           orderBy: { createdAt: 'desc' }
+        },
+        weeklyCheckIns: {
+          orderBy: { createdAt: 'desc' },
+          take: 4
         }
       }
     });
@@ -128,6 +133,13 @@ export default async function StudentDashboard() {
   const level = Math.floor((studentProfile.xp || 0) / 500) + 1;
   const xpInCurrentLevel = (studentProfile.xp || 0) % 500;
   const xpProgress = (xpInCurrentLevel / 500) * 100;
+
+  // Check if student has submitted weekly check-in for current week
+  const currentWeek = Math.ceil(new Date().getDate() / 7);
+  const currentYear = new Date().getFullYear();
+  const hasSubmittedThisWeek = studentProfile.weeklyCheckIns?.some(
+    checkIn => checkIn.weekNumber === currentWeek && checkIn.year === currentYear
+  ) || false;
 
   // Get leaderboard (top 5 students by XP)
   const leaderboard = await prisma.studentProfile.findMany({
@@ -232,10 +244,18 @@ export default async function StudentDashboard() {
           />
         </div>
 
+        {/* Weekly Check-in Dialog */}
+        <div className="mb-6">
+          <WeeklyCheckInDialog 
+            studentId={studentProfile.id}
+            hasSubmittedThisWeek={hasSubmittedThisWeek}
+          />
+        </div>
+
         {/* Dream Board */}
         <div className="mb-6">
           <DreamBoard 
-            targetUniversity={studentProfile.targetUniversity || undefined}
+            targetUniversity={studentProfile.targetUniversities?.[0] || undefined}
             targetCountry={studentProfile.applications?.[0]?.university?.name || undefined}
             targetProgram={studentProfile.applications?.[0]?.program || undefined}
           />
@@ -304,7 +324,7 @@ export default async function StudentDashboard() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-[#c89f65]/80 mb-1">Hedef Üniversite</p>
-                  <p className="text-lg font-semibold">{studentProfile.targetUniversity || '-'}</p>
+                  <p className="text-lg font-semibold">{studentProfile.targetUniversities?.join(', ') || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-[#c89f65]/80 mb-1">Mevcut Puan</p>

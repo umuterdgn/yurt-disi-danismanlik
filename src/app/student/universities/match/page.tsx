@@ -128,7 +128,7 @@ export default async function UniversityMatcherPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Hedef Üniversite:</span>
-                    <span className="text-sm font-medium">{studentProfile.targetUniversity || '-'}</span>
+                    <span className="text-sm font-medium">{studentProfile.targetUniversities?.[0] || '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Hedef Sınav:</span>

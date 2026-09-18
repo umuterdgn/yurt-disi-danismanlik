@@ -12,14 +12,25 @@ export async function addStudent(formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const grade = formData.get('grade') as string;
-    const targetUniversity = formData.get('targetUniversity') as string;
+    const domain = formData.get('domain') as string;
+    const targetUniversitiesJson = formData.get('targetUniversities') as string;
     const targetScore = formData.get('targetScore') as string;
     const studentSymbol = formData.get('studentSymbol') as string;
     const serviceType = formData.get('serviceType') as string || 'BOTH';
 
     // Validation
-    if (!name || !email || !password || !grade) {
+    if (!name || !email || !password || !grade || !domain) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' };
+    }
+
+    // Parse target universities array
+    let targetUniversities: string[] = [];
+    if (targetUniversitiesJson) {
+      try {
+        targetUniversities = JSON.parse(targetUniversitiesJson);
+      } catch (error) {
+        console.error('Error parsing target universities:', error);
+      }
     }
 
     // Get current advisor from session using Supabase Server Client with cookies
@@ -144,7 +155,8 @@ export async function addStudent(formData: FormData) {
           userId: newUser.id,
           advisorId: advisor.id,
           grade,
-          targetUniversity: targetUniversity || null,
+          domain: domain as any,
+          targetUniversities: targetUniversities,
           targetScore: targetScore ? parseFloat(targetScore) : 0,
           currentScore: 0,
           school: '',
@@ -170,7 +182,8 @@ export async function addStudent(formData: FormData) {
         name: newUser.name,
         email: newUser.email,
         grade: studentProfile.grade,
-        targetUniversity: studentProfile.targetUniversity
+        domain: studentProfile.domain,
+        targetUniversities: studentProfile.targetUniversities
       }
     };
 

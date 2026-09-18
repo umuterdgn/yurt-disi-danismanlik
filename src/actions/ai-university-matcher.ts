@@ -161,14 +161,14 @@ Her üniversite için:
       messages: [
         {
           role: 'system',
-          content: 'Sen uzman bir yurt dışı eğitim danışmanısın. Gerçek üniversite verileri ve kabul şartları hakkında bilgi sahibisin. Türkçe yanıt ver ve JSON formatında çıktı üret. You MUST return the output strictly in JSON format. OUTPUT MUST BE STRICTLY A VALID JSON OBJECT. DO NOT ADD ANY MARKDOWN OR TEXT OUTSIDE THE JSON.'
+          content: 'You are a helpful assistant that outputs strictly in JSON format. Sen uzman bir yurt dışı eğitim danışmanısın. Gerçek üniversite verileri ve kabul şartları hakkında bilgi sahibisin. Türkçe yanıt ver ve JSON formatında çıktı üret. OUTPUT MUST BE STRICTLY A VALID JSON OBJECT. DO NOT ADD ANY MARKDOWN OR TEXT OUTSIDE THE JSON.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama3-70b-8192',
       temperature: 0.7,
       max_tokens: 2048,
       response_format: { type: "json_object" }
@@ -179,7 +179,9 @@ Her üniversite için:
       throw new Error('No response from AI');
     }
 
-    const aiData = JSON.parse(aiResponse);
+    // Clean markdown blocks from response before parsing
+    const cleanJson = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+    const aiData = JSON.parse(cleanJson);
 
     if (!aiData.universities || !Array.isArray(aiData.universities)) {
       throw new Error('Invalid AI response format');

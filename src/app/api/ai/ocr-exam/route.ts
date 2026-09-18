@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant that extracts exam scores from images. You MUST return the output strictly in JSON format.'
+            content: 'You are a helpful assistant that outputs strictly in JSON format. You are an AI assistant that extracts exam scores from images. You MUST return the output strictly in JSON format.'
           },
           {
             role: 'user',

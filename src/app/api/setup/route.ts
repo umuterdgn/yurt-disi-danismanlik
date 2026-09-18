@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         userId: student.id,
         grade: '11',
         school: 'İstanbul Lisesi',
-        targetUniversity: 'Boğaziçi Üniversitesi',
+        targetUniversities: ['Boğaziçi Üniversitesi'],
         targetScore: 450,
         currentScore: 380,
         advisorId: advisorProfile.id,

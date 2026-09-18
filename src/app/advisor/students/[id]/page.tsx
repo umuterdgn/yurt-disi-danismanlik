@@ -24,6 +24,7 @@ import { getTimeAnalysis, getEfficiencyAnalysis, getStudySessionLogs } from "@/a
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { UniversityMatcherForm } from "@/components/university-matcher-form";
 import { AITaskSuggestions } from "@/components/ai-task-suggestions";
+import { SubjectMasteryPanel } from "@/components/subject-mastery-panel";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -224,7 +225,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             ← Ana Panele Dön
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">{student.user.name}</h1>
-          <p className="text-gray-600 mt-2">{student.school} - {student.grade}. Sınıf</p>
+          <p className="text-gray-600 mt-2">{student.school} - {student.grade}. Sınıf {student.domain && `(${student.domain})`}</p>
         </div>
 
         {/* Hero Section - Health Score & AI Copilot */}
@@ -296,6 +297,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               </TabsTrigger>
             )}
             {student.serviceType !== 'STUDY_ABROAD' && (
+              <TabsTrigger value="mastery" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Konu Hakimiyeti
+              </TabsTrigger>
+            )}
+            {student.serviceType !== 'STUDY_ABROAD' && (
               <TabsTrigger value="study-efficiency" className="flex items-center gap-2">
                 <Activity className="w-4 h-4" />
                 Çalışma & Efor
@@ -329,13 +336,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                         <p><span className="text-gray-600">Ad Soyad:</span> {student.user.name}</p>
                         <p><span className="text-gray-600">E-posta:</span> {student.user.email}</p>
                         <p><span className="text-gray-600">Sınıf:</span> {student.grade}</p>
+                        <p><span className="text-gray-600">YKS Alanı:</span> {student.domain || '-'}</p>
                         <p><span className="text-gray-600">Okul:</span> {student.school || '-'}</p>
                       </div>
                     </div>
                     <div>
                       <h3 className="font-semibold mb-3">Hedefler</h3>
                       <div className="space-y-2">
-                        <p><span className="text-gray-600">Hedef Üniversite:</span> {student.targetUniversity || '-'}</p>
+                        <p><span className="text-gray-600">Hedef Üniversiteler:</span> {student.targetUniversities && student.targetUniversities.length > 0 ? student.targetUniversities.join(', ') : '-'}</p>
                         <p><span className="text-gray-600">Hedef Puan:</span> {student.targetScore || '-'}</p>
                         <p><span className="text-gray-600">Mevcut Puan:</span> {student.currentScore || '-'}</p>
                         <p><span className="text-gray-600">Hedef Sınav:</span> {student.targetExam || '-'}</p>
@@ -682,6 +690,15 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Subject Mastery Tab */}
+          <TabsContent value="mastery">
+            <SubjectMasteryPanel
+              subjectResults={student.exams.flatMap((exam: any) => exam.subjectResults || [])}
+              dailyTasks={student.dailyTasks}
+              subjectAnalysis={student.subjectAnalysis}
+            />
           </TabsContent>
 
           {/* Study Efficiency & Effort Tab */}

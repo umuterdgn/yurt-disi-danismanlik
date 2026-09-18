@@ -111,8 +111,8 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 <p className="font-medium">{student.school || 'Belirtilmemiş'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Hedef Üniversite</p>
-                <p className="font-medium">{student.targetUniversity || 'Belirtilmemiş'}</p>
+                <p className="text-sm text-gray-500">Hedef Üniversiteler</p>
+                <p className="font-medium">{student.targetUniversities && student.targetUniversities.length > 0 ? student.targetUniversities.join(', ') : 'Belirtilmemiş'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Hizmet Türü</p>

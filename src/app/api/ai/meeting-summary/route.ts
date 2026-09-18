@@ -66,14 +66,14 @@ ${notes}
       messages: [
         {
           role: "system",
-          content: "Sen bir eğitim danışmanlık asistanısın. Görüşme notlarını analiz edip özet, kararlar ve aksiyonlar çıkarırsın. You MUST return the output strictly in JSON format."
+          content: "You are a helpful assistant that outputs strictly in JSON format. Sen bir eğitim danışmanlık asistanısın. Görüşme notlarını analiz edip özet, kararlar ve aksiyonlar çıkarırsın. You MUST return the output strictly in JSON format."
         },
         {
           role: "user",
           content: prompt
         }
       ],
-      model: "llama-3.1-70b-versatile",
+      model: "llama3-70b-8192",
       temperature: 0.5,
       max_tokens: 1000,
       response_format: { type: "json_object" }
@@ -84,7 +84,9 @@ ${notes}
       throw new Error('No response from AI');
     }
 
-    const aiAnalysis = JSON.parse(aiResponse);
+    // Clean markdown blocks from response before parsing
+    const cleanJson = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+    const aiAnalysis = JSON.parse(cleanJson);
 
     // Update meeting note with AI analysis
     await prisma.meetingNote.update({

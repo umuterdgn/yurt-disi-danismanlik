@@ -49,7 +49,8 @@ export async function POST(
         userId: user.id,
         advisorId: lead.assignedAdvisorId,
         grade: '12', // Default grade
-        targetUniversity: lead.service === 'STUDY_ABROAD' ? 'Yurt Dışı Üniversite' : 'Türk Üniversitesi',
+        domain: 'ESIT_AGIRLIK', // Default domain
+        targetUniversities: lead.service === 'STUDY_ABROAD' ? ['Yurt Dışı Üniversite'] : ['Türk Üniversitesi'],
         targetScore: 0,
         currentScore: 0,
         healthScore: 100,

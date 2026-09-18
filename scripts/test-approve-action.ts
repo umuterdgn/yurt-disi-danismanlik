@@ -18,7 +18,8 @@ async function testApproveAction() {
       data: {
         userId: testUser.id,
         grade: '11',
-        targetUniversity: 'Test University',
+        domain: 'SAYISAL',
+        targetUniversities: ['Test University'],
         targetScore: 400.0
       }
     });

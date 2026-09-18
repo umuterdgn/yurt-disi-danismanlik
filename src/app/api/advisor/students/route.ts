@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
           id: student.id,
           name: student.user.name,
           grade: student.grade,
-          targetUniversity: student.targetUniversity,
+          targetUniversities: student.targetUniversities,
           currentScore: student.currentScore,
           targetScore: student.targetScore,
           lastMeetingDate: lastMeeting?.meetingDate

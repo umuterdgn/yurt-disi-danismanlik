@@ -99,7 +99,8 @@ async function createTestUser(email: string, password: string, name: string, rol
           userId: user.id,
           grade: '11',
           school: 'Test Lisesi',
-          targetUniversity: 'Test Üniversitesi',
+          domain: 'SAYISAL',
+          targetUniversities: ['Test Üniversitesi'],
           targetScore: 450,
           currentScore: 380,
         }

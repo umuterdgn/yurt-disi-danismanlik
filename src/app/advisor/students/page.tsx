@@ -94,8 +94,9 @@ export default async function AdvisorStudentsPage() {
                 <TableHead>Ad Soyad</TableHead>
                 <TableHead>E-posta</TableHead>
                 <TableHead>Sınıf</TableHead>
+                <TableHead>Alan</TableHead>
                 <TableHead>Okul</TableHead>
-                <TableHead>Hedef Üniversite</TableHead>
+                <TableHead>Hedef Üniversiteler</TableHead>
                 <TableHead>Mevcut Puan</TableHead>
                 <TableHead>Hedef Puan</TableHead>
                 <TableHead>Danışman</TableHead>
@@ -105,7 +106,7 @@ export default async function AdvisorStudentsPage() {
             <TableBody>
               {students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <p className="text-lg font-medium">Henüz size atanmış bir öğrenci bulunmamaktadır.</p>
                       <p className="text-sm">Öğrenci eklemek için "Öğrenci Ekle" butonunu kullanabilirsiniz.</p>
@@ -118,8 +119,18 @@ export default async function AdvisorStudentsPage() {
                     <TableCell className="font-medium">{student.user.name}</TableCell>
                     <TableCell>{student.user.email}</TableCell>
                     <TableCell>{student.grade}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {student.domain || '-'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{student.school}</TableCell>
-                    <TableCell>{student.targetUniversity}</TableCell>
+                    <TableCell>
+                      {student.targetUniversities && student.targetUniversities.length > 0
+                        ? student.targetUniversities.slice(0, 2).join(', ') +
+                          (student.targetUniversities.length > 2 ? ` (+${student.targetUniversities.length - 2})` : '')
+                        : '-'}
+                    </TableCell>
                     <TableCell>{student.currentScore}</TableCell>
                     <TableCell>{student.targetScore}</TableCell>
                     <TableCell>

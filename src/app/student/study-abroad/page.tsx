@@ -135,7 +135,7 @@ export default async function StudentStudyAbroadPage() {
               </div>
               <div>
                 <p className="text-sm text-blue-100 mb-1">Hedef Üniversite</p>
-                <p className="text-xl font-semibold">{recentApplication?.university?.name || studentProfile.targetUniversity || '-'}</p>
+                <p className="text-xl font-semibold">{recentApplication?.university?.name || studentProfile.targetUniversities?.[0] || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-blue-100 mb-1">Program</p>

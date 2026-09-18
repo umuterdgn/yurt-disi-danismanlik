@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       name: dbUser.name,
       email: dbUser.email,
       grade: dbUser.studentProfile.grade,
-      targetUniversity: dbUser.studentProfile.targetUniversity,
+      targetUniversities: dbUser.studentProfile.targetUniversities,
       targetScore: dbUser.studentProfile.targetScore,
       currentScore: dbUser.studentProfile.currentScore
     };
