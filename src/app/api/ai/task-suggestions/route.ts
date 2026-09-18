@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { YKS_CURRICULUM } from '@/constants/curriculum';
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,6 +130,9 @@ function buildGapFocusedPrompt(student: any, currentScore: number, targetScore: 
 
 Öğrenci Performans Analizi:
 ${subjectAnalysis}
+
+RESMİ YKS MÜFREDAT (Ders ve Konu Listeleri):
+${Object.entries(YKS_CURRICULUM).map(([subject, topics]) => `${subject}: ${topics.slice(0, 5).join(', ')}...`).join('\n')}
 
 MÜFREDAT AI KURALLARI:
 - Eğer bir konuda başarı %50'nin altındaysa ona soru çözümü DEĞİL, 'Konu Tekrarı' (REVIEW) görevi öner.

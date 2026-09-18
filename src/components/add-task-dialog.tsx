@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { addTask } from "@/actions/add-task";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { SUBJECTS, getTopicsForSubject } from "@/constants/curriculum";
 
 interface AddTaskDialogProps {
   students: { id: string; name: string }[];
@@ -21,6 +22,7 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -38,6 +40,8 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
       setLoading(false);
     }
   }
+
+  const topics = selectedSubject ? getTopicsForSubject(selectedSubject) : [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -89,24 +93,39 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
               <Label htmlFor="subject" className="md:text-right">
                 Ders
               </Label>
-              <Input
-                id="subject"
-                name="subject"
-                placeholder="Örn: Matematik"
-                className="col-span-1 md:col-span-3"
-                required
-              />
+              <Select 
+                name="subject" 
+                required 
+                onValueChange={(value) => setSelectedSubject(value)}
+              >
+                <SelectTrigger className="col-span-1 md:col-span-3">
+                  <SelectValue placeholder="Ders seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUBJECTS.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="topic" className="md:text-right">
                 İlgili Konu
               </Label>
-              <Input
-                id="topic"
-                name="topic"
-                placeholder="Örn: Türev, İntegral"
-                className="col-span-1 md:col-span-3"
-              />
+              <Select name="topic" required disabled={!selectedSubject}>
+                <SelectTrigger className="col-span-1 md:col-span-3">
+                  <SelectValue placeholder={selectedSubject ? "Konu seçin" : "Önce ders seçin"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {topics.map((topic) => (
+                    <SelectItem key={topic} value={topic}>
+                      {topic}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="taskType" className="md:text-right">
