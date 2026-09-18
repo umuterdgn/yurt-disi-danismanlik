@@ -31,27 +31,104 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
   const [science, setScience] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
   const [social, setSocial] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+
+  // Reset form when modal closes
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Reset all form states
+      setTurkish({ correct: 0, wrong: 0, empty: 0 });
+      setMath({ correct: 0, wrong: 0, empty: 0 });
+      setScience({ correct: 0, wrong: 0, empty: 0 });
+      setSocial({ correct: 0, wrong: 0, empty: 0 });
+      setImageFiles([]);
+      setError("");
+    }
+    setOpen(newOpen);
+  };
+
+  // Client-side image compression to prevent 413 errors
+  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+      
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+        
+        // Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to compressed base64
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Canvas to blob failed'));
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(blob);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      
+      img.onerror = error => reject(error);
+    });
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    setImageFile(file);
+    setImageFiles(files);
     setOcrLoading(true);
 
     try {
-      // Convert image to base64
-      const base64 = await fileToBase64(file);
+      // Compress all images to prevent 413 errors
+      const compressedImages = await Promise.all(
+        files.map(file => compressImage(file, 800, 0.7))
+      );
 
       // Send to Groq Vision API
       const response = await fetch('/api/ai/ocr-exam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 })
+        body: JSON.stringify({ images: compressedImages })
       });
 
-      if (!response.ok) throw new Error('OCR processing failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'OCR processing failed');
+      }
 
       const data = await response.json();
 
@@ -61,23 +138,15 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
         if (data.scores.math) setMath(data.scores.math);
         if (data.scores.science) setScience(data.scores.science);
         if (data.scores.social) setSocial(data.scores.social);
-        toast.success('Görsel başarıyla işlendi!');
+        toast.success(`${files.length} görsel başarıyla işlendi!`);
       }
     } catch (error) {
       console.error('OCR Error:', error);
-      toast.error('Görsel işlenirken hata oluştu');
+      const errorMessage = error instanceof Error ? error.message : 'Görsel işlenirken hata oluştu';
+      toast.error(errorMessage);
     } finally {
       setOcrLoading(false);
     }
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
   };
 
   const handleSubjectChange = (subject: string, field: keyof SubjectScores, value: string) => {
@@ -136,6 +205,7 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
       setMath({ correct: 0, wrong: 0, empty: 0 });
       setScience({ correct: 0, wrong: 0, empty: 0 });
       setSocial({ correct: 0, wrong: 0, empty: 0 });
+      setImageFiles([]);
       window.location.reload();
     } else {
       toast.error(result.error || "Bir hata oluştu");
@@ -196,7 +266,7 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-purple-600 hover:bg-purple-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -217,6 +287,7 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
             <input
               type="file"
               accept="image/*"
+              multiple
               onChange={handleImageUpload}
               disabled={ocrLoading}
               className="hidden"
@@ -230,11 +301,11 @@ export function AddExamDialog({ students }: AddExamDialogProps) {
               className="w-full border-dashed"
             >
               <Camera className="w-4 h-4 mr-2" />
-              {ocrLoading ? 'İşleniyor...' : '📷 Fotoğraftan Oku / Yükle'}
+              {ocrLoading ? 'İşleniyor...' : '📷 Fotoğraflardan Oku / Yükle (Çoklu Seçim)'}
             </Button>
-            {imageFile && (
+            {imageFiles.length > 0 && (
               <p className="text-xs text-gray-500 mt-2 text-center">
-                Seçilen: {imageFile.name}
+                Seçilen: {imageFiles.length} fotoğraf (otomatik sıkıştırılacak)
               </p>
             )}
           </div>
