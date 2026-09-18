@@ -14,32 +14,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Görsel bulunamadı." }, { status: 400 });
     }
 
+    // 1. ADIM: DİNAMİK MODEL SORGULAMA (AUTO-DISCOVERY)
+    const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    const modelsData = await modelsRes.json();
+    
+    // 'gemini' içeren ve 'generateContent' destekleyen modelleri filtrele
+    const availableModels = modelsData.models?.filter((m: any) => 
+        m.name.includes("gemini") && 
+        m.supportedGenerationMethods?.includes("generateContent")
+    ) || [];
+
+    if (availableModels.length === 0) {
+        return NextResponse.json({ error: "Bu API anahtarına tanımlı geçerli bir Gemini modeli bulunamadı." }, { status: 404 });
+    }
+
+    // Öncelik Sırası: 1.5-flash -> 1.5-pro -> listedeki ilk model
+    const targetModelName = 
+        availableModels.find((m: any) => m.name.includes("gemini-1.5-flash"))?.name || 
+        availableModels.find((m: any) => m.name.includes("gemini-1.5-pro"))?.name || 
+        availableModels[0].name; // targetModelName zaten "models/gemini-..." formatında gelir.
+
+    console.log("SEÇİLEN DİNAMİK MODEL:", targetModelName);
+
     const prompt = "You are an expert exam OCR system. Analyze the provided exam images and extract the correct, incorrect, and blank scores for each subject (Turkish, Math, Science, Social). You MUST return ONLY a valid JSON object in this exact format: {\"scores\": {\"turkish\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"math\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"science\": {\"correct\": number, \"wrong\": number, \"empty\": number}, \"social\": {\"correct\": number, \"wrong\": number, \"empty\": number}}}. Do not include markdown formatting. If a subject has no data, set all values to 0.";
 
     const parts: any[] = [{ text: prompt }];
 
-    // Görselleri doğrudan REST API'nin beklediği snake_case formata çevir
+    // 2. ADIM: GÖRSELLERİ HAZIRLA
     images.slice(0, 5).forEach((imgData: string) => {
       const matches = imgData.match(/^data:(.+);base64,(.+)$/);
       if (matches && matches.length === 3) {
-        parts.push({
-          inline_data: {
-            mime_type: matches[1],
-            data: matches[2]
-          }
-        });
+        parts.push({ inline_data: { mime_type: matches[1], data: matches[2] } });
       } else {
-        parts.push({
-          inline_data: {
-            mime_type: "image/jpeg",
-            data: imgData
-          }
-        });
+        parts.push({ inline_data: { mime_type: "image/jpeg", data: imgData } });
       }
     });
 
-    // SDK kullanmadan doğrudan Google REST API'ye istek at
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 3. ADIM: DOĞRUDAN AKTİF MODELE İSTEK AT
+    const url = `https://generativelanguage.googleapis.com/v1beta/${targetModelName}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -53,12 +65,11 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("GEMINI_REST_ERROR:", errorText);
-      return NextResponse.json({ error: `Google API Hatası: ${response.status} - ${errorText}` }, { status: response.status });
+      return NextResponse.json({ error: `API Hatası: ${response.status} - ${errorText}` }, { status: response.status });
     }
 
     const result = await response.json();
     
-    // Saf JSON çıktısını parse et
     let responseText = result.candidates[0].content.parts[0].text;
     responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsedData = JSON.parse(responseText);
