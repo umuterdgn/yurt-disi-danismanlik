@@ -49,7 +49,12 @@ export async function analyzeExamTopics(examId: string) {
 
     for (const subjectResult of exam.subjectResults) {
       for (const questionResult of subjectResult.questionResults) {
-        const topicKey = `${subjectResult.subjectName}-${questionResult.topic || 'unknown'}`;
+        // Skip questions without a valid topic - don't create 'Genel' or 'unknown' entries
+        if (!questionResult.topic || questionResult.topic === 'unknown' || questionResult.topic === 'Genel') {
+          continue;
+        }
+        
+        const topicKey = `${subjectResult.subjectName}-${questionResult.topic}`;
         
         if (!topicMap.has(topicKey)) {
           topicMap.set(topicKey, {
@@ -82,8 +87,13 @@ export async function analyzeExamTopics(examId: string) {
     // Calculate metrics and status for each topic
     const topicResults: TopicResult[] = [];
     for (const topic of topicMap.values()) {
+      // Skip topics with no questions (division by zero protection)
+      if (topic.totalQuestions === 0) {
+        continue;
+      }
+      
       topic.net = topic.correct - (topic.wrong / 4);
-      topic.successRate = topic.totalQuestions > 0 ? (topic.correct / topic.totalQuestions) * 100 : 0;
+      topic.successRate = (topic.correct / topic.totalQuestions) * 100;
       
       // Determine status based on success rate
       if (topic.successRate >= 71) {

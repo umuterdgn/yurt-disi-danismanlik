@@ -69,32 +69,43 @@ export async function createAdvancedExam(formData: FormData) {
     }
 
     // Subject scores (manual entry or OCR summary)
-    const turkishCorrect = parseInt(formData.get('turkish_correct') as string) || 0;
-    const turkishWrong = parseInt(formData.get('turkish_wrong') as string) || 0;
-    const turkishEmpty = parseInt(formData.get('turkish_empty') as string) || 0;
+    let turkishCorrect = parseInt(formData.get('turkish_correct') as string) || 0;
+    let turkishWrong = parseInt(formData.get('turkish_wrong') as string) || 0;
+    let turkishEmpty = parseInt(formData.get('turkish_empty') as string) || 0;
 
-    const mathCorrect = parseInt(formData.get('math_correct') as string) || 0;
-    const mathWrong = parseInt(formData.get('math_wrong') as string) || 0;
-    const mathEmpty = parseInt(formData.get('math_empty') as string) || 0;
+    let mathCorrect = parseInt(formData.get('math_correct') as string) || 0;
+    let mathWrong = parseInt(formData.get('math_wrong') as string) || 0;
+    let mathEmpty = parseInt(formData.get('math_empty') as string) || 0;
 
-    const scienceCorrect = parseInt(formData.get('science_correct') as string) || 0;
-    const scienceWrong = parseInt(formData.get('science_wrong') as string) || 0;
-    const scienceEmpty = parseInt(formData.get('science_empty') as string) || 0;
+    let scienceCorrect = parseInt(formData.get('science_correct') as string) || 0;
+    let scienceWrong = parseInt(formData.get('science_wrong') as string) || 0;
+    let scienceEmpty = parseInt(formData.get('science_empty') as string) || 0;
 
-    const socialCorrect = parseInt(formData.get('social_correct') as string) || 0;
-    const socialWrong = parseInt(formData.get('social_wrong') as string) || 0;
-    const socialEmpty = parseInt(formData.get('social_empty') as string) || 0;
+    let socialCorrect = parseInt(formData.get('social_correct') as string) || 0;
+    let socialWrong = parseInt(formData.get('social_wrong') as string) || 0;
+    let socialEmpty = parseInt(formData.get('social_empty') as string) || 0;
 
     // Validation
     if (!studentProfileId || !examName || !examDate || !examType) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' };
     }
 
-    // Calculate individual nets
+    // Calculate individual nets (backend recalculation)
     const turkishNet = turkishCorrect - (turkishWrong / 4);
     const mathNet = mathCorrect - (mathWrong / 4);
     const scienceNet = scienceCorrect - (scienceWrong / 4);
     const socialNet = socialCorrect - (socialWrong / 4);
+
+    // Recalculate total net from verified counts
+    const verifiedTotalNet = turkishNet + mathNet + scienceNet + socialNet;
+
+    console.log('Final verified totals:', {
+      turkishNet,
+      mathNet,
+      scienceNet,
+      socialNet,
+      totalNet: verifiedTotalNet
+    });
 
     // Parse answer key if provided
     let answerKey: Record<string, string> | null = null;
@@ -118,14 +129,53 @@ export async function createAdvancedExam(formData: FormData) {
 
     const hasOCRData = ocrProcessed && parsedQuestionResults.length > 0;
 
+    // If OCR data is available, recalculate scores from question results (backend verification)
+    if (hasOCRData) {
+      // Reset counts
+      turkishCorrect = 0; turkishWrong = 0; turkishEmpty = 0;
+      mathCorrect = 0; mathWrong = 0; mathEmpty = 0;
+      scienceCorrect = 0; scienceWrong = 0; scienceEmpty = 0;
+      socialCorrect = 0; socialWrong = 0; socialEmpty = 0;
+
+      // Calculate real scores from question results
+      for (const qr of parsedQuestionResults) {
+        const subject = qr.subject || 'unknown';
+        
+        // Count based on result field (already compared with answer key in OCR route)
+        if (qr.result === 'CORRECT') {
+          if (subject === 'turkish') turkishCorrect++;
+          else if (subject === 'math') mathCorrect++;
+          else if (subject === 'science') scienceCorrect++;
+          else if (subject === 'social') socialCorrect++;
+        } else if (qr.result === 'WRONG') {
+          if (subject === 'turkish') turkishWrong++;
+          else if (subject === 'math') mathWrong++;
+          else if (subject === 'science') scienceWrong++;
+          else if (subject === 'social') socialWrong++;
+        } else if (qr.result === 'EMPTY') {
+          if (subject === 'turkish') turkishEmpty++;
+          else if (subject === 'math') mathEmpty++;
+          else if (subject === 'science') scienceEmpty++;
+          else if (subject === 'social') socialEmpty++;
+        }
+      }
+
+      console.log('Backend recalculation from OCR:', {
+        turkish: { correct: turkishCorrect, wrong: turkishWrong, empty: turkishEmpty },
+        math: { correct: mathCorrect, wrong: mathWrong, empty: mathEmpty },
+        science: { correct: scienceCorrect, wrong: scienceWrong, empty: scienceEmpty },
+        social: { correct: socialCorrect, wrong: socialWrong, empty: socialEmpty }
+      });
+    }
+
     // Create exam with subject results and advisor comments
     const exam = await prisma.exam.create({
       data: {
         studentProfileId,
         title: examName,
         date: new Date(examDate),
-        totalNet,
-        totalScore: totalNet * 10, // Approximate score calculation
+        totalNet: verifiedTotalNet, // Use backend-calculated net
+        totalScore: verifiedTotalNet * 10, // Approximate score calculation
         examType,
         advisorComments: advisorComments || null,
         answerKey: answerKey ? answerKey as any : null,
