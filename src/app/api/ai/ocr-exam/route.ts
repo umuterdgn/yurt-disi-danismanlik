@@ -41,12 +41,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Görsel bulunamadı." }, { status: 400 });
     }
 
-    console.log("GEMINI_API_VERSION: generateContent API");
-    console.log("GEMINI_MODEL: gemini-3.8-flash");
+    console.log("GEMINI_API_VERSION: generateContent API with Fallback");
     console.log("GEMINI_REQUEST_IMAGES:", images.length);
 
-    // SABİT MODEL: gemini-3.8-flash
-    const modelName = "gemini-3.8-flash";
+    // FALLBACK MODEL DİZİSİ
+    const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
 
     const prompt = `You are an expert Turkish exam answer-sheet and exam-question OCR system.
 
@@ -102,64 +101,99 @@ Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
       }
     });
 
-    // GENERATECONTENT API İLE İSTEK AT
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    // FALLBACK MECANİZMASI İLE MODEL DENEYİŞİ
+    let parsedData: any = null;
+    let successfulModel: string | null = null;
+    let lastError: any = null;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { 
-          responseMimeType: "application/json"
+    for (const modelName of models) {
+      console.log(`GEMINI_MODEL: Trying ${modelName}...`);
+      
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: { 
+            responseMimeType: "application/json"
+          }
+        })
+      });
+
+      console.log(`GEMINI_RESPONSE_STATUS: ${modelName} - ${response.status}`);
+
+      // 503 High Demand - bir sonraki modele geç
+      if (response.status === 503) {
+        console.warn(`${modelName} 503 High Demand, bir sonraki modele geçiliyor...`);
+        lastError = { status: 503, model: modelName };
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`GEMINI_API_ERROR: ${modelName} - ${errorText}`);
+        
+        // 404 model bulunamadı - bir sonraki modele geç
+        if (response.status === 404) {
+          console.warn(`${modelName} 404 not found, bir sonraki modele geçiliyor...`);
+          lastError = { status: 404, model: modelName };
+          continue;
         }
-      })
-    });
-
-    console.log("GEMINI_RESPONSE_STATUS:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("GEMINI_REQUEST_ERROR:", errorText);
-      
-      // Error type detection
-      if (response.status === 404) {
-        console.error("GEMINI_MODEL_ERROR: Model not found -", modelName);
-        return NextResponse.json({ error: `Model bulunamadı: ${modelName}. API anahtarınızın bu modeli desteklediğinden emin olun.` }, { status: 404 });
-      } else if (response.status === 401 || response.status === 403) {
-        console.error("GEMINI_AUTH_ERROR: Authentication failed");
-        return NextResponse.json({ error: "API anahtar geçersiz veya yetkisiz." }, { status: response.status });
-      } else if (response.status === 429) {
-        console.error("GEMINI_RATE_LIMIT_ERROR: Rate limit exceeded");
-        return NextResponse.json({ error: "API rate limit aşıldı. Lütfen biraz bekleyip tekrar deneyin." }, { status: 429 });
-      } else if (response.status === 500) {
-        console.error("GEMINI_REQUEST_ERROR: Server error");
-        return NextResponse.json({ error: "Gemini sunucu hatası. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
+        
+        // Diğer hatalar - hemen dön
+        if (response.status === 401 || response.status === 403) {
+          console.error("GEMINI_AUTH_ERROR: Authentication failed");
+          return NextResponse.json({ error: "API anahtar geçersiz veya yetkisiz." }, { status: response.status });
+        } else if (response.status === 429) {
+          console.error("GEMINI_RATE_LIMIT_ERROR: Rate limit exceeded");
+          return NextResponse.json({ error: "API rate limit aşıldı. Lütfen biraz bekleyip tekrar deneyin." }, { status: 429 });
+        } else if (response.status === 500) {
+          console.error("GEMINI_REQUEST_ERROR: Server error");
+          return NextResponse.json({ error: "Gemini sunucu hatası. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
+        }
+        
+        return NextResponse.json({ error: `API Hatası: ${response.status} - ${errorText}` }, { status: response.status });
       }
-      
-      return NextResponse.json({ error: `API Hatası: ${response.status} - ${errorText}` }, { status: response.status });
+
+      // Başarılı - yanıtı parse et
+      try {
+        const result = await response.json();
+        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) {
+          console.error(`GEMINI_PARSE_ERROR: ${modelName} - Empty response`);
+          lastError = { status: "empty", model: modelName };
+          continue;
+        }
+        
+        // Clean markdown if present
+        const cleanText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        parsedData = JSON.parse(cleanText);
+        successfulModel = modelName;
+        console.log(`GEMINI_SUCCESS: ${modelName} worked!`);
+        break; // Başarılı, döngüden çık
+      } catch (parseError) {
+        console.error(`GEMINI_PARSE_ERROR: ${modelName} -`, parseError);
+        lastError = { status: "parse", model: modelName, error: parseError };
+        continue; // Parse hatası - bir sonraki modele geç
+      }
     }
 
-    const result = await response.json();
-    
-    console.log("GEMINI_RESPONSE_PARSE: Attempting to parse response");
-    
-    // Safe JSON parsing with validation
-    let parsedData: any;
-    try {
-      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!responseText) {
-        console.error("GEMINI_PARSE_ERROR: Empty response received");
-        throw new Error("Gemini API'den boş yanıt alındı");
+    // Tüm modeller başarısız oldu
+    if (!parsedData) {
+      console.error("GEMINI_FATAL_ERROR: All models failed");
+      if (lastError?.status === 503) {
+        return NextResponse.json({ error: "Tüm modeller şu anda meşgul (503 High Demand). Lütfen birazdan tekrar deneyin." }, { status: 503 });
+      } else if (lastError?.status === 404) {
+        return NextResponse.json({ error: "Tüm modeller bulunamadı (404). API anahtarınızın Gemini modellerini desteklediğinden emin olun." }, { status: 404 });
+      } else {
+        return NextResponse.json({ error: "Tüm modeller başarısız oldu. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
       }
-      
-      // Clean markdown if present
-      const cleanText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-      parsedData = JSON.parse(cleanText);
-    } catch (parseError) {
-      console.error("GEMINI_PARSE_ERROR:", parseError);
-      return NextResponse.json({ error: "Gemini yanıtı JSON formatında değil veya bozuk." }, { status: 500 });
     }
+
+    console.log(`GEMINI_SUCCESS: Used model ${successfulModel}`);
+    console.log("GEMINI_RESPONSE_PARSE: Parsing successful");
 
     // Validate response structure
     if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
