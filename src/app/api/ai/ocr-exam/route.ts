@@ -28,10 +28,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Bu API anahtarına tanımlı geçerli bir Gemini modeli bulunamadı." }, { status: 404 });
     }
 
-    // Öncelik Sırası: 1.5-flash -> 1.5-pro -> listedeki ilk model
+    // Öncelik Sırası: 2.5-flash -> 2.5-flash-lite -> başka flash -> pro
     const targetModelName = 
-        availableModels.find((m: any) => m.name.includes("gemini-1.5-flash"))?.name || 
-        availableModels.find((m: any) => m.name.includes("gemini-1.5-pro"))?.name || 
+        availableModels.find((m: any) => m.name.includes("gemini-2.5-flash") && !m.name.includes("lite"))?.name || 
+        availableModels.find((m: any) => m.name.includes("gemini-2.5-flash-lite"))?.name ||
+        availableModels.find((m: any) => m.name.includes("gemini") && m.name.includes("flash"))?.name ||
+        availableModels.find((m: any) => m.name.includes("gemini") && m.name.includes("pro"))?.name ||
         availableModels[0].name; // targetModelName zaten "models/gemini-..." formatında gelir.
 
     console.log("SEÇİLEN DİNAMİK MODEL:", targetModelName);
@@ -40,8 +42,8 @@ export async function POST(req: Request) {
 
     const parts: any[] = [{ text: prompt }];
 
-    // 2. ADIM: GÖRSELLERİ HAZIRLA
-    images.slice(0, 5).forEach((imgData: string) => {
+    // 2. ADIM: GÖRSELLERİ HAZIRLA (limit 10 sayfa için güvenli)
+    images.slice(0, 10).forEach((imgData: string) => {
       const matches = imgData.match(/^data:(.+);base64,(.+)$/);
       if (matches && matches.length === 3) {
         parts.push({ inline_data: { mime_type: matches[1], data: matches[2] } });
