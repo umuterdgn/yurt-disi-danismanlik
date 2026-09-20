@@ -106,6 +106,18 @@ export async function createAdvancedExam(formData: FormData) {
       }
     }
 
+    // Parse question results if provided
+    let parsedQuestionResults: any[] = [];
+    if (questionResultsJson) {
+      try {
+        parsedQuestionResults = JSON.parse(questionResultsJson);
+      } catch (e) {
+        console.error('Failed to parse question results:', e);
+      }
+    }
+
+    const hasOCRData = ocrProcessed && parsedQuestionResults.length > 0;
+
     // Create exam with subject results and advisor comments
     const exam = await prisma.exam.create({
       data: {
@@ -160,10 +172,8 @@ export async function createAdvancedExam(formData: FormData) {
     });
 
     // Create question results if OCR was used
-    if (ocrProcessed && questionResultsJson) {
+    if (hasOCRData) {
       try {
-        const questionResults = JSON.parse(questionResultsJson);
-        
         // Map subject names to match database
         const subjectNameMap: Record<string, string> = {
           'turkish': 'Türkçe',
@@ -172,7 +182,7 @@ export async function createAdvancedExam(formData: FormData) {
           'social': 'Sosyal Bilimler'
         };
 
-        for (const qr of questionResults) {
+        for (const qr of parsedQuestionResults) {
           const mappedSubjectName = subjectNameMap[qr.subject] || qr.subject;
           
           // Find the corresponding subject result
@@ -225,6 +235,21 @@ export async function createAdvancedExam(formData: FormData) {
     } catch (error) {
       console.error('Failed to generate AI study plan:', error);
       // Don't fail the exam creation if AI study plan fails
+    }
+
+    // Run topic analysis if OCR was used
+    if (hasOCRData) {
+      try {
+        const { analyzeExamTopics } = await import('./exam-topic-analysis');
+        const analysisResult = await analyzeExamTopics(exam.id);
+        
+        if (analysisResult.success) {
+          console.log('Topic analysis completed:', analysisResult);
+        }
+      } catch (error) {
+        console.error('Failed to run topic analysis:', error);
+        // Don't fail the exam creation if topic analysis fails
+      }
     }
 
     // Revalidate paths

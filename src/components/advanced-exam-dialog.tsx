@@ -19,7 +19,88 @@ interface SubjectScores {
 
 interface AddAdvancedExamDialogProps {
   students: { id: string; name: string }[];
-  studentId?: string; // Optional for direct student usage
+  studentId?: string;
+}
+
+function QuestionReviewDialog({ 
+  open, 
+  onOpenChange, 
+  questionResults, 
+  onReview 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  questionResults: any[]; 
+  onReview: (questionNumber: number, newAnswer: string) => void;
+}) {
+  const needsReviewQuestions = questionResults.filter(qr => qr.needsReview);
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[700px] max-w-[95vw] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>OCR Sonuçlarını Doğrula</DialogTitle>
+          <DialogDescription>
+            Düşük güvenilirlikli soruları kontrol edip düzeltebilirsiniz.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          {needsReviewQuestions.length === 0 ? (
+            <p className="text-center text-gray-500">Doğrulanacak soru yok.</p>
+          ) : (
+            needsReviewQuestions.map((qr) => (
+              <div key={qr.questionNumber} className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h4 className="font-semibold">Soru {qr.questionNumber}</h4>
+                    <p className="text-sm text-gray-600">{qr.subject}</p>
+                    {qr.topic && <p className="text-xs text-gray-500">Konu: {qr.topic}</p>}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-yellow-600">
+                      Confidence: %{Math.round((qr.confidence || 0) * 100)}
+                    </div>
+                    <div className="text-lg font-bold">
+                      AI: {qr.markedAnswer || 'Boş'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  {['A', 'B', 'C', 'D', 'E'].map((option) => (
+                    <Button
+                      key={option}
+                      type="button"
+                      variant={qr.markedAnswer === option ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => onReview(qr.questionNumber, option)}
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant={qr.markedAnswer === null ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onReview(qr.questionNumber, '')}
+                  >
+                    Boş
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>
+            Tamamlandı
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDialogProps) {
@@ -35,6 +116,10 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
   const [social, setSocial] = useState<SubjectScores>({ correct: 0, wrong: 0, empty: 0 });
   const [ocrLoading, setOcrLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [questionResults, setQuestionResults] = useState<any[]>([]);
+  const [ocrWarnings, setOcrWarnings] = useState<string[]>([]);
+  const [ocrProcessed, setOcrProcessed] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -78,7 +163,22 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
         if (data.scores.math) setMath(data.scores.math);
         if (data.scores.science) setScience(data.scores.science);
         if (data.scores.social) setSocial(data.scores.social);
-        toast.success(`${files.length} görsel başarıyla işlendi!`);
+        
+        // Store question results and warnings
+        if (data.questionResults) {
+          setQuestionResults(data.questionResults);
+          setOcrProcessed(true);
+        }
+        
+        if (data.warnings && data.warnings.length > 0) {
+          setOcrWarnings(data.warnings);
+          // Show review dialog if there are warnings
+          setShowReviewDialog(true);
+        }
+        
+        const totalQuestions = data.questionResults?.length || 0;
+        const reviewCount = data.warnings?.length || 0;
+        toast.success(`${totalQuestions} soru okundu${reviewCount > 0 ? `, ${reviewCount} soru kontrol bekliyor` : ''}`);
       }
     } catch (error) {
       console.error('OCR Error:', error);
@@ -112,6 +212,43 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
     return calculateNet(turkish) + calculateNet(math) + calculateNet(science) + calculateNet(social);
   };
 
+  const handleQuestionReview = (questionNumber: number, newAnswer: string) => {
+    setQuestionResults(prev => 
+      prev.map(qr => 
+        qr.questionNumber === questionNumber 
+          ? { ...qr, markedAnswer: newAnswer, needsReview: false }
+          : qr
+      )
+    );
+    
+    // Update subject scores based on new answer
+    const question = questionResults.find(qr => qr.questionNumber === questionNumber);
+    if (question) {
+      const subjectName = question.subject;
+      const subjectMap: Record<string, [any, React.Dispatch<React.SetStateAction<SubjectScores>>]> = {
+        turkish: [turkish, setTurkish],
+        math: [math, setMath],
+        science: [science, setScience],
+        social: [social, setSocial]
+      };
+      
+      const [subjectScores, setSubjectScores] = subjectMap[subjectName] || [null, null];
+      if (subjectScores && setSubjectScores) {
+        // Decrement old result, increment new result
+        if (question.result === 'CORRECT') {
+          setSubjectScores(prev => ({ ...prev, correct: prev.correct - 1 }));
+        } else if (question.result === 'WRONG') {
+          setSubjectScores(prev => ({ ...prev, wrong: prev.wrong - 1 }));
+        } else if (question.result === 'EMPTY') {
+          setSubjectScores(prev => ({ ...prev, empty: prev.empty - 1 }));
+        }
+        
+        // New answer logic would require answer key - for now just mark as reviewed
+        setOcrWarnings(prev => prev.filter(w => !w.includes(`Soru ${questionNumber}`)));
+      }
+    }
+  };
+
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError("");
@@ -135,6 +272,17 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
     
     formData.append('totalNet', calculateTotalNet().toString());
     formData.append('advisorComments', advisorComments);
+    
+    // Add OCR data if available
+    if (ocrProcessed && questionResults.length > 0) {
+      formData.append('questionResults', JSON.stringify(questionResults));
+      formData.append('ocrProcessed', 'true');
+      formData.append('ocrStatus', 'success');
+      
+      // Calculate average confidence
+      const avgConfidence = questionResults.reduce((sum, qr) => sum + (qr.confidence || 0), 0) / questionResults.length;
+      formData.append('ocrConfidence', avgConfidence.toString());
+    }
 
     const result = await createAdvancedExam(formData);
     
@@ -146,6 +294,10 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
       setMath({ correct: 0, wrong: 0, empty: 0 });
       setScience({ correct: 0, wrong: 0, empty: 0 });
       setSocial({ correct: 0, wrong: 0, empty: 0 });
+      setQuestionResults([]);
+      setOcrWarnings([]);
+      setOcrProcessed(false);
+      setImageFiles([]);
       window.location.reload();
     } else {
       toast.error(result.error || "Bir hata oluştu");
@@ -206,7 +358,8 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="bg-purple-600 hover:bg-purple-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -378,6 +531,27 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
             <div className="text-sm text-red-600 mb-4">{error}</div>
           )}
           
+          {/* OCR Warnings */}
+          {ocrWarnings.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Düşük Güvenli Sorular</h4>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                {ocrWarnings.map((warning, idx) => (
+                  <li key={idx}>{warning}</li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => setShowReviewDialog(true)}
+              >
+                Soruları Gözden Geç
+              </Button>
+            </div>
+          )}
+          
           <DialogFooter>
             <Button type="submit" disabled={loading} className="w-full md:w-auto">
               {loading ? "Ekleniyor..." : "Gelişmiş Deneme Ekle"}
@@ -386,5 +560,13 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
         </form>
       </DialogContent>
     </Dialog>
+    
+    <QuestionReviewDialog
+      open={showReviewDialog}
+      onOpenChange={setShowReviewDialog}
+      questionResults={questionResults}
+      onReview={handleQuestionReview}
+    />
+  </>
   );
 }
