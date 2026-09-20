@@ -42,11 +42,11 @@ export async function POST(req: Request) {
     }
 
     console.log("GEMINI_API_VERSION: generateContent API");
-    console.log("GEMINI_MODEL: gemini-1.5-flash");
+    console.log("GEMINI_MODEL: gemini-3.8-flash");
     console.log("GEMINI_REQUEST_IMAGES:", images.length);
 
-    // SABİT MODEL: gemini-1.5-flash
-    const modelName = "gemini-1.5-flash";
+    // SABİT MODEL: gemini-3.8-flash
+    const modelName = "gemini-3.8-flash";
 
     const prompt = `You are an expert Turkish exam answer-sheet and exam-question OCR system.
 
