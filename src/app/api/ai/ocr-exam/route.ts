@@ -35,16 +35,24 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const images = body.images || [];
-    const answerKey = body.answerKey || null; // Cevap anahtarı opsiyonel
+    const answerKey = body.answerKey || null;
 
     if (images.length === 0) {
       return NextResponse.json({ error: "Görsel bulunamadı." }, { status: 400 });
     }
 
+    console.log("GEMINI_API_VERSION: Interactions API");
+    console.log("GEMINI_REQUEST_IMAGES:", images.length);
+
     // 1. ADIM: DİNAMİK MODEL SORGULAMA (AUTO-DISCOVERY)
     const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     const modelsData = await modelsRes.json();
     
+    if (!modelsData.models) {
+      console.error("GEMINI_MODEL_ERROR: No models returned from API");
+      return NextResponse.json({ error: "API anahtarınız modelleri listelemek için yetkili değil." }, { status: 403 });
+    }
+
     // 'gemini' içeren ve 'generateContent' destekleyen modelleri filtrele
     const availableModels = modelsData.models?.filter((m: any) => 
         m.name.includes("gemini") && 
@@ -52,20 +60,22 @@ export async function POST(req: Request) {
     ) || [];
 
     if (availableModels.length === 0) {
+        console.error("GEMINI_MODEL_ERROR: No suitable models found");
         return NextResponse.json({ error: "Bu API anahtarına tanımlı geçerli bir Gemini modeli bulunamadı." }, { status: 404 });
     }
 
-    // Öncelik Sırası: 2.5-flash -> 2.5-flash-lite -> başka flash -> pro
+    // Öncelik Sırası: 3.6-flash -> 3.5-flash -> 3.1-flash-lite -> başka flash -> pro
     const targetModelName = 
-        availableModels.find((m: any) => m.name.includes("gemini-2.5-flash") && !m.name.includes("lite"))?.name || 
-        availableModels.find((m: any) => m.name.includes("gemini-2.5-flash-lite"))?.name ||
+        availableModels.find((m: any) => m.name.includes("gemini-3.6-flash"))?.name || 
+        availableModels.find((m: any) => m.name.includes("gemini-3.5-flash"))?.name ||
+        availableModels.find((m: any) => m.name.includes("gemini-3.1-flash-lite"))?.name ||
         availableModels.find((m: any) => m.name.includes("gemini") && m.name.includes("flash"))?.name ||
         availableModels.find((m: any) => m.name.includes("gemini") && m.name.includes("pro"))?.name ||
         availableModels[0].name;
 
-    console.log("SEÇİLEN DİNAMİK MODEL:", targetModelName);
+    console.log("GEMINI_MODEL:", targetModelName);
 
-    // Model adından "models/" prefix'ini kaldır (endpoint'te kullanılacak)
+    // Model adından "models/" prefix'ini kaldır
     const modelName = targetModelName.replace("models/", "");
 
     // Structured output schema for Gemini
@@ -119,45 +129,65 @@ CRITICAL RULES:
 
 Return ONLY structured JSON matching the provided schema.`;
 
-    const parts: any[] = [{ text: prompt }];
-
     // 2. ADIM: GÖRSELLERİ HAZIRLA (limit 10 sayfa için güvenli)
+    const imageParts: any[] = [];
     images.slice(0, 10).forEach((imgData: string) => {
       const matches = imgData.match(/^data:(.+);base64,(.+)$/);
       if (matches && matches.length === 3) {
-        parts.push({ inline_data: { mime_type: matches[1], data: matches[2] } });
+        imageParts.push({ inline_data: { mime_type: matches[1], data: matches[2] } });
       } else {
-        parts.push({ inline_data: { mime_type: "image/jpeg", data: imgData } });
+        imageParts.push({ inline_data: { mime_type: "image/jpeg", data: imgData } });
       }
     });
 
-    // 3. ADIM: DOĞRUDAN AKTİF MODELE İSTEK AT
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    // 3. ADIM: INTERACTIONS API İLE İSTEK AT
+    const url = "https://generativelanguage.googleapis.com/v1/interactions";
+
+    const requestBody = {
+      model: modelName,
+      input: {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              ...imageParts
+            ]
+          }
+        ]
+      },
+      response_format: {
+        type: "json_schema",
+        json_schema: schema
+      }
+    };
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { 
-          responseMimeType: "application/json",
-          responseSchema: schema
-        }
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify(requestBody)
     });
+
+    console.log("GEMINI_RESPONSE_STATUS:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("GEMINI_REST_ERROR:", errorText);
+      console.error("GEMINI_REQUEST_ERROR:", errorText);
       
       // Error type detection
       if (response.status === 404) {
-        return NextResponse.json({ error: "Model bulunamadı. API anahtarınızın bu modeli desteklediğinden emin olun." }, { status: 404 });
+        console.error("GEMINI_MODEL_ERROR: Model not found -", modelName);
+        return NextResponse.json({ error: `Model bulunamadı: ${modelName}. API anahtarınızın bu modeli desteklediğinden emin olun.` }, { status: 404 });
       } else if (response.status === 401 || response.status === 403) {
+        console.error("GEMINI_AUTH_ERROR: Authentication failed");
         return NextResponse.json({ error: "API anahtar geçersiz veya yetkisiz." }, { status: response.status });
       } else if (response.status === 429) {
+        console.error("GEMINI_RATE_LIMIT_ERROR: Rate limit exceeded");
         return NextResponse.json({ error: "API rate limit aşıldı. Lütfen biraz bekleyip tekrar deneyin." }, { status: 429 });
       } else if (response.status === 500) {
+        console.error("GEMINI_REQUEST_ERROR: Server error");
         return NextResponse.json({ error: "Gemini sunucu hatası. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
       }
       
@@ -166,11 +196,18 @@ Return ONLY structured JSON matching the provided schema.`;
 
     const result = await response.json();
     
+    console.log("GEMINI_RESPONSE_PARSE: Attempting to parse response");
+    
     // Safe JSON parsing with validation
     let parsedData: any;
     try {
-      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      // Interactions API response format might be different
+      const responseText = result.response?.text || 
+                          result.candidates?.[0]?.content?.parts?.[0]?.text ||
+                          result.output?.text;
+                          
       if (!responseText) {
+        console.error("GEMINI_PARSE_ERROR: Empty response received");
         throw new Error("Gemini API'den boş yanıt alındı");
       }
       
@@ -178,12 +215,13 @@ Return ONLY structured JSON matching the provided schema.`;
       const cleanText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
       parsedData = JSON.parse(cleanText);
     } catch (parseError) {
-      console.error("OCR JSON Parse Error:", parseError);
+      console.error("GEMINI_PARSE_ERROR:", parseError);
       return NextResponse.json({ error: "Gemini yanıtı JSON formatında değil veya bozuk." }, { status: 500 });
     }
 
     // Validate response structure
     if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
+      console.error("GEMINI_PARSE_ERROR: Invalid response structure");
       return NextResponse.json({ error: "Gemini yanıtı beklenen formatta değil." }, { status: 500 });
     }
 
