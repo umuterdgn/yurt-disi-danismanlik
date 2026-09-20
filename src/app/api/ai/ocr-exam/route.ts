@@ -6,7 +6,7 @@ interface QuestionResult {
   questionText: string | null;
   markedAnswer: string | null;
   correctAnswer: string | null;
-  result: "correct" | "wrong" | "empty" | "uncertain";
+  result: "CORRECT" | "WRONG" | "EMPTY" | "UNCERTAIN";
   confidence: number;
   needsReview: boolean;
   topic: string | null;
@@ -207,7 +207,7 @@ Return ONLY structured JSON matching the provided schema.`;
 
     for (const q of parsedData.questions) {
       const subject = q.subject || "unknown";
-      let result: "correct" | "wrong" | "empty" | "uncertain" = "uncertain";
+      let result: "CORRECT" | "WRONG" | "EMPTY" | "UNCERTAIN" = "UNCERTAIN";
       let correctAnswer: string | null = null;
       let needsReview = false;
 
@@ -226,18 +226,18 @@ Return ONLY structured JSON matching the provided schema.`;
         correctAnswer = answerKey[q.questionNumber];
         
         if (q.markedAnswer === null) {
-          result = "empty";
+          result = "EMPTY";
           (scores as any)[normalizedSubject].empty++;
         } else if (q.markedAnswer === correctAnswer) {
-          result = "correct";
+          result = "CORRECT";
           (scores as any)[normalizedSubject].correct++;
         } else {
-          result = "wrong";
+          result = "WRONG";
           (scores as any)[normalizedSubject].wrong++;
         }
       } else {
         // No answer key - cannot determine result
-        result = "uncertain";
+        result = "UNCERTAIN";
         
         // Count as empty if no marked answer
         if (q.markedAnswer === null) {

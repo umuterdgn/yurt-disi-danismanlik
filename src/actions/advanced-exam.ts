@@ -47,6 +47,13 @@ export async function createAdvancedExam(formData: FormData) {
     const totalNet = parseFloat(formData.get('totalNet') as string);
     const advisorComments = formData.get('advisorComments') as string;
 
+    // OCR-related fields
+    const questionResultsJson = formData.get('questionResults') as string;
+    const answerKeyJson = formData.get('answerKey') as string;
+    const ocrProcessed = formData.get('ocrProcessed') === 'true';
+    const ocrConfidence = formData.get('ocrConfidence') ? parseFloat(formData.get('ocrConfidence') as string) : null;
+    const ocrStatus = formData.get('ocrStatus') as string || null;
+
     // Enhanced validation for studentProfileId
     if (!studentProfileId || studentProfileId === 'undefined' || studentProfileId === 'null' || studentProfileId.trim() === '') {
       return { success: false, error: 'Geçerli bir öğrenci profili seçilmelidir' };
@@ -61,7 +68,7 @@ export async function createAdvancedExam(formData: FormData) {
       return { success: false, error: 'Seçilen öğrenci profili bulunamadı' };
     }
 
-    // Subject scores
+    // Subject scores (manual entry or OCR summary)
     const turkishCorrect = parseInt(formData.get('turkish_correct') as string) || 0;
     const turkishWrong = parseInt(formData.get('turkish_wrong') as string) || 0;
     const turkishEmpty = parseInt(formData.get('turkish_empty') as string) || 0;
@@ -89,6 +96,16 @@ export async function createAdvancedExam(formData: FormData) {
     const scienceNet = scienceCorrect - (scienceWrong / 4);
     const socialNet = socialCorrect - (socialWrong / 4);
 
+    // Parse answer key if provided
+    let answerKey: Record<string, string> | null = null;
+    if (answerKeyJson) {
+      try {
+        answerKey = JSON.parse(answerKeyJson);
+      } catch (e) {
+        console.error('Failed to parse answer key:', e);
+      }
+    }
+
     // Create exam with subject results and advisor comments
     const exam = await prisma.exam.create({
       data: {
@@ -99,6 +116,11 @@ export async function createAdvancedExam(formData: FormData) {
         totalScore: totalNet * 10, // Approximate score calculation
         examType,
         advisorComments: advisorComments || null,
+        answerKey: answerKey ? answerKey as any : null,
+        ocrProcessed,
+        ocrConfidence,
+        ocrStatus,
+        analysisStatus: ocrProcessed ? 'analyzed' : 'pending',
         subjectResults: {
           create: [
             {
@@ -137,6 +159,50 @@ export async function createAdvancedExam(formData: FormData) {
       }
     });
 
+    // Create question results if OCR was used
+    if (ocrProcessed && questionResultsJson) {
+      try {
+        const questionResults = JSON.parse(questionResultsJson);
+        
+        // Map subject names to match database
+        const subjectNameMap: Record<string, string> = {
+          'turkish': 'Türkçe',
+          'math': 'Matematik',
+          'science': 'Fen Bilimleri',
+          'social': 'Sosyal Bilimler'
+        };
+
+        for (const qr of questionResults) {
+          const mappedSubjectName = subjectNameMap[qr.subject] || qr.subject;
+          
+          // Find the corresponding subject result
+          const subjectResult = exam.subjectResults.find(sr => sr.subjectName === mappedSubjectName);
+          
+          if (subjectResult) {
+            await prisma.questionResult.create({
+              data: {
+                subjectResultId: subjectResult.id,
+                questionNumber: qr.questionNumber,
+                subject: mappedSubjectName,
+                questionText: qr.questionText || null,
+                markedAnswer: qr.markedAnswer || null,
+                correctAnswer: qr.correctAnswer || null,
+                result: qr.result,
+                confidence: qr.confidence || null,
+                needsReview: qr.needsReview || false,
+                topic: qr.topic || null,
+                subTopic: qr.subTopic || null,
+                learningOutcome: qr.learningOutcome || null
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to create question results:', e);
+        // Don't fail the exam creation if question results fail
+      }
+    }
+
     // Create audit log
     await prisma.auditLog.create({
       data: {
@@ -144,7 +210,7 @@ export async function createAdvancedExam(formData: FormData) {
         action: 'EXAM_CREATED',
         entityType: 'Exam',
         entityId: exam.id,
-        details: `Advanced exam created: ${examName} with total net ${totalNet}`
+        details: `Advanced exam created: ${examName} with total net ${totalNet}, OCR: ${ocrProcessed}`
       }
     });
 

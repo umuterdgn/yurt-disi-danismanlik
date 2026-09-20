@@ -21,7 +21,7 @@ interface SubjectResult {
     id: string;
     topic: string;
     subTopic?: string;
-    isCorrect: boolean;
+    result: string;
     errorType?: string;
     timeSpent: number;
   }[];

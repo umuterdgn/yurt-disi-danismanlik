@@ -37,7 +37,7 @@ export async function getTimeAnalysis(studentId: string) {
     }
     acc[subject].totalTime += result.timeSpent
     acc[subject].count += 1
-    if (result.isCorrect) {
+    if (result.result === 'CORRECT') {
       acc[subject].correctCount += 1
     } else {
       acc[subject].wrongCount += 1

@@ -1,17 +1,676 @@
-// This is your Prisma schema file,
-// learn more about the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
-// ============================================
-// ORTAK MODELLER (Users & Roles)
-// ============================================
+model User {
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  password                String
+  name                    String
+  role                    UserRole
+  isApproved              Boolean                  @default(false)
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  organizationId          String?
+  advisorProfile          AdvisorProfile?
+  participantAppointments AppointmentParticipant[]
+  createdAppointments     Appointment[]            @relation("AppointmentCreator")
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+  parentProfile           ParentProfile?
+  childrenAsParent        Parent[]                 @relation("ParentRelations")
+  studentProfile          StudentProfile?
+  organization            Organization?            @relation(fields: [organizationId], references: [id])
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  grade                String
+  school               String?
+  targetScore          Float?
+  currentScore         Float?
+  serviceType          ServiceType        @default(BOTH)
+  xp                   Int                @default(0)
+  studentSymbol        String             @default("🎓")
+  streak               Int                @default(0)
+  lastLoginDate        DateTime?
+  badges               String[]           @default([])
+  targetExam           String?
+  examDate             DateTime?
+  advisorNote          String?
+  pomodoroDuration     Int                @default(25)
+  healthScore          Int                @default(100)
+  riskStatus           String             @default("GREEN")
+  applicationReadiness Int                @default(0)
+  lastActivityDate     DateTime?
+  advisorId            String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  domain               YKSDomain?
+  targetUniversities   String[]
+  aiRecommendations    AIRecommendation[]
+  applications         Application[]
+  dailyTasks           DailyTask[]
+  examResults          ExamResult[]
+  exams                Exam[]
+  financePackage       FinancePackage?
+  meetingNotes         MeetingNote[]
+  parentRelations      Parent[]           @relation("StudentProfile")
+  questProgress        QuestProgress[]
+  advisor              AdvisorProfile?    @relation(fields: [advisorId], references: [id])
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studySessions        StudySession[]     @relation("StudentStudySessions")
+  subjectAnalysis      SubjectAnalysis[]
+  tasks                Task[]
+  weeklyCheckIns       WeeklyCheckIn[]
+  parentProfiles       ParentProfile[]    @relation("StudentParents")
+
+  @@map("student_profiles")
+}
+
+model AdvisorProfile {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  specialization    String?
+  experience        Int?
+  bio               String?
+  maxStudents       Int                @default(20)
+  advisorType       String             @default("BOTH")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiRecommendations AIRecommendation[]
+  leads             Lead[]             @relation("LeadAdvisor")
+  students          StudentProfile[]
+  tasks             Task[]
+
+  @@map("advisor_profiles")
+}
+
+model ParentProfile {
+  id         String           @id @default(cuid())
+  userId     String           @unique
+  occupation String?
+  address    String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students   StudentProfile[] @relation("StudentParents")
+
+  @@map("parent_profiles")
+}
+
+model Parent {
+  id               String         @id @default(cuid())
+  parentUserId     String
+  studentProfileId String
+  relationship     String
+  createdAt        DateTime       @default(now())
+  parent           User           @relation("ParentRelations", fields: [parentUserId], references: [id], onDelete: Cascade)
+  studentProfile   StudentProfile @relation("StudentProfile", fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([parentUserId, studentProfileId])
+  @@map("parents")
+}
+
+model DailyTask {
+  id                 String         @id @default(cuid())
+  studentProfileId   String
+  title              String
+  description        String?
+  subject            String
+  targetQuantity     Int
+  estimatedPomodoros Int            @default(0)
+  completedQuantity  Int            @default(0)
+  isCompleted        Boolean        @default(false)
+  taskDate           DateTime
+  priority           String         @default("medium")
+  status             TaskStatus     @default(TODO)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  correctCount       Int?           @default(0)
+  topic              String?
+  wrongCount         Int?           @default(0)
+  taskType           TaskType       @default(OTHER)
+  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  studySessions      StudySession[] @relation("TaskStudySessions")
+
+  @@map("daily_tasks")
+}
+
+model StudySession {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  taskId           String?
+  subject          String?
+  startTime        DateTime
+  endTime          DateTime?
+  pauseCount       Int            @default(0)
+  actualDuration   Int?
+  status           String         @default("IN_PROGRESS")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  studentProfile   StudentProfile @relation("StudentStudySessions", fields: [studentProfileId], references: [id], onDelete: Cascade)
+  task             DailyTask?     @relation("TaskStudySessions", fields: [taskId], references: [id])
+
+  @@map("study_sessions")
+}
+
+model Task {
+  id               String          @id @default(cuid())
+  studentProfileId String
+  advisorId        String?
+  title            String
+  description      String?
+  status           TaskStatus      @default(TODO)
+  dueDate          DateTime?
+  subject          String?
+  priority         String          @default("medium")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  advisor          AdvisorProfile? @relation(fields: [advisorId], references: [id])
+  studentProfile   StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model Exam {
+  id               String          @id @default(cuid())
+  studentProfileId String
+  title            String
+  date             DateTime
+  totalNet         Float?
+  totalScore       Float?
+  examType         String?
+  advisorComments  String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  analysisStatus   String?         @default("pending")
+  answerKey        Json?
+  ocrConfidence    Float?
+  ocrProcessed     Boolean         @default(false)
+  ocrStatus        String?
+  studentProfile   StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  subjectResults   SubjectResult[]
+
+  @@map("exams")
+}
+
+model SubjectResult {
+  id              String           @id @default(cuid())
+  examId          String
+  subjectName     String
+  correct         Int              @default(0)
+  wrong           Int              @default(0)
+  empty           Int              @default(0)
+  net             Float?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  questionResults QuestionResult[]
+  exam            Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@map("subject_results")
+}
+
+enum QuestionResultStatus {
+  CORRECT
+  WRONG
+  EMPTY
+  UNCERTAIN
+}
+
+model QuestionResult {
+  id               String              @id @default(cuid())
+  subjectResultId  String
+  subjectResult   SubjectResult      @relation(fields: [subjectResultId], references: [id], onDelete: Cascade)
+
+  questionNumber   Int
+  subject          String
+  questionText     String?             @db.Text
+  markedAnswer     String?
+  correctAnswer    String?
+  result           QuestionResultStatus // "correct", "wrong", "empty", "uncertain"
+  confidence       Float?              // 0.0-1.0
+  needsReview      Boolean             @default(false)
+  
+  topic             String?             // Türev, İntegral vb.
+  subTopic         String?
+  learningOutcome  String?
+  errorType         String?             // İşlem, Konu, Dikkat vb.
+  timeSpent         Int                 @default(0) // saniye
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("question_results")
+}
+
+model ExamResult {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  examName         String
+  examType         String
+  examDate         DateTime
+  targetScore      Float
+  actualScore      Float?
+  scoreDifference  Float?
+  turkishScore     Float?
+  mathScore        Float?
+  scienceScore     Float?
+  socialScore      Float?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("exam_results")
+}
+
+model SubjectAnalysis {
+  id               String           @id @default(cuid())
+  studentProfileId String
+  subject          String
+  topic            String
+  proficiency      ProficiencyLevel
+  progressPercent  Int              @default(0)
+  lastStudiedAt    DateTime?
+  totalHours       Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  studentProfile   StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, subject, topic])
+  @@map("subject_analysis")
+}
+
+model MeetingNote {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  meetingDate      DateTime
+  duration         Int
+  motivationLevel  String
+  issues           String?
+  achievements     String?
+  actionItems      String?
+  nextMeetingDate  DateTime?
+  notes            String
+  aiSummary        String?
+  aiDecisions      String?
+  aiActions        String?
+  aiProcessedAt    DateTime?
+  tasksGenerated   Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("meeting_notes")
+}
+
+model Country {
+  id           String       @id @default(cuid())
+  name         String       @unique
+  code         String       @unique
+  slug         String       @unique
+  flag         String?
+  currency     String?
+  language     String?
+  visaRequired Boolean      @default(true)
+  averageCost  Float?
+  pageContent  String?
+  coverImage   String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  universities University[]
+
+  @@map("countries")
+}
+
+model University {
+  id                  String        @id @default(cuid())
+  countryId           String
+  name                String
+  city                String?
+  ranking             Int?
+  type                String?
+  tuitionFees         Float?
+  languageRequirement String?
+  requiredScore       Float?
+  website             String?
+  description         String?
+  departments         String[]
+  applicationDeadline DateTime?
+  requirements        String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  baseScore           Float?
+  applications        Application[]
+  country             Country       @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@map("universities")
+}
+
+model Application {
+  id               String            @id @default(cuid())
+  studentProfileId String
+  universityId     String
+  universityName   String?
+  country          String?
+  program          String
+  semester         String
+  year             Int
+  status           ApplicationStatus @default(LEAD)
+  applicationDate  DateTime?
+  decisionDate     DateTime?
+  deadline         DateTime?
+  estimatedBudget  Float?
+  actualBudget     Float?
+  languageTest     String?
+  languageScore    Float?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  studentProfile   StudentProfile    @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  university       University        @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  documents        Document[]
+  visaProcesses    VisaProcess[]
+
+  @@map("applications")
+}
+
+model VisaProcess {
+  id               String      @id @default(cuid())
+  applicationId    String
+  status           String      @default("NOT_STARTED")
+  appointmentDate  DateTime?
+  missingDocuments String[]    @default([])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  application      Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("visa_processes")
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  applicationId  String
+  documentType   String
+  documentName   String
+  filePath       String?
+  isUploaded     Boolean        @default(false)
+  uploadDate     DateTime?
+  expiryDate     DateTime?
+  status         DocumentStatus @default(PENDING)
+  feedback       String?
+  responsibility String?        @default("STUDENT")
+  aiCheckStatus  Boolean        @default(false)
+  aiCheckDate    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  application    Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Appointment {
+  id                String                   @id @default(cuid())
+  creatorId         String
+  title             String
+  description       String?
+  appointmentType   String
+  startTime         DateTime
+  endTime           DateTime
+  location          String?
+  zoomMeetingId     String?
+  zoomMeetingUrl    String?
+  zoomPassword      String?
+  googleEventId     String?
+  googleCalendarUrl String?
+  status            String                   @default("scheduled")
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  participants      AppointmentParticipant[]
+  creator           User                     @relation("AppointmentCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+model AppointmentParticipant {
+  id            String      @id @default(cuid())
+  appointmentId String
+  userId        String
+  status        String      @default("accepted")
+  attended      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, userId])
+  @@map("appointment_participants")
+}
+
+model Notification {
+  id                String           @id @default(cuid())
+  userId            String
+  title             String
+  message           String
+  type              NotificationType
+  isRead            Boolean          @default(false)
+  relatedEntityType String?
+  relatedEntityId   String?
+  createdAt         DateTime         @default(now())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AIRecommendation {
+  id              String               @id @default(cuid())
+  studentId       String
+  advisorId       String?
+  type            AIRecommendationType
+  message         String
+  suggestedAction String
+  isResolved      Boolean              @default(false)
+  priority        String               @default("MEDIUM")
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  advisor         AdvisorProfile?      @relation(fields: [advisorId], references: [id], onDelete: Cascade)
+  student         StudentProfile       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("ai_recommendations")
+}
+
+model WeeklyCheckIn {
+  id               String         @id @default(cuid())
+  studentProfileId String
+  stressLevel      Int
+  motivationLevel  Int
+  notes            String?
+  weekNumber       Int
+  year             Int
+  createdAt        DateTime       @default(now())
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, weekNumber, year])
+  @@map("weekly_check_ins")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  description String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+model Lead {
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  phone             String?
+  source            LeadSource
+  service           LeadService
+  status            LeadStatus      @default(NEW)
+  notes             String?
+  assignedAdvisorId String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  assignedAdvisor   AdvisorProfile? @relation("LeadAdvisor", fields: [assignedAdvisorId], references: [id])
+
+  @@map("leads")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  logo      String?
+  domain    String?  @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+
+  @@map("organizations")
+}
+
+model FinancePackage {
+  id               String         @id @default(cuid())
+  studentProfileId String         @unique
+  packageName      String
+  totalAmount      Float
+  paidAmount       Float          @default(0)
+  currency         String         @default("TRY")
+  discount         Float?         @default(0)
+  status           String         @default("ACTIVE")
+  paymentMethod    String?
+  paymentDate      DateTime?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  installments     Installment[]
+
+  @@map("finance_packages")
+}
+
+model Installment {
+  id               String         @id @default(cuid())
+  financePackageId String
+  amount           Float
+  dueDate          DateTime
+  paidDate         DateTime?
+  status           String         @default("PENDING")
+  paymentMethod    String?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  financePackage   FinancePackage @relation(fields: [financePackageId], references: [id], onDelete: Cascade)
+
+  @@map("installments")
+}
+
+model Workflow {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  trigger     WorkflowTrigger
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  actions     WorkflowAction[]
+
+  @@map("workflows")
+}
+
+model WorkflowAction {
+  id         String             @id @default(cuid())
+  workflowId String
+  actionType WorkflowActionType
+  payload    String
+  order      Int                @default(0)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  workflow   Workflow           @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_actions")
+}
+
+model Quest {
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  xpReward      Int
+  targetCount   Int
+  type          QuestType
+  difficulty    String          @default("MEDIUM")
+  isActive      Boolean         @default(true)
+  startDate     DateTime
+  endDate       DateTime
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  questProgress QuestProgress[]
+
+  @@map("quests")
+}
+
+model QuestProgress {
+  id               String         @id @default(cuid())
+  questId          String
+  studentProfileId String
+  currentCount     Int            @default(0)
+  isCompleted      Boolean        @default(false)
+  completedAt      DateTime?
+  xpAwarded        Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  quest            Quest          @relation(fields: [questId], references: [id], onDelete: Cascade)
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([questId, studentProfileId])
+  @@map("quest_progress")
+}
 
 enum UserRole {
   SUPER_ADMIN
@@ -50,440 +709,11 @@ enum TaskType {
   OTHER
 }
 
-model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  password   String
-  name       String
-  role       UserRole
-  isApproved Boolean  @default(false)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Multi-tenant support (optional for future)
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-
-  // İlişkiler
-  studentProfile StudentProfile?
-  advisorProfile AdvisorProfile?
-  parentProfile  ParentProfile?
-
-  // Randevu ilişkileri
-  createdAppointments     Appointment[]            @relation("AppointmentCreator")
-  participantAppointments AppointmentParticipant[]
-
-  // Veli ilişkileri
-  childrenAsParent Parent[] @relation("ParentRelations")
-
-  // Bildirim ilişkileri
-  notifications Notification[]
-
-  // Audit Log ilişkileri
-  auditLogs AuditLog[]
-
-  @@map("users")
-}
-
-// ============================================
-// EĞİTİM DANIŞMANLIĞI MODÜLÜ
-// ============================================
-
-model StudentProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Temel bilgiler
-  grade            String // 9, 10, 11, 12 sınıf
-  school           String?
-  domain           YKSDomain? // YKS Alanı: SAYISAL, SOZEL, ESIT_AGIRLIK, DIL
-  targetUniversities String[] // Çoklu hedef üniversite
-  targetScore      Float? // Hedef puan (TYT/AYT)
-  currentScore     Float? // Mevcut puan
-  serviceType      ServiceType @default(BOTH) // Hizmet türü: Eğitim Koçluğu, Yurt Dışı Danışmanlık, İkisi Birlikte
-
-  // Oyunlaştırma (Gamification)
-  xp               Int      @default(0) // Tecrübe puanı
-  studentSymbol    String   @default("🎓") // Öğrencinin sembolü/emoji
-  streak           Int      @default(0) // Ardışık giriş/görev serisi
-  lastLoginDate    DateTime? // Son giriş tarihi (streak hesaplama için)
-  badges           String[] @default([]) // Kazanılan rozetler
-  targetExam       String?  // Sınav türü (YKS, DGS, MSÜ, IELTS)
-  examDate         DateTime? // Hedef sınav tarihi
-  advisorNote      String? // Danışmanın notu
-  pomodoroDuration Int      @default(25) // Pomodoro süresi (dakika)
-
-  // ATA VISION Intelligence Layer - Student 360 & Risk Motoru
-  healthScore        Int      @default(100) // Öğrenci sağlık skoru (0-100)
-  riskStatus         String   @default("GREEN") // GREEN, YELLOW, RED
-  applicationReadiness Int      @default(0) // Başvuru hazırlık skoru (0-100)
-  lastActivityDate   DateTime? // Son aktivite tarihi
-
-  // İlişkiler
-  advisorId       String?
-  advisor         AdvisorProfile? @relation(fields: [advisorId], references: [id])
-  parentProfiles  ParentProfile[] @relation("StudentParents")
-  parentRelations Parent[]        @relation("StudentProfile")
-  
-  // ATA VISION Intelligence Layer - AI Recommendation
-  aiRecommendations AIRecommendation[]
-
-  // Eğitim verileri
-  dailyTasks      DailyTask[]
-  examResults     ExamResult[]
-  subjectAnalysis SubjectAnalysis[]
-  meetingNotes    MeetingNote[]
-  applications    Application[]
-  tasks           Task[]
-  
-  // ATA VISION Intelligence Layer - Gelişmiş Deneme Motoru
-  exams           Exam[]
-  
-  // Finance & Gamification
-  financePackage  FinancePackage?
-  
-  // Study Sessions
-  studySessions   StudySession[] @relation("StudentStudySessions")
-  
-  // Quest Progress
-  questProgress   QuestProgress[]
-
-  // Psychologial Tracking
-  weeklyCheckIns WeeklyCheckIn[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("student_profiles")
-}
-
-model AdvisorProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  specialization String? // Matematik, Fen, Sosyal vb.
-  experience     Int? // Yıl sayısı
-  bio            String?
-  maxStudents    Int     @default(20)
-  advisorType    String  @default("BOTH") // COACH, CONSULTANT, BOTH
-
-  // İlişkiler
-  students StudentProfile[]
-  tasks    Task[]
-  aiRecommendations AIRecommendation[]
-  leads    Lead[] @relation("LeadAdvisor")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("advisor_profiles")
-}
-
-model ParentProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  occupation String?
-  address    String?
-
-  // İlişkiler
-  students StudentProfile[] @relation("StudentParents")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("parent_profiles")
-}
-
-model Parent {
-  id               String         @id @default(cuid())
-  parentUserId     String
-  parent           User           @relation("ParentRelations", fields: [parentUserId], references: [id], onDelete: Cascade)
-  studentProfileId String
-  studentProfile   StudentProfile @relation("StudentProfile", fields: [studentProfileId], references: [id], onDelete: Cascade)
-  relationship     String // Anne, Baba, Vasi
-
-  createdAt DateTime @default(now())
-
-  @@unique([parentUserId, studentProfileId])
-  @@map("parents")
-}
-
-// Günlük Görevler
-model DailyTask {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  title             String
-  description       String?
-  subject           String // Matematik, Fizik vb.
-  topic             String? // Türev, İntegral vb. (İlgili konu)
-  taskType          TaskType @default(OTHER) // TEST, REVIEW, READING, VIDEO, PRACTICE, PROJECT, EXAM, OTHER
-  targetQuantity    Int // 40 soru, 2 saat vb.
-  estimatedPomodoros Int      @default(0) // Tahmini Pomodoro sayısı
-  completedQuantity Int      @default(0)
-  correctCount      Int?     @default(0) // Doğru sayısı (TEST görevleri için)
-  wrongCount        Int?     @default(0) // Yanlış sayısı (TEST görevleri için)
-  isCompleted       Boolean  @default(false)
-  taskDate          DateTime
-  priority          String   @default("medium") // low, medium, high
-  status            TaskStatus @default(TODO) // Kanban status
-
-  // İlişkiler
-  studySessions StudySession[] @relation("TaskStudySessions")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("daily_tasks")
-}
-
-// Çalışma Oturumları (Study Sessions)
-model StudySession {
-  id               String     @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation("StudentStudySessions", fields: [studentProfileId], references: [id], onDelete: Cascade)
-  
-  taskId           String?
-  task             DailyTask? @relation("TaskStudySessions", fields: [taskId], references: [id], onDelete: SetNull)
-  
-  subject          String?
-  startTime        DateTime
-  endTime          DateTime?
-  pauseCount       Int        @default(0)
-  actualDuration   Int?       // dakika cinsinden
-  status           String     @default("IN_PROGRESS") // COMPLETED, INTERRUPTED, IN_PROGRESS
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("study_sessions")
-}
-
-// Danışman Görevleri (Kanban/Todo)
-model Task {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-  advisorId        String?
-  advisor          AdvisorProfile? @relation(fields: [advisorId], references: [id])
-
-  title        String
-  description  String?
-  status       TaskStatus      @default(TODO)
-  dueDate      DateTime?
-  subject      String? // Matematik, Fizik vb.
-  priority     String          @default("medium") // low, medium, high
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("tasks")
-}
-
-// ============================================
-// NEXA INTELLIGENCE LAYER - GELİŞMİŞTİŞ DENEME MOTORU
-// ============================================
-
-model Exam {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  title             String
-  date              DateTime
-  totalNet          Float?
-  totalScore        Float?
-  examType          String? // TYT, AYT, YKS vb.
-  advisorComments   String?        @db.Text // Danışmanın yorumları ve gözlemleri
-  
-  // İlişkiler
-  subjectResults    SubjectResult[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("exams")
-}
-
-model SubjectResult {
-  id               String         @id @default(cuid())
-  examId           String
-  exam             Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
-
-  subjectName       String // Matematik, Fizik vb.
-  correct           Int      @default(0)
-  wrong             Int      @default(0)
-  empty             Int      @default(0)
-  net               Float?
-
-  // İlişkiler
-  questionResults  QuestionResult[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("subject_results")
-}
-
-model QuestionResult {
-  id               String         @id @default(cuid())
-  subjectResultId  String
-  subjectResult   SubjectResult @relation(fields: [subjectResultId], references: [id], onDelete: Cascade)
-
-  topic             String // Türev, İntegral vb.
-  subTopic          String?
-  isCorrect         Boolean  @default(false)
-  errorType         String? // İşlem, Konu, Dikkat vb.
-  timeSpent         Int      @default(0) // saniye
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("question_results")
-}
-
-// ============================================
-// LEGACY DENEME SONUÇLARI (Eski sistem için korundu)
-// ============================================
-
-model ExamResult {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  examName        String
-  examType        String // TYT, AYT, YKS vb.
-  examDate        DateTime
-  targetScore     Float
-  actualScore     Float?
-  scoreDifference Float? // actualScore - targetScore
-
-  // Detaylı puanlar
-  turkishScore Float?
-  mathScore    Float?
-  scienceScore Float?
-  socialScore  Float?
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("exam_results")
-}
-
-// Konu Etkinliği Analizi
-model SubjectAnalysis {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  subject         String // Matematik, Fizik vb.
-  topic           String // Türev, İntegral vb.
-  proficiency     ProficiencyLevel // Zayıf, Orta, İyi
-  progressPercent Int              @default(0)
-  lastStudiedAt   DateTime?
-  totalHours      Int              @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([studentProfileId, subject, topic])
-  @@map("subject_analysis")
-}
-
 enum ProficiencyLevel {
   WEAK
   MEDIUM
   GOOD
   EXCELLENT
-}
-
-// Görüşme Notları
-model MeetingNote {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  meetingDate     DateTime
-  duration        Int // dakika
-  motivationLevel String // low, medium, high
-  issues          String? // Sorunlar
-  achievements    String? // Başarılar
-  actionItems     String? // Atılacak adımlar
-  nextMeetingDate DateTime?
-  notes           String    @db.Text
-  
-  // AI Summary fields
-  aiSummary       String?  @db.Text // AI tarafından oluşturulan özet
-  aiDecisions     String?  @db.Text // AI tarafından çıkarılan kararlar
-  aiActions       String?  @db.Text // AI tarafından çıkarılan aksiyonlar (JSON formatında görevler)
-  aiProcessedAt   DateTime? // AI işleme zamanı
-  tasksGenerated  Boolean  @default(false) // AI'dan görevler oluşturuldu mu?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("meeting_notes")
-}
-
-// ============================================
-// YURT DIŞI EĞİTİM MODÜLÜ - APPLICATION OS
-// ============================================
-
-model Country {
-  id           String  @id @default(cuid())
-  name         String  @unique
-  code         String  @unique // TR, US, GB vb.
-  slug         String  @unique // URL-friendly slug
-  flag         String?
-  currency     String? // USD, EUR, GBP
-  language     String? // İngilizce, Almanca vb.
-  visaRequired Boolean @default(true)
-  averageCost  Float? // Ortalama maliyet (USD)
-  pageContent  String? @db.Text // Zengin metin/HTML içeriği
-  coverImage   String? // Kapak fotoğrafı URL'si
-  isActive     Boolean @default(true) // Sayfa aktif mi
-
-  universities University[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("countries")
-}
-
-model University {
-  id        String  @id @default(cuid())
-  countryId String
-  country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
-
-  name                String
-  city                String?
-  ranking             Int?
-  type                String? // Devlet, Özel
-  tuitionFees         Float? // Yıllık ücret
-  languageRequirement String? // IELTS, TOEFL vb.
-  requiredScore       Float?
-  baseScore           Float? // Geçen Yılki Taban Puanı (YKS için)
-  website             String?
-  description         String?   @db.Text
-  departments         String[] // Bölümler
-  applicationDeadline DateTime? // Son başvuru tarihi
-  requirements        String?   @db.Text // Başvuru şartları
-
-  applications Application[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("universities")
 }
 
 enum ApplicationStatus {
@@ -496,85 +726,6 @@ enum ApplicationStatus {
   REJECTED
 }
 
-model Application {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-  universityId     String
-  university       University     @relation(fields: [universityId], references: [id], onDelete: Cascade)
-
-  universityName     String? // Dinamik olarak university'ten alınabilir
-  country            String? // Dinamik olarak country'den alınabilir
-  program            String // Lisans, Yüksek Lisans, Doktora
-  semester           String // Fall, Spring
-  year               Int
-  status             ApplicationStatus @default(LEAD) // ATA VISION OS status
-  applicationDate    DateTime?
-  decisionDate       DateTime?
-  deadline           DateTime? // Application deadline
-
-  // Bütçe bilgileri
-  estimatedBudget     Float?
-  actualBudget       Float?
-
-  // Dil bilgileri
-  languageTest       String? // IELTS, TOEFL, GRE
-  languageScore       Float?
-
-  // Belgeler
-  documents          Document[]
-
-  // ATA VISION Intelligence Layer - Visa Process
-  visaProcesses       VisaProcess[]
-
-  notes               String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("applications")
-}
-
-model VisaProcess {
-  id               String         @id @default(cuid())
-  applicationId     String
-  application       Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  status             String         @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, APPOINTMENT_SCHEDULED, APPROVED, REJECTED
-  appointmentDate    DateTime?
-  missingDocuments   String[]       @default([])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("visa_processes")
-}
-
-model Document {
-  id            String      @id @default(cuid())
-  applicationId String
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  documentType String // Pasaport, Diploma, Transkript, Motivation Mektubu vb.
-  documentName String
-  filePath     String? // Supabase Storage URL
-  isUploaded   Boolean        @default(false)
-  uploadDate   DateTime?
-  expiryDate   DateTime?
-  status       DocumentStatus @default(PENDING) // PENDING, APPROVED, REVISION_REQUIRED, MISSING, UPLOADED, REJECTED
-  feedback     String? // Danışmanın ret/revizyon sebebi
-  responsibility String?  @default("STUDENT") // STUDENT, ADVISOR - Kimin yüklemesi gerekiyor
-  
-  // ATA VISION Intelligence Layer - AI Check
-  aiCheckStatus Boolean       @default(false) // AI tarafından kontrol edildi mi?
-  aiCheckDate   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("documents")
-}
-
 enum DocumentStatus {
   PENDING
   APPROVED
@@ -582,77 +733,6 @@ enum DocumentStatus {
   MISSING
   UPLOADED
   REJECTED
-}
-
-// ============================================
-// TAKVİM VE HATIRLATICILAR
-// ============================================
-
-model Appointment {
-  id        String @id @default(cuid())
-  creatorId String
-  creator   User   @relation("AppointmentCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-
-  title           String
-  description     String?  @db.Text
-  appointmentType String // consultancy, interview, follow_up, parent_meeting
-  startTime       DateTime
-  endTime         DateTime
-  location        String? // Online, Office vb.
-
-  // Zoom entegrasyonu
-  zoomMeetingId  String?
-  zoomMeetingUrl String?
-  zoomPassword   String?
-
-  // Google Calendar entegrasyonu
-  googleEventId     String?
-  googleCalendarUrl String?
-
-  status String @default("scheduled") // scheduled, completed, cancelled, no_show
-
-  participants AppointmentParticipant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("appointments")
-}
-
-model AppointmentParticipant {
-  id            String      @id @default(cuid())
-  appointmentId String
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  status   String  @default("accepted") // accepted, declined, pending
-  attended Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([appointmentId, userId])
-  @@map("appointment_participants")
-}
-
-model Notification {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title   String
-  message String           @db.Text
-  type    NotificationType // TASK, DOCUMENT, NOTE, MEETING, GENERAL
-  isRead  Boolean          @default(false)
-
-  // İlişkili varlık
-  relatedEntityType String? // Application, Document, Appointment vb.
-  relatedEntityId   String?
-
-  createdAt DateTime @default(now())
-
-  @@map("notifications")
 }
 
 enum NotificationType {
@@ -668,107 +748,11 @@ enum NotificationType {
   PAYMENT_REMINDER
 }
 
-// ============================================
-// NEXA INTELLIGENCE LAYER - AI COPILOT & AKSİYON MERKEZİ
-// ============================================
-
-model AIRecommendation {
-  id              String   @id @default(cuid())
-  studentId       String
-  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  advisorId       String?
-  advisor         AdvisorProfile? @relation(fields: [advisorId], references: [id], onDelete: Cascade)
-  
-  type            AIRecommendationType // RISK, ACADEMIC, APPLICATION
-  message         String   @db.Text
-  suggestedAction String   @db.Text
-  isResolved      Boolean  @default(false)
-  priority        String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("ai_recommendations")
-}
-
 enum AIRecommendationType {
   RISK
   ACADEMIC
   APPLICATION
 }
-
-// ============================================
-// PSIKOLOJIK TAKIP VE RISK ANALIZI
-// ============================================
-
-model WeeklyCheckIn {
-  id               String         @id @default(cuid())
-  studentProfileId String
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  stressLevel      Int            // 1-5 scale (1=Çok Düşük, 5=Çok Yüksek)
-  motivationLevel  Int            // 1-5 scale (1=Çok Düşük, 5=Çok Yüksek)
-  notes            String?        @db.Text // İsteğe bağlı notlar
-  weekNumber       Int            // Hafta numarası (1-52)
-  year             Int            // Yıl
-
-  createdAt        DateTime       @default(now())
-
-  @@unique([studentProfileId, weekNumber, year])
-  @@map("weekly_check_ins")
-}
-
-model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  action      String   // DOCUMENT_APPROVED, EXAM_ADDED, APPLICATION_CREATED, TASK_COMPLETED vb.
-  entityType  String   // User, Student, Application, Document, Exam vb.
-  entityId    String?
-  details     String?  @db.Text
-  ipAddress   String?
-  userAgent   String?
-  
-  timestamp   DateTime @default(now())
-
-  @@map("audit_logs")
-}
-
-// ============================================
-// SİSTEM AYARLARI VE LOG'LAR
-// ============================================
-
-model SystemSettings {
-  id          String  @id @default(cuid())
-  key         String  @unique
-  value       String  @db.Text
-  description String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("system_settings")
-}
-
-model ActivityLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  action      String
-  entityType  String // User, Student, Application vb.
-  entityId    String?
-  description String? @db.Text
-  ipAddress   String?
-  userAgent   String?
-
-  createdAt DateTime @default(now())
-
-  @@map("activity_logs")
-}
-
-// ============================================
-// CRM & LEAD MANAGEMENT
-// ============================================
 
 enum LeadStatus {
   NEW
@@ -797,97 +781,6 @@ enum LeadService {
   OTHER
 }
 
-model Lead {
-  id        String      @id @default(cuid())
-  name      String
-  email     String     @unique
-  phone     String?
-  source    LeadSource
-  service   LeadService
-  status    LeadStatus  @default(NEW)
-  notes     String?     @db.Text
-  
-  // İlişkiler
-  assignedAdvisorId String?
-  assignedAdvisor   AdvisorProfile? @relation("LeadAdvisor", fields: [assignedAdvisorId], references: [id])
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("leads")
-}
-
-// ============================================
-// MULTI-TENANT ORGANIZATION SUPPORT
-// ============================================
-
-model Organization {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  logo      String?
-  domain    String?  @unique
-  isActive  Boolean  @default(true)
-  
-  users     User[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("organizations")
-}
-
-// ============================================
-// FINANCE & PAYMENT MANAGEMENT
-// ============================================
-
-model FinancePackage {
-  id               String @id @default(cuid())
-  studentProfileId String @unique
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-  
-  packageName      String   // Paket adı (Örn: "Premium YKS Paketi", "Yurt Dışı Başvuru Paketi")
-  totalAmount      Float    // Toplam tutar
-  paidAmount       Float    @default(0) // Ödenen tutar
-  currency         String   @default("TRY") // TRY, USD, EUR
-  discount         Float?   @default(0) // İndirim tutarı
-  status           String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
-  
-  // Taksit bilgileri
-  installments     Installment[]
-  
-  // Ödeme bilgileri
-  paymentMethod    String?  // CREDIT_CARD, BANK_TRANSFER, CASH
-  paymentDate      DateTime?
-  notes            String?  @db.Text
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("finance_packages")
-}
-
-model Installment {
-  id               String         @id @default(cuid())
-  financePackageId String
-  financePackage   FinancePackage @relation(fields: [financePackageId], references: [id], onDelete: Cascade)
-  
-  amount           Float
-  dueDate          DateTime
-  paidDate         DateTime?
-  status           String         @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED
-  paymentMethod    String?
-  notes            String?        @db.Text
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("installments")
-}
-
-// ============================================
-// WORKFLOW AUTOMATION ENGINE
-// ============================================
-
 enum WorkflowTrigger {
   NEW_STUDENT
   DOC_REJECTED
@@ -908,40 +801,6 @@ enum WorkflowActionType {
   TRIGGER_AI_ANALYSIS
 }
 
-model Workflow {
-  id          String          @id @default(cuid())
-  name        String
-  description String?         @db.Text
-  trigger     WorkflowTrigger
-  isActive    Boolean         @default(true)
-  
-  actions     WorkflowAction[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("workflows")
-}
-
-model WorkflowAction {
-  id         String            @id @default(cuid())
-  workflowId String
-  workflow   Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  
-  actionType WorkflowActionType
-  payload    String            @db.Text // JSON payload for action parameters
-  order      Int               @default(0) // Execution order
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("workflow_actions")
-}
-
-// ============================================
-// ADVANCED GAMIFICATION - QUEST SYSTEM
-// ============================================
-
 enum QuestType {
   POMODORO
   TASK
@@ -950,46 +809,3 @@ enum QuestType {
   DOCUMENT_UPLOAD
   MEETING_ATTENDANCE
 }
-
-model Quest {
-  id          String    @id @default(cuid())
-  title       String
-  description String    @db.Text
-  xpReward    Int       // XP ödülü
-  targetCount Int       // Hedef sayı (Örn: 5 pomodoro)
-  type        QuestType
-  difficulty  String    @default("MEDIUM") // EASY, MEDIUM, HARD
-  isActive    Boolean   @default(true)
-  startDate   DateTime
-  endDate     DateTime
-  
-  // İlişkiler
-  questProgress QuestProgress[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("quests")
-}
-
-model QuestProgress {
-  id               String         @id @default(cuid())
-  questId          String
-  studentProfileId String
-  
-  currentCount     Int            @default(0) // Mevcut ilerleme
-  isCompleted      Boolean        @default(false)
-  completedAt      DateTime?
-  xpAwarded        Boolean        @default(false)
-  
-  // İlişkiler
-  quest            Quest          @relation(fields: [questId], references: [id], onDelete: Cascade)
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([questId, studentProfileId])
-  @@map("quest_progress")
-}
-

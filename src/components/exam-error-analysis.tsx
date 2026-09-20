@@ -24,7 +24,7 @@ interface QuestionResult {
   id: string;
   topic: string;
   subTopic?: string;
-  isCorrect: boolean;
+  result: string;
   errorType?: string;
   timeSpent: number;
 }
@@ -102,7 +102,7 @@ export function ExamErrorAnalysis({ exam, studentId }: ExamErrorAnalysisProps) {
         id: `mock-${subjectResult.id}-${i}`,
         topic: topics[i % topics.length],
         subTopic: `Alt konu ${i + 1}`,
-        isCorrect: false,
+        result: 'WRONG',
         timeSpent: Math.floor(Math.random() * 120) + 30, // 30-150 seconds
         errorType: undefined
       });
