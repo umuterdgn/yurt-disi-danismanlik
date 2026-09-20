@@ -41,67 +41,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Görsel bulunamadı." }, { status: 400 });
     }
 
-    console.log("GEMINI_API_VERSION: Interactions API");
+    console.log("GEMINI_API_VERSION: generateContent API");
+    console.log("GEMINI_MODEL: gemini-1.5-flash");
     console.log("GEMINI_REQUEST_IMAGES:", images.length);
 
-    // 1. ADIM: DİNAMİK MODEL SORGULAMA (AUTO-DISCOVERY)
-    const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    const modelsData = await modelsRes.json();
-    
-    if (!modelsData.models) {
-      console.error("GEMINI_MODEL_ERROR: No models returned from API");
-      return NextResponse.json({ error: "API anahtarınız modelleri listelemek için yetkili değil." }, { status: 403 });
-    }
-
-    // 'gemini' içeren ve 'generateContent' destekleyen modelleri filtrele
-    const availableModels = modelsData.models?.filter((m: any) => 
-        m.name.includes("gemini") && 
-        m.supportedGenerationMethods?.includes("generateContent")
-    ) || [];
-
-    if (availableModels.length === 0) {
-        console.error("GEMINI_MODEL_ERROR: No suitable models found");
-        return NextResponse.json({ error: "Bu API anahtarına tanımlı geçerli bir Gemini modeli bulunamadı." }, { status: 404 });
-    }
-
-    // Öncelik Sırası: 3.6-flash -> 3.5-flash -> 3.1-flash-lite -> başka flash -> pro
-    const targetModelName = 
-        availableModels.find((m: any) => m.name.includes("gemini-3.6-flash"))?.name || 
-        availableModels.find((m: any) => m.name.includes("gemini-3.5-flash"))?.name ||
-        availableModels.find((m: any) => m.name.includes("gemini-3.1-flash-lite"))?.name ||
-        availableModels.find((m: any) => m.name.includes("gemini") && m.name.includes("flash"))?.name ||
-        availableModels.find((m: any) => m.name.includes("gemini") && m.name.includes("pro"))?.name ||
-        availableModels[0].name;
-
-    console.log("GEMINI_MODEL:", targetModelName);
-
-    // Model adından "models/" prefix'ini kaldır
-    const modelName = targetModelName.replace("models/", "");
-
-    // Structured output schema for Gemini
-    const schema = {
-      type: "object",
-      properties: {
-        questions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              questionNumber: { type: "number" },
-              subject: { type: "string" },
-              questionText: { type: "string" },
-              markedAnswer: { type: "string" },
-              confidence: { type: "number" },
-              topic: { type: "string" },
-              subtopic: { type: "string" },
-              learningOutcome: { type: "string" }
-            },
-            required: ["questionNumber", "subject", "markedAnswer", "confidence"]
-          }
-        }
-      },
-      required: ["questions"]
-    };
+    // SABİT MODEL: gemini-1.5-flash
+    const modelName = "gemini-1.5-flash";
 
     const prompt = `You are an expert Turkish exam answer-sheet and exam-question OCR system.
 
@@ -127,47 +72,48 @@ CRITICAL RULES:
 - Treat all uploaded images as pages of the same exam
 - Subject must be one of: turkish, math, science, social
 
-Return ONLY structured JSON matching the provided schema.`;
+Return ONLY a valid JSON object in this exact format:
+{
+  "questions": [
+    {
+      "questionNumber": number,
+      "subject": "turkish|math|science|social",
+      "questionText": "string or null",
+      "markedAnswer": "A|B|C|D|E or null",
+      "confidence": number between 0.0 and 1.0,
+      "topic": "string or null",
+      "subtopic": "string or null",
+      "learningOutcome": "string or null"
+    }
+  ]
+}
 
-    // 2. ADIM: GÖRSELLERİ HAZIRLA (limit 10 sayfa için güvenli)
-    const imageParts: any[] = [];
+Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
+
+    const parts: any[] = [{ text: prompt }];
+
+    // GÖRSELLERİ HAZIRLA (limit 10 sayfa için güvenli)
     images.slice(0, 10).forEach((imgData: string) => {
       const matches = imgData.match(/^data:(.+);base64,(.+)$/);
       if (matches && matches.length === 3) {
-        imageParts.push({ inline_data: { mime_type: matches[1], data: matches[2] } });
+        parts.push({ inline_data: { mime_type: matches[1], data: matches[2] } });
       } else {
-        imageParts.push({ inline_data: { mime_type: "image/jpeg", data: imgData } });
+        parts.push({ inline_data: { mime_type: "image/jpeg", data: imgData } });
       }
     });
 
-    // 3. ADIM: INTERACTIONS API İLE İSTEK AT
-    const url = "https://generativelanguage.googleapis.com/v1/interactions";
-
-    const requestBody = {
-      model: modelName,
-      input: {
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              ...imageParts
-            ]
-          }
-        ]
-      },
-      response_format: {
-        type: "json_schema",
-        json_schema: schema
-      }
-    };
+    // GENERATECONTENT API İLE İSTEK AT
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
-      },
-      body: JSON.stringify(requestBody)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: { 
+          responseMimeType: "application/json"
+        }
+      })
     });
 
     console.log("GEMINI_RESPONSE_STATUS:", response.status);
@@ -201,11 +147,7 @@ Return ONLY structured JSON matching the provided schema.`;
     // Safe JSON parsing with validation
     let parsedData: any;
     try {
-      // Interactions API response format might be different
-      const responseText = result.response?.text || 
-                          result.candidates?.[0]?.content?.parts?.[0]?.text ||
-                          result.output?.text;
-                          
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!responseText) {
         console.error("GEMINI_PARSE_ERROR: Empty response received");
         throw new Error("Gemini API'den boş yanıt alındı");
