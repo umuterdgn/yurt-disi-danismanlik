@@ -139,6 +139,7 @@ model DailyTask {
   correctCount       Int?           @default(0)
   topic              String?
   wrongCount         Int?           @default(0)
+  emptyCount         Int?           @default(0)
   taskType           TaskType       @default(OTHER)
   studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
   studySessions      StudySession[] @relation("TaskStudySessions")
@@ -283,6 +284,7 @@ model SubjectAnalysis {
   progressPercent  Int              @default(0)
   lastStudiedAt    DateTime?
   totalHours       Int              @default(0)
+  dataSource       String           @default("BOTH") // "EXAM", "TASK", "BOTH"
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   studentProfile   StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)

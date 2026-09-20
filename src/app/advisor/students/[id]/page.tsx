@@ -46,7 +46,32 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   // Get student data
   const student = await prisma.studentProfile.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      grade: true,
+      school: true,
+      targetScore: true,
+      currentScore: true,
+      serviceType: true,
+      xp: true,
+      studentSymbol: true,
+      streak: true,
+      lastLoginDate: true,
+      badges: true,
+      targetExam: true,
+      examDate: true,
+      advisorNote: true,
+      pomodoroDuration: true,
+      healthScore: true,
+      riskStatus: true,
+      applicationReadiness: true,
+      lastActivityDate: true,
+      advisorId: true,
+      createdAt: true,
+      updatedAt: true,
+      domain: true,
+      targetUniversities: true,
       user: {
         include: {
           auditLogs: {
@@ -559,7 +584,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               </div>
 
               {/* Mastery Map */}
-              <MasteryMap exams={student.exams as any} />
+              <MasteryMap exams={student.exams as any} studentId={id} subjectAnalysis={subjectAnalysis} />
 
               {/* Subject Analysis (AI) */}
               <Card>

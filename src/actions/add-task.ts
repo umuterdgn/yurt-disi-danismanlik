@@ -138,3 +138,171 @@ export async function updateTaskStatus(taskId: string, status: 'TODO' | 'IN_PROG
     return { success: false, error: 'Görev durumu güncellenirken bir hata oluştu' };
   }
 }
+
+export async function addSuggestedTask(studentProfileId: string, recommendation: any) {
+  try {
+    // Get student profile to get userId
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentProfileId },
+      select: { userId: true }
+    });
+
+    if (!studentProfile) {
+      return { success: false, error: 'Öğrenci profili bulunamadı' };
+    }
+
+    // Create task from AI recommendation
+    const task = await prisma.dailyTask.create({
+      data: {
+        studentProfileId,
+        title: `${recommendation.topic} Konu Tekrarı`,
+        description: recommendation.reason,
+        subject: recommendation.subject,
+        topic: recommendation.topic,
+        taskType: 'REVIEW',
+        targetQuantity: 20,
+        estimatedPomodoros: 4,
+        completedQuantity: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        priority: recommendation.priority,
+        taskDate: new Date(),
+        isCompleted: false,
+        status: 'TODO'
+      }
+    });
+
+    // Create notification for student
+    await prisma.notification.create({
+      data: {
+        userId: studentProfile.userId,
+        title: 'Yeni Görev Atandı',
+        message: `Danışmanınız size yeni bir görev atadı: ${recommendation.topic} Konu Tekrarı`,
+        type: NotificationType.TASK,
+        relatedEntityType: 'DailyTask',
+        relatedEntityId: task.id
+      }
+    });
+
+    revalidatePath('/student/dashboard');
+    revalidatePath('/student/tasks');
+    revalidatePath('/advisor/students/[id]');
+
+    return {
+      success: true,
+      task
+    };
+
+  } catch (error) {
+    console.error('Add suggested task error:', error);
+    return { success: false, error: 'Önerilen görev eklenirken bir hata oluştu' };
+  }
+}
+
+export async function completeTaskWithPerformance(taskId: string, correct: number, wrong: number, empty: number) {
+  try {
+    // Get the task with student profile
+    const task = await prisma.dailyTask.findUnique({
+      where: { id: taskId },
+      include: { studentProfile: true }
+    });
+
+    if (!task) {
+      return { success: false, error: 'Görev bulunamadı' };
+    }
+
+    // Update task with performance data
+    const updatedTask = await prisma.dailyTask.update({
+      where: { id: taskId },
+      data: {
+        isCompleted: true,
+        status: 'DONE',
+        correctCount: correct,
+        wrongCount: wrong,
+        emptyCount: empty,
+        completedQuantity: correct + wrong + empty
+      }
+    });
+
+    // Update student XP based on task completion
+    const xpChange = 50;
+    
+    await prisma.studentProfile.update({
+      where: { id: task.studentProfileId },
+      data: {
+        xp: {
+          increment: xpChange
+        }
+      }
+    });
+
+    // Update SubjectAnalysis for mastery tracking (if task has subject and topic)
+    if (task.subject && task.topic) {
+      const totalQuestions = correct + wrong + empty;
+      const successRate = totalQuestions > 0 ? (correct / totalQuestions) * 100 : 0;
+
+      // Find existing subject analysis
+      const existingAnalysis = await prisma.subjectAnalysis.findFirst({
+        where: {
+          studentProfileId: task.studentProfileId,
+          subject: task.subject,
+          topic: task.topic
+        }
+      });
+
+      if (existingAnalysis) {
+        // Update existing analysis with weighted average (30% weight for task data)
+        const currentProficiency = existingAnalysis.progressPercent || 0;
+        const newProficiency = (currentProficiency * 0.7) + (successRate * 0.3);
+        
+        let newProficiencyLevel: 'WEAK' | 'MEDIUM' | 'GOOD' | 'EXCELLENT' = 'MEDIUM';
+        if (newProficiency >= 86) newProficiencyLevel = 'EXCELLENT';
+        else if (newProficiency >= 71) newProficiencyLevel = 'GOOD';
+        else if (newProficiency >= 41) newProficiencyLevel = 'MEDIUM';
+        else newProficiencyLevel = 'WEAK';
+
+        // Update dataSource to BOTH if it was previously only EXAM, otherwise keep as TASK
+        const newDataSource = existingAnalysis.dataSource === 'EXAM' ? 'BOTH' : 'TASK';
+
+        await prisma.subjectAnalysis.update({
+          where: { id: existingAnalysis.id },
+          data: {
+            progressPercent: Math.round(newProficiency),
+            proficiency: newProficiencyLevel,
+            lastStudiedAt: new Date(),
+            dataSource: newDataSource
+          }
+        });
+      } else {
+        // Create new subject analysis from task data
+        let proficiencyLevel: 'WEAK' | 'MEDIUM' | 'GOOD' | 'EXCELLENT' = 'MEDIUM';
+        if (successRate >= 86) proficiencyLevel = 'EXCELLENT';
+        else if (successRate >= 71) proficiencyLevel = 'GOOD';
+        else if (successRate >= 41) proficiencyLevel = 'MEDIUM';
+        else proficiencyLevel = 'WEAK';
+
+        await prisma.subjectAnalysis.create({
+          data: {
+            studentProfileId: task.studentProfileId,
+            subject: task.subject,
+            topic: task.topic,
+            proficiency: proficiencyLevel,
+            progressPercent: Math.round(successRate),
+            lastStudiedAt: new Date(),
+            dataSource: 'TASK' // Initially from task data
+          }
+        });
+      }
+    }
+
+    revalidatePath('/student/dashboard');
+    revalidatePath('/student/tasks');
+    revalidatePath('/advisor/students/[id]');
+    revalidatePath('/advisor/dashboard');
+
+    return { success: true, task: updatedTask };
+  } catch (error) {
+    console.error('Complete task with performance error:', error);
+    return { success: false, error: 'Görev tamamlanırken bir hata oluştu' };
+  }
+}

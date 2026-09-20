@@ -279,7 +279,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Genel Konu Hakimiyet Haritası</CardTitle>
           </CardHeader>
           <CardContent>
-            <MasteryMap exams={examResults as any} />
+            <MasteryMap exams={examResults as any} subjectAnalysis={subjectAnalysis} />
           </CardContent>
         </Card>
 

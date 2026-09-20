@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Camera, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createAdvancedExam } from "@/actions/advanced-exam";
+import { ExamTaskSuggestions } from "@/components/exam-task-suggestions";
 
 interface SubjectScores {
   correct: number;
@@ -120,6 +121,9 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
   const [ocrWarnings, setOcrWarnings] = useState<string[]>([]);
   const [ocrProcessed, setOcrProcessed] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [suggestedTasks, setSuggestedTasks] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -288,17 +292,26 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
     
     if (result.success) {
       toast.success("Gelişmiş deneme başarıyla eklendi!");
-      setOpen(false);
-      // Reset form
-      setTurkish({ correct: 0, wrong: 0, empty: 0 });
-      setMath({ correct: 0, wrong: 0, empty: 0 });
-      setScience({ correct: 0, wrong: 0, empty: 0 });
-      setSocial({ correct: 0, wrong: 0, empty: 0 });
-      setQuestionResults([]);
-      setOcrWarnings([]);
-      setOcrProcessed(false);
-      setImageFiles([]);
-      window.location.reload();
+      
+      // Check if there are suggested tasks from exam analysis
+      if (result.suggestedTasks && result.suggestedTasks.length > 0) {
+        setSuggestedTasks(result.suggestedTasks);
+        setCreatedStudentId(result.studentProfileId || formData.get('studentProfileId') as string);
+        setShowSuggestions(true);
+        setOpen(false);
+      } else {
+        setOpen(false);
+        // Reset form
+        setTurkish({ correct: 0, wrong: 0, empty: 0 });
+        setMath({ correct: 0, wrong: 0, empty: 0 });
+        setScience({ correct: 0, wrong: 0, empty: 0 });
+        setSocial({ correct: 0, wrong: 0, empty: 0 });
+        setQuestionResults([]);
+        setOcrWarnings([]);
+        setOcrProcessed(false);
+        setImageFiles([]);
+        window.location.reload();
+      }
     } else {
       toast.error(result.error || "Bir hata oluştu");
       setError(result.error || "Bir hata oluştu");
@@ -567,6 +580,48 @@ export function AddAdvancedExamDialog({ students, studentId }: AddAdvancedExamDi
       questionResults={questionResults}
       onReview={handleQuestionReview}
     />
+    
+    {showSuggestions && createdStudentId && (
+      <Dialog open={showSuggestions} onOpenChange={(open) => {
+        setShowSuggestions(open);
+        if (!open) {
+          // Reset form and reload when closing suggestions
+          setTurkish({ correct: 0, wrong: 0, empty: 0 });
+          setMath({ correct: 0, wrong: 0, empty: 0 });
+          setScience({ correct: 0, wrong: 0, empty: 0 });
+          setSocial({ correct: 0, wrong: 0, empty: 0 });
+          setQuestionResults([]);
+          setOcrWarnings([]);
+          setOcrProcessed(false);
+          setImageFiles([]);
+          setSuggestedTasks([]);
+          setCreatedStudentId(null);
+          window.location.reload();
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] max-w-[95vw] max-h-[80vh] overflow-y-auto">
+          <ExamTaskSuggestions
+            suggestions={suggestedTasks}
+            studentProfileId={createdStudentId}
+            onClose={() => {
+              setShowSuggestions(false);
+              // Reset form and reload
+              setTurkish({ correct: 0, wrong: 0, empty: 0 });
+              setMath({ correct: 0, wrong: 0, empty: 0 });
+              setScience({ correct: 0, wrong: 0, empty: 0 });
+              setSocial({ correct: 0, wrong: 0, empty: 0 });
+              setQuestionResults([]);
+              setOcrWarnings([]);
+              setOcrProcessed(false);
+              setImageFiles([]);
+              setSuggestedTasks([]);
+              setCreatedStudentId(null);
+              window.location.reload();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    )}
   </>
   );
 }

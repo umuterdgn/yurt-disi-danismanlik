@@ -5,7 +5,9 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddTaskDialog } from "@/components/add-task-dialog";
+import { TaskCompletionModal } from "@/components/task-completion-modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { completeTaskWithPerformance } from "@/actions/add-task";
 
 interface Task {
   id: string;
@@ -31,6 +33,9 @@ interface AdvisorKanbanBoardProps {
 export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
+  const [completionModalOpen, setCompletionModalOpen] = useState(false);
+  const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const getPriorityColor = (priority: string) => {
     const colors: Record<string, string> = {
@@ -59,6 +64,16 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
 
     const newStatus = destination.droppableId as 'TODO' | 'IN_PROGRESS' | 'DONE';
     
+    // If moving to DONE, show performance modal
+    if (newStatus === 'DONE') {
+      const task = localTasks.find(t => t.id === draggableId);
+      if (task) {
+        setTaskToComplete(task);
+        setCompletionModalOpen(true);
+        return; // Don't update yet, wait for modal confirmation
+      }
+    }
+    
     // Update local state immediately for better UX
     const updatedTasks = localTasks.map(task => 
       task.id === draggableId ? { ...task, status: newStatus } : task
@@ -67,6 +82,34 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
 
     // Call the server action to update the database
     await onTaskMove(draggableId, newStatus);
+  };
+
+  const handleTaskCompletion = async (correct: number, wrong: number, empty: number) => {
+    if (!taskToComplete) return;
+
+    setIsCompleting(true);
+    
+    try {
+      // Call the new server action with performance data
+      const result = await completeTaskWithPerformance(taskToComplete.id, correct, wrong, empty);
+      
+      if (result.success) {
+        // Update local state
+        const updatedTasks = localTasks.map(task => 
+          task.id === taskToComplete.id ? { ...task, status: 'DONE' as const } : task
+        );
+        setLocalTasks(updatedTasks);
+        
+        // Also call the original onTaskMove for consistency
+        await onTaskMove(taskToComplete.id, 'DONE');
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+    } finally {
+      setIsCompleting(false);
+      setCompletionModalOpen(false);
+      setTaskToComplete(null);
+    }
   };
 
   const getTasksByStatus = (status: string) => {
@@ -265,6 +308,17 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
           </div>
         </CardContent>
       </Card>
+      
+      <TaskCompletionModal
+        isOpen={completionModalOpen}
+        onClose={() => {
+          setCompletionModalOpen(false);
+          setTaskToComplete(null);
+        }}
+        onConfirm={handleTaskCompletion}
+        taskTitle={taskToComplete?.title || ''}
+        isLoading={isCompleting}
+      />
     </DragDropContext>
   );
 }

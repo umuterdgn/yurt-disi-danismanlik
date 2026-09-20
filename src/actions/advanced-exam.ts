@@ -288,6 +288,7 @@ export async function createAdvancedExam(formData: FormData) {
     }
 
     // Run topic analysis if OCR was used
+    let suggestedTasks: any[] = [];
     if (hasOCRData) {
       try {
         const { analyzeExamTopics } = await import('./exam-topic-analysis');
@@ -295,6 +296,7 @@ export async function createAdvancedExam(formData: FormData) {
         
         if (analysisResult.success) {
           console.log('Topic analysis completed:', analysisResult);
+          suggestedTasks = analysisResult.suggestedTasks || [];
         }
       } catch (error) {
         console.error('Failed to run topic analysis:', error);
@@ -310,7 +312,9 @@ export async function createAdvancedExam(formData: FormData) {
 
     return {
       success: true,
-      exam
+      exam,
+      suggestedTasks,
+      studentProfileId: exam.studentProfileId
     };
 
   } catch (error) {

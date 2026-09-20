@@ -1,101 +1,113 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
 
 interface TaskCompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (correctCount: number, wrongCount: number) => void;
-  taskType: string;
+  onConfirm: (correct: number, wrong: number, empty: number) => Promise<void>;
   taskTitle: string;
+  isLoading?: boolean;
 }
 
-export function TaskCompletionModal({ isOpen, onClose, onConfirm, taskType, taskTitle }: TaskCompletionModalProps) {
-  const [correctCount, setCorrectCount] = useState<number>(0);
-  const [wrongCount, setWrongCount] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
+export function TaskCompletionModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  taskTitle,
+  isLoading = false
+}: TaskCompletionModalProps) {
+  const [correct, setCorrect] = useState<string>("0");
+  const [wrong, setWrong] = useState<string>("0");
+  const [empty, setEmpty] = useState<string>("0");
 
   const handleSubmit = async () => {
-    setLoading(true);
-    await onConfirm(correctCount, wrongCount);
-    setLoading(false);
-    onClose();
+    const correctNum = parseInt(correct) || 0;
+    const wrongNum = parseInt(wrong) || 0;
+    const emptyNum = parseInt(empty) || 0;
+    
+    await onConfirm(correctNum, wrongNum, emptyNum);
+    
     // Reset form
-    setCorrectCount(0);
-    setWrongCount(0);
+    setCorrect("0");
+    setWrong("0");
+    setEmpty("0");
   };
 
-  const isTestType = taskType === 'TEST' || taskType === 'EXAM' || taskType === 'PRACTICE';
+  const handleCancel = () => {
+    setCorrect("0");
+    setWrong("0");
+    setEmpty("0");
+    onClose();
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleCancel}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-green-600" />
-            <DialogTitle>Görev Tamamlama</DialogTitle>
-          </div>
+          <DialogTitle>Görev Performans Verisi</DialogTitle>
           <DialogDescription>
-            {isTestType 
-              ? `"${taskTitle}" görevini tamamladınız. Performansınızı girin:` 
-              : `"${taskTitle}" görevini tamamladınız. Onaylıyor musunuz?`
-            }
+            <span className="font-semibold">{taskTitle}</span> görevi için performans verilerini girin.
           </DialogDescription>
         </DialogHeader>
-        
-        {isTestType ? (
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="correctCount">Doğru Sayısı</Label>
-                <Input
-                  id="correctCount"
-                  type="number"
-                  min="0"
-                  value={correctCount}
-                  onChange={(e) => setCorrectCount(parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  className="text-green-600 font-semibold"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="wrongCount">Yanlış Sayısı</Label>
-                <Input
-                  id="wrongCount"
-                  type="number"
-                  min="0"
-                  value={wrongCount}
-                  onChange={(e) => setWrongCount(parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  className="text-red-600 font-semibold"
-                />
-              </div>
-            </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>İpucu:</strong> Bu veriler Konu Hakimiyet Analizi'nde kullanılacak ve gelecekteki görev önerilerini optimize edecektir.
-              </p>
-            </div>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="correct" className="text-right">
+              Doğru
+            </Label>
+            <Input
+              id="correct"
+              type="number"
+              min="0"
+              value={correct}
+              onChange={(e) => setCorrect(e.target.value)}
+              className="col-span-3"
+            />
           </div>
-        ) : (
-          <div className="py-4">
-            <p className="text-gray-600">
-              Bu görev ({taskType}) performans takibi gerektirmez. Tamamlamak için onaylayın.
-            </p>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="wrong" className="text-right">
+              Yanlış
+            </Label>
+            <Input
+              id="wrong"
+              type="number"
+              min="0"
+              value={wrong}
+              onChange={(e) => setWrong(e.target.value)}
+              className="col-span-3"
+            />
           </div>
-        )}
-
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="empty" className="text-right">
+              Boş
+            </Label>
+            <Input
+              id="empty"
+              type="number"
+              min="0"
+              value={empty}
+              onChange={(e) => setEmpty(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+        </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
             İptal
           </Button>
-          <Button onClick={handleSubmit} disabled={loading} className="bg-green-600 hover:bg-green-700">
-            {loading ? "İşleniyor..." : "Görevi Tamamla"}
+          <Button type="button" onClick={handleSubmit} disabled={isLoading}>
+            {isLoading ? "Kaydediliyor..." : "Kaydet"}
           </Button>
         </DialogFooter>
       </DialogContent>

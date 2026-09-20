@@ -157,7 +157,8 @@ export async function analyzeExamTopics(examId: string) {
             data: {
               progressPercent: Math.round(newProficiency),
               proficiency: newProficiencyLevel,
-              lastStudiedAt: new Date()
+              lastStudiedAt: new Date(),
+              dataSource: existingAnalysis.dataSource === 'TASK' ? 'BOTH' : 'EXAM'
             }
           });
         } else {
@@ -175,42 +176,17 @@ export async function analyzeExamTopics(examId: string) {
               topic: topic.topic,
               proficiency: proficiencyLevel,
               progressPercent: Math.round(topic.successRate),
-              lastStudiedAt: new Date()
+              lastStudiedAt: new Date(),
+              dataSource: 'EXAM' // Initially from exam data
             }
           });
         }
       }
     }
 
-    // Create DailyTask recommendations (avoid duplicates)
-    for (const recommendation of recommendations) {
-      // Check if similar task already exists
-      const existingTask = await prisma.dailyTask.findFirst({
-        where: {
-          studentProfileId: exam.studentProfileId,
-          subject: recommendation.subject,
-          topic: recommendation.topic,
-          isCompleted: false
-        }
-      });
-
-      if (!existingTask) {
-        await prisma.dailyTask.create({
-          data: {
-            studentProfileId: exam.studentProfileId,
-            title: `${recommendation.topic} Konu Tekrarı`,
-            description: recommendation.reason,
-            subject: recommendation.subject,
-            topic: recommendation.topic,
-            taskType: 'REVIEW',
-            targetQuantity: 20,
-            priority: recommendation.priority,
-            taskDate: new Date(),
-            status: 'TODO'
-          }
-        });
-      }
-    }
+    // Note: Automatic task creation has been removed to prevent spam
+    // AI now only suggests tasks; advisors can choose to add them via the UI
+    // The recommendations are returned as suggestedTasks for manual approval
 
     // Update exam analysis status
     await prisma.exam.update({
@@ -222,6 +198,7 @@ export async function analyzeExamTopics(examId: string) {
       success: true,
       topicResults,
       recommendations,
+      suggestedTasks: recommendations, // AI suggests tasks, advisor approves them
       totalTopics: topicResults.length,
       weakTopics: topicResults.filter(t => t.status === 'weak').length
     };

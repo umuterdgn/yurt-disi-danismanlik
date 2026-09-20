@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, BookOpen, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Target, BookOpen, TrendingUp, Filter } from "lucide-react";
 
 interface SubjectResult {
   subjectName: string;
@@ -22,10 +27,77 @@ interface Exam {
 
 interface MasteryMapProps {
   exams: Exam[];
+  studentId?: string;
+  subjectAnalysis?: any[];
 }
 
-export function MasteryMap({ exams }: MasteryMapProps) {
+export function MasteryMap({ exams, studentId, subjectAnalysis }: MasteryMapProps) {
+  const [dataSource, setDataSource] = useState<'ALL' | 'EXAM' | 'TASK'>('ALL');
+  const [selectedSubject, setSelectedSubject] = useState<string>('ALL');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
   const calculateMasteryData = () => {
+    if (exams.length === 0 && !subjectAnalysis) {
+      return null;
+    }
+
+    // Filter by data source
+    let filteredAnalysis = subjectAnalysis || [];
+    if (dataSource !== 'ALL') {
+      filteredAnalysis = filteredAnalysis.filter(item => {
+        if (dataSource === 'EXAM') return item.dataSource === 'EXAM';
+        if (dataSource === 'TASK') return item.dataSource === 'TASK';
+        return true;
+      });
+    }
+
+    // Filter by subject
+    if (selectedSubject !== 'ALL') {
+      filteredAnalysis = filteredAnalysis.filter(item => item.subject === selectedSubject);
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      filteredAnalysis = filteredAnalysis.filter(item => {
+        const itemDate = new Date(item.lastStudiedAt || item.createdAt);
+        if (startDate && itemDate < new Date(startDate)) return false;
+        if (endDate && itemDate > new Date(endDate)) return false;
+        return true;
+      });
+    }
+
+    // If we have subject analysis data, use it
+    if (filteredAnalysis.length > 0) {
+      const subjectMastery: Record<string, { totalPercent: number; count: number; topics: any[] }> = {};
+
+      filteredAnalysis.forEach(item => {
+        if (!subjectMastery[item.subject]) {
+          subjectMastery[item.subject] = { totalPercent: 0, count: 0, topics: [] };
+        }
+        subjectMastery[item.subject].totalPercent += item.progressPercent;
+        subjectMastery[item.subject].count += 1;
+        subjectMastery[item.subject].topics.push(item);
+      });
+
+      const masteryData = Object.entries(subjectMastery).map(([subject, data]) => {
+        const percentage = data.count > 0 ? data.totalPercent / data.count : 0;
+        
+        return {
+          subject,
+          percentage: Math.round(percentage),
+          avgNet: 'N/A',
+          totalQuestions: data.topics.length,
+          totalCorrect: data.topics.filter(t => t.proficiency === 'GOOD' || t.proficiency === 'EXCELLENT').length,
+          dataSource: dataSource,
+          topics: data.topics
+        };
+      });
+
+      return masteryData;
+    }
+
+    // Fallback to exam data if no subject analysis
     if (exams.length === 0) {
       return null;
     }
@@ -56,7 +128,9 @@ export function MasteryMap({ exams }: MasteryMapProps) {
         percentage: Math.round(percentage),
         avgNet: avgNet.toFixed(2),
         totalQuestions: data.total,
-        totalCorrect: data.correct
+        totalCorrect: data.correct,
+        dataSource: 'EXAM',
+        topics: []
       };
     });
 
@@ -64,6 +138,18 @@ export function MasteryMap({ exams }: MasteryMapProps) {
   };
 
   const masteryData = calculateMasteryData();
+
+  // Get unique subjects for filter
+  const allSubjects = subjectAnalysis 
+    ? [...new Set(subjectAnalysis.map(item => item.subject))]
+    : [];
+
+  const resetFilters = () => {
+    setDataSource('ALL');
+    setSelectedSubject('ALL');
+    setStartDate('');
+    setEndDate('');
+  };
 
   const getMasteryColor = (percentage: number) => {
     if (percentage >= 80) return 'bg-green-500';
@@ -109,10 +195,73 @@ export function MasteryMap({ exams }: MasteryMapProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="w-5 h-5" />
-          Konu Hakimiyet Haritası
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Target className="w-5 h-5" />
+            Konu Hakimiyet Haritası
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filtreleri Sıfırla
+          </Button>
+        </div>
+        
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+          <div>
+            <Label className="text-xs text-gray-600">Veri Kaynağı</Label>
+            <Select value={dataSource} onValueChange={(value: any) => setDataSource(value)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tümü</SelectItem>
+                <SelectItem value="EXAM">Sadece Denemeler</SelectItem>
+                <SelectItem value="TASK">Sadece Görevler</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label className="text-xs text-gray-600">Ders Seçimi</Label>
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tüm Dersler</SelectItem>
+                {allSubjects.map(subject => (
+                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label className="text-xs text-gray-600">Başlangıç Tarihi</Label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label className="text-xs text-gray-600">Bitiş Tarihi</Label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -124,7 +273,8 @@ export function MasteryMap({ exams }: MasteryMapProps) {
                   <div>
                     <h4 className="font-semibold text-gray-900">{data.subject}</h4>
                     <p className="text-xs text-gray-600">
-                      {data.totalCorrect}/{data.totalQuestions} doğru • Ort. Net: {data.avgNet}
+                      {data.totalCorrect}/{data.totalQuestions} konu • Ort. Net: {data.avgNet}
+                      {data.dataSource !== 'EXAM' && <span className="ml-2">• Kaynak: {data.dataSource === 'TASK' ? 'Görevler' : 'Tümü'}</span>}
                     </p>
                   </div>
                 </div>
@@ -141,6 +291,21 @@ export function MasteryMap({ exams }: MasteryMapProps) {
                   style={{ width: `${data.percentage}%` }}
                 />
               </div>
+              
+              {/* Show topic breakdown if available */}
+              {data.topics && data.topics.length > 0 && (
+                <div className="mt-2 pl-4 space-y-1">
+                  {data.topics.slice(0, 3).map((topic: any) => (
+                    <div key={topic.id} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">{topic.topic}</span>
+                      <span className="font-medium">%{topic.progressPercent}</span>
+                    </div>
+                  ))}
+                  {data.topics.length > 3 && (
+                    <div className="text-xs text-gray-500">+{data.topics.length - 3} daha fazla konu</div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
