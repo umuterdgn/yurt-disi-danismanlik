@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { CURRICULUM, isTopicInCurriculum, normalizeTopicName } from './constants/curriculum';
 
 interface SubjectMatch {
   id: string;
@@ -110,26 +111,35 @@ export function matchSubjectToCurriculum(
 // Match OCR topic output to official curriculum topics
 export function matchTopicToCurriculum(
   ocrTopic: string,
-  officialTopics: TopicMatch[]
+  officialTopics: TopicMatch[],
+  gradeLevel: string = '10. Sınıf',
+  subject: string = 'Matematik'
 ): TopicMatch | null {
   if (!ocrTopic) return null;
 
   // Normalize the OCR topic name
-  const normalizedOCR = ocrTopic.toLowerCase().trim();
+  const normalizedOCR = normalizeTopicName(ocrTopic);
+  
+  // IMPORTANT: Check if topic is in hardcoded curriculum first
+  // Only accept topics that are officially defined in the curriculum
+  if (!isTopicInCurriculum(gradeLevel, subject, ocrTopic)) {
+    console.warn(`Topic "${ocrTopic}" not in curriculum for ${gradeLevel} ${subject} - rejecting`);
+    return null;
+  }
   
   // Direct match
   const directMatch = officialTopics.find(
-    topic => topic.name.toLowerCase() === normalizedOCR
+    topic => normalizeTopicName(topic.name) === normalizedOCR
   );
   if (directMatch) return directMatch;
 
   // Code match
   const codeMatch = officialTopics.find(
-    topic => topic.code?.toLowerCase() === normalizedOCR
+    topic => topic.code ? normalizeTopicName(topic.code) === normalizedOCR : false
   );
   if (codeMatch) return codeMatch;
 
-  // Fuzzy match for common variations
+  // Fuzzy match for common variations (only if topic is in curriculum)
   const topicVariations: Record<string, string[]> = {
     'türev': ['türev', 'türev alma', 'türev hesaplama', 'derivative'],
     'integral': ['integral', 'integrasyon', 'integration'],
@@ -155,10 +165,13 @@ export function matchTopicToCurriculum(
 
   for (const [officialName, variations] of Object.entries(topicVariations)) {
     if (variations.includes(normalizedOCR)) {
-      const match = officialTopics.find(topic => 
-        topic.name.toLowerCase() === officialName
-      );
-      if (match) return match;
+      // Double-check that the official name is in curriculum
+      if (isTopicInCurriculum(gradeLevel, subject, officialName)) {
+        const match = officialTopics.find(topic => 
+          normalizeTopicName(topic.name) === normalizeTopicName(officialName)
+        );
+        if (match) return match;
+      }
     }
   }
 
@@ -196,7 +209,14 @@ export async function matchOCRToCurriculum(
 
     // Get official topics for the matched subject from the map
     const officialTopics = topicsMap.get(matchedSubject.id) || [];
-    const matchedTopic = matchTopicToCurriculum(result.topic, officialTopics);
+    
+    // Pass gradeLevel and subject name to enforce curriculum restrictions
+    const matchedTopic = matchTopicToCurriculum(
+      result.topic, 
+      officialTopics,
+      gradeLevel,
+      matchedSubject.name
+    );
     
     if (!matchedTopic) {
       // If no topic match, don't make up a topic

@@ -112,25 +112,89 @@ TONE: Professional, encouraging, insightful, and data-driven. Avoid generic prai
 
 Return ONLY the summary text (no markdown formatting, no introductory text, no explanatory notes).`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { 
-          responseMimeType: "text/plain"
-        }
-      })
-    });
+    // FALLBACK MODEL DİZİSİ (OCR sisteminde kullanılan aynı döngü)
+    const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
+    
+    let summary: string | null = null;
+    let successfulModel: string | null = null;
+    let lastError: any = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("GEMINI_API_ERROR:", errorText);
-      return NextResponse.json({ error: "AI rapor özeti oluşturulamadı" }, { status: response.status });
+    for (const modelName of models) {
+      console.log(`GEMINI_MODEL: Trying ${modelName} for report summary...`);
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { 
+            responseMimeType: "text/plain"
+          }
+        })
+      });
+
+      console.log(`GEMINI_RESPONSE_STATUS: ${modelName} - ${response.status}`);
+
+      // 503 High Demand - bir sonraki modele geç
+      if (response.status === 503) {
+        console.warn(`${modelName} 503 High Demand, bir sonraki modele geçiliyor...`);
+        lastError = { status: 503, model: modelName };
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`GEMINI_API_ERROR: ${modelName} - ${errorText}`);
+        
+        // 404 model bulunamadı - bir sonraki modele geç
+        if (response.status === 404) {
+          console.warn(`${modelName} 404 not found, bir sonraki modele geçiliyor...`);
+          lastError = { status: 404, model: modelName };
+          continue;
+        }
+        
+        // Diğer hatalar - hemen dön
+        if (response.status === 401 || response.status === 403) {
+          console.error("GEMINI_AUTH_ERROR: Authentication failed");
+          return NextResponse.json({ error: "API anahtar geçersiz veya yetkisiz." }, { status: response.status });
+        } else if (response.status === 429) {
+          console.error("GEMINI_RATE_LIMIT_ERROR: Rate limit exceeded");
+          return NextResponse.json({ error: "API rate limit aşıldı. Lütfen biraz bekleyip tekrar deneyin." }, { status: 429 });
+        } else if (response.status === 500) {
+          console.error("GEMINI_REQUEST_ERROR: Server error");
+          return NextResponse.json({ error: "Gemini sunucu hatası. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
+        }
+        
+        return NextResponse.json({ error: `API Hatası: ${response.status} - ${errorText}` }, { status: response.status });
+      }
+
+      // Başarılı - yanıtı parse et
+      try {
+        const responseData = await response.json();
+        summary = responseData.candidates[0].content.parts[0].text;
+        successfulModel = modelName;
+        console.log(`GEMINI_SUCCESS: ${modelName} worked!`);
+        break; // Başarılı, döngüden çık
+      } catch (parseError) {
+        console.error(`GEMINI_PARSE_ERROR: ${modelName} -`, parseError);
+        lastError = { status: "parse", model: modelName, error: parseError };
+        continue; // Parse hatası - bir sonraki modele geç
+      }
     }
 
-    const responseData = await response.json();
-    const summary = responseData.candidates[0].content.parts[0].text;
+    // Tüm modeller başarısız oldu
+    if (!summary) {
+      console.error("GEMINI_FATAL_ERROR: All models failed for report summary");
+      if (lastError?.status === 503) {
+        return NextResponse.json({ error: "Tüm modeller şu anda meşgul (503 High Demand). Lütfen birazdan tekrar deneyin." }, { status: 503 });
+      } else if (lastError?.status === 404) {
+        return NextResponse.json({ error: "Tüm modeller bulunamadı (404). API anahtarınızın Gemini modellerini desteklediğinden emin olun." }, { status: 404 });
+      } else {
+        return NextResponse.json({ error: "Tüm modeller başarısız oldu. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
+      }
+    }
+
+    console.log(`GEMINI_SUCCESS: Used model ${successfulModel} for report summary`);
 
     return NextResponse.json({
       success: true,
