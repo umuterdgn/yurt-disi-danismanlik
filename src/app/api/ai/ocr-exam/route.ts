@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { matchOCRToCurriculum } from "@/lib/curriculum-matcher";
 
 interface QuestionResult {
   questionNumber: number;
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const images = body.images || [];
     const answerKey = body.answerKey || null;
+    const gradeLevel = body.gradeLevel || '10. Sınıf'; // Default to 10th grade
 
     if (images.length === 0) {
       return NextResponse.json({ error: "Görsel bulunamadı." }, { status: 400 });
@@ -279,10 +281,13 @@ Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
     // Build response with backward-compatible scores (exclude unknown from final response)
     const { unknown: _unknown, ...finalScores } = scores as any;
     
+    // Match OCR results to official curriculum
+    const curriculumMatchedResults = await matchOCRToCurriculum(questionResults, gradeLevel);
+    
     const ocrResponse: OCRResponse = {
       success: true,
       scores: finalScores,
-      questionResults,
+      questionResults: curriculumMatchedResults,
       warnings
     };
 

@@ -17,6 +17,10 @@ import { AICopilotPanel } from "@/components/ai-copilot-panel";
 import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
 import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
+import { HolisticAnalysis } from "@/components/holistic-analysis";
+import { GoalProgress } from "@/components/goal-progress";
+import { AIUniversityAdvisor } from "@/components/ai-university-advisor";
+import { ReportGenerationDialog } from "@/components/report-generation-dialog";
 import { StudySessionLogs } from "@/components/study-session-logs";
 import { TimeAnalysisCard } from "@/components/time-analysis-card";
 import { EfficiencyAnalysisCard } from "@/components/efficiency-analysis-card";
@@ -72,6 +76,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       updatedAt: true,
       domain: true,
       targetUniversities: true,
+      targetUniversity: true,
+      targetMajor: true,
       user: {
         include: {
           auditLogs: {
@@ -246,9 +252,22 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/advisor/dashboard" className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
-            ← Ana Panele Dön
-          </Link>
+          <div className="flex items-center justify-between mb-4">
+            <Link href="/advisor/dashboard" className="text-blue-600 hover:text-blue-700">
+              ← Ana Panele Dön
+            </Link>
+            <ReportGenerationDialog
+              studentName={student.user.name}
+              studentId={id}
+              targetUniversity={student.targetUniversity}
+              targetMajor={student.targetMajor}
+              currentScore={student.currentScore}
+              targetScore={student.targetScore}
+              exams={student.exams}
+              completedTasks={student.dailyTasks}
+              subjectAnalysis={subjectAnalysis}
+            />
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">{student.user.name}</h1>
           <p className="text-gray-600 mt-2">{student.school} - {student.grade}. Sınıf {student.domain && `(${student.domain})`}</p>
         </div>
@@ -583,8 +602,33 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <AddAdvancedExamDialog students={[{ id, name: student.user.name }]} studentId={id} />
               </div>
 
+              {/* Goal Progress */}
+              <GoalProgress 
+                currentScore={student.currentScore}
+                targetScore={student.targetScore}
+                targetUniversity={student.targetUniversity}
+                targetMajor={student.targetMajor}
+                examHistory={student.exams.map((exam: any) => ({
+                  date: new Date(exam.date),
+                  score: exam.totalNet || 0
+                }))}
+              />
+
               {/* Mastery Map */}
               <MasteryMap exams={student.exams as any} studentId={id} subjectAnalysis={subjectAnalysis} />
+
+              {/* Holistic Analysis - Integrated Performance */}
+              <HolisticAnalysis subjectAnalysis={subjectAnalysis} studentId={id} />
+
+              {/* AI University Advisor */}
+              <AIUniversityAdvisor 
+                studentId={id}
+                academicPerformance={subjectAnalysis}
+                currentScore={student.currentScore}
+                targetScore={student.targetScore}
+                targetMajor={student.targetMajor}
+                targetUniversity={student.targetUniversity}
+              />
 
               {/* Subject Analysis (AI) */}
               <Card>

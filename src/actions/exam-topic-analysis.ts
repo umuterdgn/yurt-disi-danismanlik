@@ -129,7 +129,7 @@ export async function analyzeExamTopics(examId: string) {
       }
     }
 
-    // Update SubjectAnalysis for mastery tracking
+    // Update SubjectAnalysis for mastery tracking with holistic analysis
     for (const topic of topicResults) {
       if (topic.topic) {
         // Find existing subject analysis
@@ -142,7 +142,7 @@ export async function analyzeExamTopics(examId: string) {
         });
 
         if (existingAnalysis) {
-          // Update existing analysis with weighted average
+          // Update existing analysis with weighted average and holistic data
           const currentProficiency = existingAnalysis.progressPercent || 0;
           const newProficiency = (currentProficiency * 0.7) + (topic.successRate * 0.3); // 70% old, 30% new
           
@@ -152,22 +152,32 @@ export async function analyzeExamTopics(examId: string) {
           else if (newProficiency >= 41) newProficiencyLevel = 'MEDIUM';
           else newProficiencyLevel = 'WEAK';
 
+          // Calculate exam net score
+          const examNet = topic.correct - (topic.wrong / 4);
+
           await prisma.subjectAnalysis.update({
             where: { id: existingAnalysis.id },
             data: {
               progressPercent: Math.round(newProficiency),
               proficiency: newProficiencyLevel,
               lastStudiedAt: new Date(),
-              dataSource: existingAnalysis.dataSource === 'TASK' ? 'BOTH' : 'EXAM'
+              dataSource: existingAnalysis.dataSource === 'TASK' ? 'BOTH' : 'EXAM',
+              // Holistic Analysis: Exam Data
+              examNetScore: examNet,
+              examTotalQuestions: topic.totalQuestions,
+              examCorrect: topic.correct
             }
           });
         } else {
-          // Create new subject analysis
+          // Create new subject analysis with holistic data
           let proficiencyLevel: 'WEAK' | 'MEDIUM' | 'GOOD' | 'EXCELLENT' = 'MEDIUM';
           if (topic.successRate >= 86) proficiencyLevel = 'EXCELLENT';
           else if (topic.successRate >= 71) proficiencyLevel = 'GOOD';
           else if (topic.successRate >= 41) proficiencyLevel = 'MEDIUM';
           else proficiencyLevel = 'WEAK';
+
+          // Calculate exam net score
+          const examNet = topic.correct - (topic.wrong / 4);
 
           await prisma.subjectAnalysis.create({
             data: {
@@ -177,7 +187,11 @@ export async function analyzeExamTopics(examId: string) {
               proficiency: proficiencyLevel,
               progressPercent: Math.round(topic.successRate),
               lastStudiedAt: new Date(),
-              dataSource: 'EXAM' // Initially from exam data
+              dataSource: 'EXAM', // Initially from exam data
+              // Holistic Analysis: Exam Data
+              examNetScore: examNet,
+              examTotalQuestions: topic.totalQuestions,
+              examCorrect: topic.correct
             }
           });
         }

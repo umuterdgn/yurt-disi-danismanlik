@@ -8,6 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
 import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
+import { HolisticAnalysis } from "@/components/holistic-analysis";
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface SubjectResult {
@@ -280,6 +281,16 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
           </CardHeader>
           <CardContent>
             <MasteryMap exams={examResults as any} subjectAnalysis={subjectAnalysis} />
+          </CardContent>
+        </Card>
+
+        {/* Holistic Analysis - Integrated Performance */}
+        <Card className="mb-6 md:mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Bütünleşik Performans Analizi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HolisticAnalysis subjectAnalysis={subjectAnalysis} />
           </CardContent>
         </Card>
 
