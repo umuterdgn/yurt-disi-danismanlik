@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const images = body.images || [];
     const answerKey = body.answerKey || null;
-    const gradeLevel = body.gradeLevel || '10. Sınıf'; // Default to 10th grade
+    const examType = body.examType || 'TYT'; // Default to TYT
 
     if (images.length === 0) {
       return NextResponse.json({ error: "Görsel bulunamadı." }, { status: 400 });
@@ -282,7 +282,7 @@ Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
     const { unknown: _unknown, ...finalScores } = scores as any;
     
     // Match OCR results to official curriculum
-    const curriculumMatchedResults = await matchOCRToCurriculum(questionResults, gradeLevel);
+    const curriculumMatchedResults = await matchOCRToCurriculum(questionResults, examType);
     
     const ocrResponse: OCRResponse = {
       success: true,

@@ -14,10 +14,11 @@ interface TopicMatch {
   subjectId: string;
 }
 
-// Get official subjects from curriculum for a given grade level
-export async function getOfficialSubjects(gradeLevel: string): Promise<SubjectMatch[]> {
-  const gradeLevelRecord = await prisma.gradeLevel.findUnique({
-    where: { name: gradeLevel },
+// Get official subjects from curriculum for a given exam type or grade level
+export async function getOfficialSubjects(examType: string): Promise<SubjectMatch[]> {
+  // Try to find by exam type first, then by grade level
+  let gradeLevelRecord = await prisma.gradeLevel.findUnique({
+    where: { name: examType },
     include: {
       subjects: {
         where: { isActive: true },
@@ -26,7 +27,26 @@ export async function getOfficialSubjects(gradeLevel: string): Promise<SubjectMa
     }
   });
 
+  // If not found by exam type, try as grade level
   if (!gradeLevelRecord) {
+    gradeLevelRecord = await prisma.gradeLevel.findFirst({
+      where: { 
+        OR: [
+          { name: examType },
+          { name: { contains: examType } }
+        ]
+      },
+      include: {
+        subjects: {
+          where: { isActive: true },
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
+  }
+
+  if (!gradeLevelRecord) {
+    console.warn(`No grade level found for exam type: ${examType}`);
     return [];
   }
 
@@ -112,7 +132,7 @@ export function matchSubjectToCurriculum(
 export function matchTopicToCurriculum(
   ocrTopic: string,
   officialTopics: TopicMatch[],
-  gradeLevel: string = '10. Sınıf',
+  examType: string = 'TYT',
   subject: string = 'Matematik'
 ): TopicMatch | null {
   if (!ocrTopic) return null;
@@ -120,10 +140,10 @@ export function matchTopicToCurriculum(
   // Normalize the OCR topic name
   const normalizedOCR = normalizeTopicName(ocrTopic);
   
-  // IMPORTANT: Check if topic is in hardcoded curriculum first
+  // CRITICAL: Strict validation - Check if topic is in hardcoded curriculum first
   // Only accept topics that are officially defined in the curriculum
-  if (!isTopicInCurriculum(gradeLevel, subject, ocrTopic)) {
-    console.warn(`Topic "${ocrTopic}" not in curriculum for ${gradeLevel} ${subject} - rejecting`);
+  if (!isTopicInCurriculum(examType, subject, ocrTopic)) {
+    console.warn(`Topic "${ocrTopic}" not in curriculum for ${examType} ${subject} - rejecting`);
     return null;
   }
   
@@ -166,7 +186,7 @@ export function matchTopicToCurriculum(
   for (const [officialName, variations] of Object.entries(topicVariations)) {
     if (variations.includes(normalizedOCR)) {
       // Double-check that the official name is in curriculum
-      if (isTopicInCurriculum(gradeLevel, subject, officialName)) {
+      if (isTopicInCurriculum(examType, subject, officialName)) {
         const match = officialTopics.find(topic => 
           normalizeTopicName(topic.name) === normalizeTopicName(officialName)
         );
@@ -181,9 +201,9 @@ export function matchTopicToCurriculum(
 // Main function to match OCR results to curriculum
 export async function matchOCRToCurriculum(
   ocrResults: any[],
-  gradeLevel: string
+  examType: string
 ): Promise<any[]> {
-  const officialSubjects = await getOfficialSubjects(gradeLevel);
+  const officialSubjects = await getOfficialSubjects(examType);
   
   // Build a map of subjectId to topics to avoid multiple queries
   const topicsMap = new Map<string, TopicMatch[]>();
@@ -210,11 +230,11 @@ export async function matchOCRToCurriculum(
     // Get official topics for the matched subject from the map
     const officialTopics = topicsMap.get(matchedSubject.id) || [];
     
-    // Pass gradeLevel and subject name to enforce curriculum restrictions
+    // Pass examType and subject name to enforce curriculum restrictions
     const matchedTopic = matchTopicToCurriculum(
       result.topic, 
       officialTopics,
-      gradeLevel,
+      examType,
       matchedSubject.name
     );
     

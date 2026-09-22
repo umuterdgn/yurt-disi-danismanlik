@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { addTask } from "@/actions/add-task";
-import { getCurriculumSubjects, getCurriculumTopics, getCurriculumQuestionTypes } from "@/actions/get-curriculum";
+import { CURRICULUM, getSubjectsForExamType, getTopicsForSubject, getAllExamTypes } from "@/lib/constants/curriculum";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,14 +22,14 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedExamType, setSelectedExamType] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedQuestionType, setSelectedQuestionType] = useState("");
   
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [topics, setTopics] = useState<any[]>([]);
-  const [questionTypes, setQuestionTypes] = useState<any[]>([]);
-  const [loadingCurriculum, setLoadingCurriculum] = useState(false);
+  const [examTypes, setExamTypes] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [topics, setTopics] = useState<string[]>([]);
 
   // Load curriculum data when dialog opens
   useEffect(() => {
@@ -38,78 +38,52 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
     }
   }, [open]);
 
-  const loadCurriculumData = async () => {
-    setLoadingCurriculum(true);
+  const loadCurriculumData = () => {
     try {
-      const subjectsResult = await getCurriculumSubjects();
-      if (subjectsResult.success && subjectsResult.subjects) {
-        setSubjects(subjectsResult.subjects);
-      }
+      const allExamTypes = getAllExamTypes();
+      setExamTypes(allExamTypes);
     } catch (error) {
       console.error('Error loading curriculum:', error);
-    } finally {
-      setLoadingCurriculum(false);
     }
   };
+
+  // Load subjects when exam type changes
+  useEffect(() => {
+    if (selectedExamType) {
+      const subjectList = getSubjectsForExamType(selectedExamType);
+      setSubjects(subjectList);
+      setSelectedSubject("");
+      setSelectedTopic("");
+    } else {
+      setSubjects([]);
+      setTopics([]);
+    }
+  }, [selectedExamType]);
 
   // Load topics when subject changes
   useEffect(() => {
-    if (selectedSubject) {
-      loadTopics(selectedSubject);
+    if (selectedExamType && selectedSubject) {
+      const topicList = getTopicsForSubject(selectedExamType, selectedSubject);
+      setTopics(topicList);
+      setSelectedTopic("");
     } else {
       setTopics([]);
-      setQuestionTypes([]);
     }
-  }, [selectedSubject]);
-
-  // Load question types when topic changes
-  useEffect(() => {
-    if (selectedTopic) {
-      loadQuestionTypes(selectedTopic);
-    } else {
-      setQuestionTypes([]);
-    }
-  }, [selectedTopic]);
-
-  const loadTopics = async (subjectId: string) => {
-    try {
-      const topicsResult = await getCurriculumTopics(subjectId);
-      if (topicsResult.success && topicsResult.topics) {
-        setTopics(topicsResult.topics);
-      }
-    } catch (error) {
-      console.error('Error loading topics:', error);
-    }
-  };
-
-  const loadQuestionTypes = async (topicId: string) => {
-    try {
-      const qtResult = await getCurriculumQuestionTypes(topicId);
-      if (qtResult.success && qtResult.questionTypes) {
-        setQuestionTypes(qtResult.questionTypes);
-      }
-    } catch (error) {
-      console.error('Error loading question types:', error);
-    }
-  };
+  }, [selectedExamType, selectedSubject]);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError("");
     
-    // Add curriculum IDs to form data
+    // Add curriculum data to form data
+    if (selectedExamType) {
+      formData.append('examType', selectedExamType);
+    }
     if (selectedSubject) {
-      const subject = subjects.find(s => s.id === selectedSubject);
-      formData.append('subject', subject?.name || '');
-      formData.append('subjectId', selectedSubject);
+      formData.append('subject', selectedSubject);
     }
     if (selectedTopic) {
-      const topic = topics.find(t => t.id === selectedTopic);
-      formData.append('topic', topic?.name || '');
-      formData.append('topicId', selectedTopic);
-    }
-    if (selectedQuestionType) {
-      formData.append('questionTypeId', selectedQuestionType);
+      formData.append('topic', selectedTopic);
     }
     
     const result = await addTask(formData);
@@ -172,26 +146,50 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+              <Label htmlFor="examType" className="md:text-right">
+                Sınav Türü / Sınıf
+              </Label>
+              <Select 
+                name="examType" 
+                required 
+                onValueChange={(value) => {
+                  setSelectedExamType(value);
+                  setSelectedSubject("");
+                  setSelectedTopic("");
+                }}
+              >
+                <SelectTrigger className="col-span-1 md:col-span-3">
+                  <SelectValue placeholder="Sınav türü seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {examTypes.map((examType) => (
+                    <SelectItem key={examType} value={examType}>
+                      {examType}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="subject" className="md:text-right">
                 Ders
               </Label>
               <Select 
                 name="subject" 
                 required 
-                disabled={loadingCurriculum}
+                disabled={!selectedExamType}
                 onValueChange={(value) => {
                   setSelectedSubject(value);
-                  setSelectedTopic('');
-                  setSelectedQuestionType('');
+                  setSelectedTopic("");
                 }}
               >
                 <SelectTrigger className="col-span-1 md:col-span-3">
-                  <SelectValue placeholder={loadingCurriculum ? "Yükleniyor..." : "Ders seçin"} />
+                  <SelectValue placeholder={selectedExamType ? "Ders seçin" : "Önce sınav türü seçin"} />
                 </SelectTrigger>
                 <SelectContent>
                   {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.displayName || subject.name}
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -205,39 +203,15 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
                 name="topic" 
                 required 
                 disabled={!selectedSubject}
-                onValueChange={(value) => {
-                  setSelectedTopic(value);
-                  setSelectedQuestionType('');
-                }}
+                onValueChange={(value) => setSelectedTopic(value)}
               >
                 <SelectTrigger className="col-span-1 md:col-span-3">
                   <SelectValue placeholder={selectedSubject ? "Konu seçin" : "Önce ders seçin"} />
                 </SelectTrigger>
                 <SelectContent>
                   {topics.map((topic) => (
-                    <SelectItem key={topic.id} value={topic.id}>
-                      {topic.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-              <Label htmlFor="questionType" className="md:text-right">
-                Soru Tipi
-              </Label>
-              <Select 
-                name="questionType" 
-                disabled={!selectedTopic}
-                onValueChange={(value) => setSelectedQuestionType(value)}
-              >
-                <SelectTrigger className="col-span-1 md:col-span-3">
-                  <SelectValue placeholder={selectedTopic ? "Soru tipi seçin" : "Önce konu seçin"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {questionTypes.map((qt) => (
-                    <SelectItem key={qt.id} value={qt.id}>
-                      {qt.name}
+                    <SelectItem key={topic} value={topic}>
+                      {topic}
                     </SelectItem>
                   ))}
                 </SelectContent>
