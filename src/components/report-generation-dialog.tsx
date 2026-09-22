@@ -147,31 +147,17 @@ export function ReportGenerationDialog({
       toast.loading('PDF oluşturuluyor...');
 
       const canvas = await html2canvas(templateElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false
+        scale: 2, // Yüksek kalite için
+        useCORS: true, // Logoların ve dış görsellerin yüklenmesi için ZORUNLU
+        logging: true // Hatayı görebilmemiz için
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
       const reportDate = new Date().toLocaleDateString('tr-TR').replace(/\//g, '-');
       const fileName = `${studentName}_${reportType === 'weekly' ? 'Haftalik' : 'Aylik'}Rapor_${reportDate}.pdf`;
       
@@ -183,9 +169,9 @@ export function ReportGenerationDialog({
       setShowTemplate(false);
       setAiSummary('');
     } catch (error) {
-      console.error('Error downloading PDF:', error);
+      console.error("PDF_EXPORT_ERROR:", error);
       toast.dismiss();
-      toast.error('PDF indirilirken hata oluştu');
+      toast.error('PDF oluşturulurken bir hata oluştu. Lütfen konsolu kontrol edin.');
     }
   };
 
@@ -348,6 +334,26 @@ export function ReportGenerationDialog({
             >
               Vazgeç
             </Button>
+          </div>
+        )}
+        
+        {/* Hidden template for PDF generation - always rendered but positioned off-screen */}
+        {showTemplate && (
+          <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', visibility: 'hidden' }}>
+            <StudentReportTemplate
+              studentName={studentName}
+              targetUniversity={targetUniversity}
+              targetMajor={targetMajor}
+              reportType={reportType}
+              reportDate={reportDate}
+              aiSummary={aiSummary}
+              currentScore={currentScore}
+              targetScore={targetScore}
+              exams={filteredExams}
+              completedTasks={filteredTasks}
+              pomodoroData={pomodoroData}
+              subjectAnalysis={subjectAnalysis}
+            />
           </div>
         )}
       </DialogContent>
