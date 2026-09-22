@@ -437,19 +437,21 @@ export const CURRICULUM: Record<string, Record<string, string[]>> = {
       "Canlılar ve Çevre"
     ]
   },
-  "YDT": [
-    "Kelime Bilgisi",
-    "Dil Bilgisi",
-    "Cloze Test",
-    "Cümleyi Tamamlama",
-    "İngilizce Cümlenin Türkçe Karşılığını Bulma",
-    "Türkçe Cümlenin İngilizce Karşılığını Bulma",
-    "Paragraf Anlamca Yakın Cümleyi Bulma",
-    "Paragrafta Anlam Bütünlüğünü Sağlayacak Cümleyi Bulma",
-    "Verilen Durumda Söylenecek İfadeyi Bulma",
-    "Diyalog Tamamlama",
-    "Anlam Bütünlüğünü Bozan Cümleyi Bulma"
-  ],
+  "YDT": {
+    "İngilizce": [
+      "Kelime Bilgisi",
+      "Dil Bilgisi",
+      "Cloze Test",
+      "Cümleyi Tamamlama",
+      "İngilizce Cümlenin Türkçe Karşılığını Bulma",
+      "Türkçe Cümlenin İngilizce Karşılığını Bulma",
+      "Paragraf Anlamca Yakın Cümleyi Bulma",
+      "Paragrafta Anlam Bütünlüğünü Sağlayacak Cümleyi Bulma",
+      "Verilen Durumda Söylenecek İfadeyi Bulma",
+      "Diyalog Tamamlama",
+      "Anlam Bütünlüğünü Bozan Cümleyi Bulma"
+    ]
+  },
   "9. Sınıf": {
     "Edebiyat": [
       "Edebiyat Nedir?",
