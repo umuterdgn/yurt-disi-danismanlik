@@ -113,7 +113,7 @@ TONE: Professional, encouraging, insightful, and data-driven. Avoid generic prai
 Return ONLY the summary text (no markdown formatting, no introductory text, no explanatory notes).`;
 
     // FALLBACK MODEL DİZİSİ (OCR sisteminde kullanılan aynı döngü)
-    const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
+    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
     
     let summary: string | null = null;
     let successfulModel: string | null = null;

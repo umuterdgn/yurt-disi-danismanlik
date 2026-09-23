@@ -112,25 +112,96 @@ IMPORTANT:
 
 Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { 
-          responseMimeType: "application/json"
-        }
-      })
-    });
+    // FALLBACK MODEL DİZİSİ
+    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("GEMINI_API_ERROR:", errorText);
-      return NextResponse.json({ error: "AI üniversite önerisi başarısız" }, { status: response.status });
+    let parsedData: any = null;
+    let successfulModel: string | null = null;
+    let lastError: any = null;
+
+    for (const modelName of models) {
+      console.log(`UNIVERSITY_ADVISOR_AI: Trying ${modelName}...`);
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        console.log(`UNIVERSITY_ADVISOR_AI: ${modelName} response status: ${response.status}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`UNIVERSITY_ADVISOR_AI_ERROR: ${modelName} - ${errorText}`);
+
+          // 404 model bulunamadı - bir sonraki modele geç
+          if (response.status === 404) {
+            console.warn(`${modelName} 404 not found, bir sonraki modele geçiliyor...`);
+            lastError = { status: 404, model: modelName };
+            continue;
+          }
+
+          // 503 High Demand - bir sonraki modele geç
+          if (response.status === 503) {
+            console.warn(`${modelName} 503 High Demand, bir sonraki modele geçiliyor...`);
+            lastError = { status: 503, model: modelName };
+            continue;
+          }
+
+          // Diğer hatalar - hemen dön
+          if (response.status === 401 || response.status === 403) {
+            console.error("UNIVERSITY_ADVISOR_AUTH_ERROR: Authentication failed");
+            return NextResponse.json({ error: "API anahtar geçersiz veya yetkisiz." }, { status: response.status });
+          } else if (response.status === 429) {
+            console.error("UNIVERSITY_ADVISOR_RATE_LIMIT_ERROR: Rate limit exceeded");
+            return NextResponse.json({ error: "API rate limit aşıldı. Lütfen biraz bekleyip tekrar deneyin." }, { status: 429 });
+          } else if (response.status === 500) {
+            console.error("UNIVERSITY_ADVISOR_REQUEST_ERROR: Server error");
+            return NextResponse.json({ error: "Gemini sunucu hatası. Lütfen daha sonra tekrar deneyin." }, { status: 500 });
+          }
+
+          lastError = { status: response.status, model: modelName, error: errorText };
+          continue;
+        }
+
+        const data = await response.json();
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!responseText) {
+          console.error(`UNIVERSITY_ADVISOR_PARSE_ERROR: ${modelName} - Empty response`);
+          lastError = { status: "empty", model: modelName };
+          continue;
+        }
+
+        // Clean markdown if present
+        const cleanText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        parsedData = JSON.parse(cleanText);
+        successfulModel = modelName;
+        console.log(`UNIVERSITY_ADVISOR_AI: ${modelName} worked!`);
+        break; // Başarılı, döngüden çık
+      } catch (parseError) {
+        console.error(`UNIVERSITY_ADVISOR_PARSE_ERROR: ${modelName} -`, parseError);
+        lastError = { status: "parse", model: modelName, error: parseError };
+        continue; // Parse hatası - bir sonraki modele geç
+      }
     }
 
-    const data = await response.json();
-    const parsedData = JSON.parse(data.candidates[0].content.parts[0].text);
+    // Tüm modeller başarısız oldu
+    if (!parsedData) {
+      console.error("UNIVERSITY_ADVISOR_FATAL_ERROR: All models failed");
+      console.error("UNIVERSITY_ADVISOR_FATAL_ERROR: Last error:", lastError);
+      return NextResponse.json({
+        error: "Üniversite önerisi alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
+      }, { status: 500 });
+    }
+
+    console.log(`UNIVERSITY_ADVISOR_AI_SUCCESS: Used model ${successfulModel}`);
 
     return NextResponse.json({
       success: true,

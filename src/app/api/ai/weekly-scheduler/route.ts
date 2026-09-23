@@ -129,7 +129,7 @@ Başlangıç tarihi: ${startDate || new Date().toISOString().split('T')[0]}
 Return ONLY valid JSON. Do NOT include markdown blocks, text, or explanations.`;
 
     // FALLBACK MODEL DİZİSİ
-    const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+    const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
 
     const prompt = `${systemPrompt}
 
