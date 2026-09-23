@@ -47,7 +47,7 @@ export async function analyzeWorksheetTopics(worksheetId: string) {
       return { success: false, error: 'Worksheet not found' };
     }
 
-    const questionTypeAnalysis = worksheet.questionTypeAnalysis as QuestionTypeAnalysis[] || [];
+    const questionTypeAnalysis = (worksheet.questionTypeAnalysis as unknown) as QuestionTypeAnalysis[] || [];
     
     // Calculate total metrics
     const totalQuestions = worksheet.correct + worksheet.wrong + worksheet.empty;

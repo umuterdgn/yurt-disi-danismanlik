@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import React from "react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   description: "Uluslararası eğitim danışmanlığı ve yurt dışı eğitim hizmetleri",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="tr"
