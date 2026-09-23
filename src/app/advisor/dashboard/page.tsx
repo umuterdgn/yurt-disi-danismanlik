@@ -188,8 +188,8 @@ export default async function AdvisorDashboard() {
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Öğrenci Listesi</CardTitle>
             {transformedStudents.length > 0 && (
-              <WorksheetUploadDialog 
-                studentId={transformedStudents[0].id}
+              <WorksheetUploadDialog
+                students={transformedStudents.map(s => ({ id: s.id, name: s.name }))}
                 trigger={
                   <Button variant="outline" size="sm">
                     <FileText className="w-4 h-4 mr-2" />
