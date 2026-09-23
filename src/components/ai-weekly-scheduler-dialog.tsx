@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,10 +30,10 @@ interface ScheduleDay {
 interface AIWeeklySchedulerDialogProps {
   studentId: string;
   studentName: string;
-  onSuccess?: () => void;
 }
 
-export function AIWeeklySchedulerDialog({ studentId, studentName, onSuccess }: AIWeeklySchedulerDialogProps) {
+export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySchedulerDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -176,7 +177,7 @@ export function AIWeeklySchedulerDialog({ studentId, studentName, onSuccess }: A
       setOpen(false);
       setGenerated(false);
       setSchedule(null);
-      onSuccess?.();
+      router.refresh();
     } catch (error) {
       console.error('Error saving schedule:', error);
       toast.error(error instanceof Error ? error.message : 'Program kaydedilirken hata oluştu');

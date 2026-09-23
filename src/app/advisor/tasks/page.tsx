@@ -137,7 +137,6 @@ export default async function TasksPage() {
               <AIWeeklySchedulerDialog 
                 studentId={students[0].id} 
                 studentName={students[0].name}
-                onSuccess={() => window.location.reload()}
               />
             </div>
           )}

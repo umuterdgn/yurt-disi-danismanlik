@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,16 +15,15 @@ interface EditStudentDialogProps {
   currentTargetScore?: number | null;
   currentTargetUniversity?: string | null;
   currentTargetMajor?: string | null;
-  onSuccess?: () => void;
 }
 
 export function EditStudentDialog({ 
   studentId, 
   currentTargetScore, 
   currentTargetUniversity, 
-  currentTargetMajor,
-  onSuccess 
+  currentTargetMajor
 }: EditStudentDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [targetScore, setTargetScore] = useState(currentTargetScore?.toString() || '');
@@ -53,7 +53,7 @@ export function EditStudentDialog({
 
       toast.success('Öğrenci bilgileri güncellendi!');
       setOpen(false);
-      onSuccess?.();
+      router.refresh();
     } catch (error) {
       console.error('Error updating student:', error);
       toast.error(error instanceof Error ? error.message : 'Bir hata oluştu');

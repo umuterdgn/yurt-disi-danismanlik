@@ -627,7 +627,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   currentTargetScore={student.targetScore}
                   currentTargetUniversity={student.targetUniversity}
                   currentTargetMajor={student.targetMajor}
-                  onSuccess={() => window.location.reload()}
                 />
               </div>
 
