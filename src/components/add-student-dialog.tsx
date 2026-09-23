@@ -123,7 +123,7 @@ export function AddStudentDialog() {
                 id="name"
                 name="name"
                 placeholder="Öğrenci adı soyadı"
-                className="col-span-1 md:col-span-3"
+                className="col-span-1 md:col-span-3 w-full"
                 required
               />
             </div>
@@ -136,7 +136,7 @@ export function AddStudentDialog() {
                 name="email"
                 type="email"
                 placeholder="ogrenci@example.com"
-                className="col-span-1 md:col-span-3"
+                className="col-span-1 md:col-span-3 w-full"
                 required
               />
             </div>
@@ -149,7 +149,7 @@ export function AddStudentDialog() {
                 name="password"
                 type="password"
                 placeholder="******"
-                className="col-span-1 md:col-span-3"
+                className="col-span-1 md:col-span-3 w-full"
                 required
               />
             </div>
@@ -158,7 +158,7 @@ export function AddStudentDialog() {
                 Sınıf
               </Label>
               <Select name="grade" onValueChange={setGrade} required>
-                <SelectTrigger className="col-span-1 md:col-span-3">
+                <SelectTrigger className="col-span-1 md:col-span-3 w-full">
                   <SelectValue placeholder="Sınıf seçin" />
                 </SelectTrigger>
                 <SelectContent>
@@ -174,7 +174,7 @@ export function AddStudentDialog() {
                 YKS Alanı
               </Label>
               <Select name="domain" onValueChange={setDomain} required>
-                <SelectTrigger className="col-span-1 md:col-span-3">
+                <SelectTrigger className="col-span-1 md:col-span-3 w-full">
                   <SelectValue placeholder="Alan seçin" />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +191,7 @@ export function AddStudentDialog() {
                 <Label htmlFor="targetUniversities" className="md:text-right pt-2">
                   Hedef Üniversiteler
                 </Label>
-                <div className="col-span-1 md:col-span-3 space-y-2">
+                <div className="col-span-1 md:col-span-3 space-y-2 w-full">
                   <div className="max-h-40 overflow-y-auto border rounded p-2">
                     {universities.length === 0 ? (
                       <p className="text-sm text-gray-500">Üniversite yükleniyor...</p>
@@ -238,7 +238,7 @@ export function AddStudentDialog() {
                 value={targetScore}
                 onChange={(e) => setTargetScore(parseFloat(e.target.value) || 0)}
                 placeholder="Üniversite taban puanı"
-                className="col-span-1 md:col-span-3"
+                className="col-span-1 md:col-span-3 w-full"
                 readOnly
               />
             </div>
@@ -247,7 +247,7 @@ export function AddStudentDialog() {
                 Sembol Seçimi
               </Label>
               <Select name="studentSymbol" defaultValue="🎓">
-                <SelectTrigger className="col-span-1 md:col-span-3">
+                <SelectTrigger className="col-span-1 md:col-span-3 w-full">
                   <SelectValue placeholder="Sembol seçin" />
                 </SelectTrigger>
                 <SelectContent>
