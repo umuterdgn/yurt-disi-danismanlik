@@ -10,6 +10,7 @@ import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
 import { HolisticAnalysis } from "@/components/holistic-analysis";
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SubjectResult {
   id: string;
@@ -64,12 +65,30 @@ interface SubjectAnalysis {
 interface ExamsClientProps {
   examResults: ExamResult[];
   subjectAnalysis: SubjectAnalysis[];
-  students: { id: string; name: string }[];
+  students: { id: string; name: string; grade: string }[];
   userName: string;
 }
 
 export function ExamsClient({ examResults, subjectAnalysis, students, userName }: ExamsClientProps) {
   const [selectedExam, setSelectedExam] = useState<ExamResult | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+
+  // Filter data based on selected grade
+  const filteredStudents = selectedGrade === 'all'
+    ? students
+    : students.filter(student => student.grade === selectedGrade);
+
+  const filteredStudentIds = new Set(filteredStudents.map(s => s.id));
+
+  const filteredExamResults = examResults.filter(exam => {
+    const studentId = (exam as any).studentProfile?.id;
+    return studentId && filteredStudentIds.has(studentId);
+  });
+
+  const filteredSubjectAnalysis = subjectAnalysis.filter(analysis => {
+    const studentId = (analysis as any).studentProfile?.id;
+    return studentId && filteredStudentIds.has(studentId);
+  });
 
   const getProficiencyBadge = (level: string) => {
     switch (level) {
@@ -111,13 +130,13 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
     }
   };
 
-  const averageScore = examResults.length > 0 
-    ? (examResults.reduce((sum, e) => sum + (e.actualScore || e.totalNet || 0), 0) / examResults.length).toFixed(1)
+  const averageScore = filteredExamResults.length > 0
+    ? (filteredExamResults.reduce((sum, e) => sum + (e.actualScore || e.totalNet || 0), 0) / filteredExamResults.length).toFixed(1)
     : 0;
 
-  const improvementCount = examResults.filter(e => e.change > 0).length;
+  const improvementCount = filteredExamResults.filter(e => e.change > 0).length;
 
-  const chartData = examResults.slice(-20).map((e) => ({
+  const chartData = filteredExamResults.slice(-20).map((e) => ({
     name: e.studentProfile.user.name,
     date: new Date(e.examDate || e.date || Date.now()).toLocaleDateString('tr-TR'),
     score: e.actualScore || e.totalNet || 0,
@@ -139,7 +158,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
               <CardTitle className="text-xs md:text-sm font-medium text-gray-600">Toplam Deneme</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl md:text-3xl font-bold text-blue-600">{examResults.length}</div>
+              <div className="text-2xl md:text-3xl font-bold text-blue-600">{filteredExamResults.length}</div>
             </CardContent>
           </Card>
 
@@ -166,7 +185,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
               <CardTitle className="text-xs md:text-sm font-medium text-gray-600">Konu Analizi</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl md:text-3xl font-bold text-orange-600">{subjectAnalysis.length}</div>
+              <div className="text-2xl md:text-3xl font-bold text-orange-600">{filteredSubjectAnalysis.length}</div>
             </CardContent>
           </Card>
         </div>
@@ -194,8 +213,23 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
         {/* Exam Results Table */}
         <Card className="mb-6 md:mb-8">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Deneme Sonuçları</CardTitle>
-            <AddAdvancedExamDialog students={students} />
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Deneme Sonuçları</CardTitle>
+              <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sınıf Seçiniz" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Sınıflar</SelectItem>
+                  <SelectItem value="9">9. Sınıf</SelectItem>
+                  <SelectItem value="10">10. Sınıf</SelectItem>
+                  <SelectItem value="11">11. Sınıf</SelectItem>
+                  <SelectItem value="12">12. Sınıf</SelectItem>
+                  <SelectItem value="Mezun">Mezun</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <AddAdvancedExamDialog students={filteredStudents} />
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -211,14 +245,14 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {examResults.length === 0 ? (
+                  {filteredExamResults.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-4 text-gray-500 text-sm">
                         Henüz deneme sonucu bulunmuyor.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    examResults.map((exam) => (
+                    filteredExamResults.map((exam) => (
                       <TableRow 
                         key={exam.id} 
                         className={selectedExam?.id === exam.id ? 'bg-purple-50' : 'hover:bg-gray-50'}
@@ -250,11 +284,11 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Konu Analizi</CardTitle>
           </CardHeader>
           <CardContent>
-            {subjectAnalysis.length === 0 ? (
+            {filteredSubjectAnalysis.length === 0 ? (
               <p className="text-gray-500 text-center py-8 text-sm">Henüz konu analizi bulunmuyor.</p>
             ) : (
               <div className="space-y-3 md:space-y-4">
-                {subjectAnalysis.map((analysis) => (
+                {filteredSubjectAnalysis.map((analysis) => (
                   <div key={analysis.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-3 md:p-4 border rounded-lg gap-3">
                     <div className="flex-1 w-full">
                       <p className="font-medium text-gray-900 text-sm md:text-base">{analysis.studentProfile.user.name}</p>
@@ -280,7 +314,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Genel Konu Hakimiyet Haritası</CardTitle>
           </CardHeader>
           <CardContent>
-            <MasteryMap exams={examResults as any} subjectAnalysis={subjectAnalysis} />
+            <MasteryMap exams={filteredExamResults as any} subjectAnalysis={filteredSubjectAnalysis} />
           </CardContent>
         </Card>
 
@@ -290,7 +324,7 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
             <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Bütünleşik Performans Analizi</CardTitle>
           </CardHeader>
           <CardContent>
-            <HolisticAnalysis subjectAnalysis={subjectAnalysis} />
+            <HolisticAnalysis subjectAnalysis={filteredSubjectAnalysis} />
           </CardContent>
         </Card>
 

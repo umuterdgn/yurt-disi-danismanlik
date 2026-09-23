@@ -24,7 +24,7 @@ export default async function TasksPage() {
   const { data: { user } } = await supabase.auth.getUser();
   
   let tasks: any[] = [];
-  let students: { id: string; name: string }[] = [];
+  let students: { id: string; name: string; grade: string }[] = [];
   let aiRecommendations: any[] = [];
   let userName = 'Danışman';
 
@@ -44,7 +44,7 @@ export default async function TasksPage() {
         const allStudents = await prisma.studentProfile.findMany({
           include: { user: true }
         });
-        students = allStudents.map(s => ({ id: s.id, name: s.user.name }));
+        students = allStudents.map(s => ({ id: s.id, name: s.user.name, grade: s.grade }));
         
         tasks = await prisma.dailyTask.findMany({
           include: {
@@ -71,7 +71,7 @@ export default async function TasksPage() {
           where: { advisorId: dbUser.advisorProfile.id },
           include: { user: true }
         });
-        students = advisorStudents.map(s => ({ id: s.id, name: s.user.name }));
+        students = advisorStudents.map(s => ({ id: s.id, name: s.user.name, grade: s.grade }));
         
         tasks = await prisma.dailyTask.findMany({
           where: {
@@ -173,11 +173,12 @@ export default async function TasksPage() {
         </div>
 
         {/* Interactive Kanban Board */}
-        <AdvisorKanbanBoard 
-          tasks={normalizedTasks} 
+        <AdvisorKanbanBoard
+          tasks={normalizedTasks}
           students={students}
           onTaskMove={updateTaskStatus}
           aiRecommendations={aiRecommendations}
+          allStudents={students}
         />
       </div>
     </div>

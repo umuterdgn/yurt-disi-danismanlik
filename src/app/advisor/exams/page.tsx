@@ -20,7 +20,7 @@ export default async function ExamsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   
   let examResults: any[] = [];
-  let students: { id: string; name: string }[] = [];
+  let students: { id: string; name: string; grade: string }[] = [];
   let userName = 'Danışman';
 
   if (user?.email) {
@@ -39,7 +39,7 @@ export default async function ExamsPage() {
         const allStudents = await prisma.studentProfile.findMany({
           include: { user: true }
         });
-        students = allStudents.map(s => ({ id: s.id, name: s.user.name }));
+        students = allStudents.map(s => ({ id: s.id, name: s.user.name, grade: s.grade }));
         
         examResults = await prisma.exam.findMany({
           include: {
@@ -59,7 +59,7 @@ export default async function ExamsPage() {
           where: { advisorId: dbUser.advisorProfile.id },
           include: { user: true }
         });
-        students = advisorStudents.map(s => ({ id: s.id, name: s.user.name }));
+        students = advisorStudents.map(s => ({ id: s.id, name: s.user.name, grade: s.grade }));
         
         examResults = await prisma.exam.findMany({
           where: {

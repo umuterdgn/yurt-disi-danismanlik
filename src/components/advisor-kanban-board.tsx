@@ -43,15 +43,17 @@ interface AIRecommendation {
 
 interface AdvisorKanbanBoardProps {
   tasks: Task[];
-  students: { id: string; name: string }[];
+  students: { id: string; name: string; grade: string }[];
   onTaskMove: (taskId: string, newStatus: 'TODO' | 'IN_PROGRESS' | 'DONE') => Promise<{ success: boolean; error?: string; task?: any }>;
   aiRecommendations?: AIRecommendation[];
+  allStudents?: { id: string; name: string; grade: string }[];
 }
 
 export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendations = [] }: AdvisorKanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
@@ -137,17 +139,25 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
 
   const getTasksByStatus = (status: string) => {
     let filteredTasks = localTasks;
-    
+
+    // Filter by grade first
+    if (selectedGrade !== 'all') {
+      filteredTasks = filteredTasks.filter(task => {
+        const student = students.find(s => s.id === task.studentProfile?.id);
+        return student?.grade === selectedGrade;
+      });
+    }
+
     // Filter by student
     if (selectedStudent !== 'all') {
       filteredTasks = filteredTasks.filter(task => task.studentProfile?.id === selectedStudent);
     }
-    
+
     // Filter by course/subject
     if (selectedCourse !== 'all') {
       filteredTasks = filteredTasks.filter(task => task.subject === selectedCourse);
     }
-    
+
     // Filter by date
     if (selectedDate) {
       filteredTasks = filteredTasks.filter(task => {
@@ -155,11 +165,16 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
         return taskDate === selectedDate;
       });
     }
-    
+
     return filteredTasks.filter(task => task.status === status);
   };
 
   const allCourses = [...new Set(localTasks.map(task => task.subject).filter((subject): subject is string => Boolean(subject)))];
+
+  // Filter students based on selected grade
+  const filteredStudents = selectedGrade === 'all'
+    ? students
+    : students.filter(student => student.grade === selectedGrade);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -225,13 +240,28 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
             <CardTitle className="text-xl font-semibold text-gray-900">Görev Panosu</CardTitle>
             <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
               <div className="w-full md:w-48">
+                <Select value={selectedGrade} onValueChange={(value) => { setSelectedGrade(value); setSelectedStudent('all'); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sınıf Seç" />
+                  </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Sınıflar</SelectItem>
+                  <SelectItem value="9">9. Sınıf</SelectItem>
+                  <SelectItem value="10">10. Sınıf</SelectItem>
+                  <SelectItem value="11">11. Sınıf</SelectItem>
+                  <SelectItem value="12">12. Sınıf</SelectItem>
+                  <SelectItem value="Mezun">Mezun</SelectItem>
+                </SelectContent>
+              </Select>
+              </div>
+              <div className="w-full md:w-48">
                 <Select value={selectedStudent} onValueChange={setSelectedStudent}>
                   <SelectTrigger>
                     <SelectValue placeholder="Öğrenci Seç" />
                   </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Öğrenciler</SelectItem>
-                  {students.map((student) => (
+                  {filteredStudents.map((student) => (
                     <SelectItem key={student.id} value={student.id}>
                       {student.name}
                     </SelectItem>
