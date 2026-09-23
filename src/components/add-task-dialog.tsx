@@ -146,6 +146,17 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+              <Label htmlFor="description" className="md:text-right">
+                Açıklama
+              </Label>
+              <Input
+                id="description"
+                name="description"
+                placeholder="Görev detayları (opsiyonel)"
+                className="col-span-1 md:col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="examType" className="md:text-right">
                 Sınav Türü / Sınıf
               </Label>

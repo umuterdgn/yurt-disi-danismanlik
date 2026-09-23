@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, BookOpen, TrendingUp, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Target, BookOpen, TrendingUp, Filter, X } from "lucide-react";
 
 interface SubjectResult {
   subjectName: string;
@@ -36,6 +37,8 @@ export function MasteryMap({ exams, studentId, subjectAnalysis }: MasteryMapProp
   const [selectedSubject, setSelectedSubject] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
+  const [topicModalOpen, setTopicModalOpen] = useState(false);
 
   const calculateMasteryData = () => {
     if (exams.length === 0 && !subjectAnalysis) {
@@ -172,6 +175,11 @@ export function MasteryMap({ exams, studentId, subjectAnalysis }: MasteryMapProp
     return '🔴';
   };
 
+  const handleTopicClick = (topic: any) => {
+    setSelectedTopic(topic);
+    setTopicModalOpen(true);
+  };
+
   if (!masteryData || masteryData.length === 0) {
     return (
       <Card>
@@ -269,7 +277,7 @@ export function MasteryMap({ exams, studentId, subjectAnalysis }: MasteryMapProp
             <div key={data.subject} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getMasteryEmoji(data.percentage)}</span>
+                  <BookOpen className={`w-5 h-5 ${getMasteryColor(data.percentage).replace('bg-', 'text-')}`} />
                   <div>
                     <h4 className="font-semibold text-gray-900">{data.subject}</h4>
                     <p className="text-xs text-gray-600">
@@ -296,7 +304,11 @@ export function MasteryMap({ exams, studentId, subjectAnalysis }: MasteryMapProp
               {data.topics && data.topics.length > 0 && (
                 <div className="mt-2 pl-4 space-y-1">
                   {data.topics.slice(0, 3).map((topic: any) => (
-                    <div key={topic.id} className="flex items-center justify-between text-xs">
+                    <div 
+                      key={topic.id} 
+                      className="flex items-center justify-between text-xs cursor-pointer hover:bg-gray-50 p-1 rounded"
+                      onClick={() => handleTopicClick(topic)}
+                    >
                       <span className="text-gray-600">{topic.topic}</span>
                       <span className="font-medium">%{topic.progressPercent}</span>
                     </div>
@@ -332,6 +344,66 @@ export function MasteryMap({ exams, studentId, subjectAnalysis }: MasteryMapProp
           </div>
         </div>
       </CardContent>
+      
+      {/* Topic Detail Modal */}
+      <Dialog open={topicModalOpen} onOpenChange={setTopicModalOpen}>
+        <DialogContent className="sm:max-w-[500px] max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Konu Detayları
+            </DialogTitle>
+            <DialogDescription>
+              Konu hakimiyet ve çalışma detayları
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTopic && (
+            <div className="space-y-4 py-4">
+              <div>
+                <h4 className="text-lg font-semibold">{selectedTopic.topic}</h4>
+                <p className="text-sm text-gray-600">{selectedTopic.subject}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600">Başarı Oranı</p>
+                  <p className="text-2xl font-bold text-blue-600">%{selectedTopic.progressPercent}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600">Seviye</p>
+                  <p className="text-lg font-semibold">{selectedTopic.proficiency}</p>
+                </div>
+              </div>
+              
+              {selectedTopic.lastStudiedAt && (
+                <div>
+                  <p className="text-xs text-gray-600">Son Çalışma Tarihi</p>
+                  <p className="text-sm">{new Date(selectedTopic.lastStudiedAt).toLocaleDateString('tr-TR')}</p>
+                </div>
+              )}
+              
+              {selectedTopic.totalHours && (
+                <div>
+                  <p className="text-xs text-gray-600">Toplam Çalışma Süresi</p>
+                  <p className="text-sm">{selectedTopic.totalHours} saat</p>
+                </div>
+              )}
+              
+              {selectedTopic.studyMethods && selectedTopic.studyMethods.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-2">Kullanılan Çalışma Yöntemleri</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTopic.studyMethods.map((method: string) => (
+                      <Badge key={method} variant="outline">{method}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

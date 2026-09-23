@@ -9,6 +9,7 @@ export async function addTask(formData: FormData) {
   try {
     const studentProfileId = formData.get('studentProfileId') as string;
     const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
     const subject = formData.get('subject') as string;
     const topic = formData.get('topic') as string;
     const subjectId = formData.get('subjectId') as string;
@@ -40,6 +41,7 @@ export async function addTask(formData: FormData) {
       data: {
         studentProfileId,
         title,
+        description: description || null,
         subject, // Keep for backward compatibility
         subjectId: subjectId || null, // New curriculum reference
         topic: topic || null, // Keep for backward compatibility

@@ -96,7 +96,7 @@ export function PomodoroTimer() {
       </CardHeader>
       <CardContent>
         <div className="text-center space-y-4">
-          <div className="text-6xl font-bold font-mono">
+          <div className="text-4xl md:text-6xl font-bold font-mono">
             {formatTime(minutes, seconds)}
           </div>
           
@@ -107,10 +107,10 @@ export function PomodoroTimer() {
             />
           </div>
           
-          <div className="flex justify-center space-x-3">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
             <Button
               onClick={toggleTimer}
-              className="bg-[#c89f65] text-[#0f2042] hover:bg-[#c89f65]/90"
+              className="bg-[#c89f65] text-[#0f2042] hover:bg-[#c89f65]/90 w-full sm:w-auto"
               size="lg"
             >
               {isActive ? (
@@ -134,7 +134,7 @@ export function PomodoroTimer() {
             <Button
               onClick={resetTimer}
               variant="outline"
-              className="bg-[#0f2042]/50 text-white hover:bg-[#0f2042]/70 border-[#c89f65]"
+              className="bg-[#0f2042]/50 text-white hover:bg-[#0f2042]/70 border-[#c89f65] w-full sm:w-auto"
               size="lg"
             >
               <RotateCcw className="w-4 h-4 mr-2" />

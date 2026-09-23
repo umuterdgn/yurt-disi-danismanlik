@@ -182,16 +182,16 @@ export function AITaskSuggestions({ studentId, studentName }: AITaskSuggestionsP
                 key={suggestion.id}
                 className="p-4 border rounded-lg bg-gradient-to-r from-[#0f2042]/5 to-[#c89f65]/5 hover:from-[#0f2042]/10 hover:to-[#c89f65]/10 transition-colors"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex-1 w-full">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <h4 className="font-semibold text-gray-900">{suggestion.title}</h4>
                       <Badge className={getPriorityColor(suggestion.priority)}>
                         {getPriorityLabel(suggestion.priority)}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <span className="font-medium">Ders:</span> {suggestion.subject}
                       </span>
@@ -203,11 +203,11 @@ export function AITaskSuggestions({ studentId, studentName }: AITaskSuggestionsP
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       onClick={() => approveTask(suggestion)}
                       size="sm"
-                      className="bg-[#c89f65] hover:bg-[#c89f65]/90 text-[#0f2042]"
+                      className="bg-[#c89f65] hover:bg-[#c89f65]/90 text-[#0f2042] w-full sm:w-auto"
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Onayla ve Ekle

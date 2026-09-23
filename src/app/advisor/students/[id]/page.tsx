@@ -29,6 +29,7 @@ import { AddTaskDialog } from "@/components/add-task-dialog";
 import { UniversityMatcherForm } from "@/components/university-matcher-form";
 import { AITaskSuggestions } from "@/components/ai-task-suggestions";
 import { SubjectMasteryPanel } from "@/components/subject-mastery-panel";
+import { EditStudentDialog } from "@/components/edit-student-dialog";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -352,7 +353,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 Çalışma & Efor
               </TabsTrigger>
             )}
-            {student.serviceType !== 'COACHING' && (
+            {student.serviceType === 'STUDY_ABROAD' && (
               <TabsTrigger value="application" className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 Başvuru & Vize
@@ -545,11 +546,16 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                           {exam.subjectResults && exam.subjectResults.length > 0 && (
                             <div className="mt-3 pt-3 border-t">
                               <h5 className="text-sm font-medium mb-2">Ders Detayları:</h5>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {exam.subjectResults.map((subject: any) => (
                                   <div key={subject.id} className="text-xs bg-gray-50 p-2 rounded">
-                                    <span className="font-medium">{subject.subjectName}:</span>
-                                    <span className="ml-1 text-blue-600">{subject.net || '-'}</span>
+                                    <div className="font-medium mb-1">{subject.subjectName}</div>
+                                    <div className="flex gap-2 text-xs">
+                                      <span className="text-green-600">D: {subject.correct}</span>
+                                      <span className="text-red-600">Y: {subject.wrong}</span>
+                                      <span className="text-gray-600">B: {subject.empty}</span>
+                                      <span className="text-blue-600 font-bold">Net: {subject.net || '-'}</span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -598,37 +604,38 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <TabsContent value="academic">
             <div className="space-y-6">
               {/* Add Advanced Exam Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-end mb-2">
                 <AddAdvancedExamDialog students={[{ id, name: student.user.name }]} studentId={id} />
               </div>
 
               {/* Goal Progress */}
-              <GoalProgress 
-                currentScore={student.currentScore}
-                targetScore={student.targetScore}
-                targetUniversity={student.targetUniversity}
-                targetMajor={student.targetMajor}
-                examHistory={student.exams.map((exam: any) => ({
-                  date: new Date(exam.date),
-                  score: exam.totalNet || 0
-                }))}
-              />
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <GoalProgress 
+                    currentScore={student.currentScore}
+                    targetScore={student.targetScore}
+                    targetUniversity={student.targetUniversity}
+                    targetMajor={student.targetMajor}
+                    examHistory={student.exams.map((exam: any) => ({
+                      date: new Date(exam.date),
+                      score: exam.totalNet || 0
+                    }))}
+                  />
+                </div>
+                <EditStudentDialog 
+                  studentId={id}
+                  currentTargetScore={student.targetScore}
+                  currentTargetUniversity={student.targetUniversity}
+                  currentTargetMajor={student.targetMajor}
+                  onSuccess={() => window.location.reload()}
+                />
+              </div>
 
               {/* Mastery Map */}
               <MasteryMap exams={student.exams as any} studentId={id} subjectAnalysis={subjectAnalysis} />
 
               {/* Holistic Analysis - Integrated Performance */}
               <HolisticAnalysis subjectAnalysis={subjectAnalysis} studentId={id} />
-
-              {/* AI University Advisor */}
-              <AIUniversityAdvisor 
-                studentId={id}
-                academicPerformance={subjectAnalysis}
-                currentScore={student.currentScore}
-                targetScore={student.targetScore}
-                targetMajor={student.targetMajor}
-                targetUniversity={student.targetUniversity}
-              />
 
               {/* Subject Analysis (AI) */}
               <Card>
@@ -767,6 +774,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               subjectResults={student.exams.flatMap((exam: any) => exam.subjectResults || [])}
               dailyTasks={student.dailyTasks}
               subjectAnalysis={student.subjectAnalysis}
+              studentId={id}
             />
           </TabsContent>
 

@@ -48,16 +48,16 @@ export function AIMotivationCard({ studentSymbol, currentXP, studentName }: AIMo
   return (
     <Card className="bg-gradient-to-r from-[#0f2042] to-[#1a3050] text-white">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-[#c89f65]" />
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+          <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#c89f65]" />
           Günün Motivasyonu
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="animate-pulse text-lg">Yükleniyor...</div>
+          <div className="animate-pulse text-sm md:text-lg">Yükleniyor...</div>
         ) : (
-          <div className="text-lg font-semibold">{motivation}</div>
+          <div className="text-sm md:text-lg font-semibold">{motivation}</div>
         )}
       </CardContent>
     </Card>

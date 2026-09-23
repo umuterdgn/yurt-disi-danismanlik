@@ -58,12 +58,12 @@ export function StudentDailyTasks({ tasks }: StudentDailyTasksProps) {
   return (
     <div className="space-y-3">
       {tasks.map((task) => (
-        <div key={task.id} className={`flex items-center justify-between p-4 rounded-lg ${
+        <div key={task.id} className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg gap-3 ${
           task.isCompleted ? 'bg-green-50' : 'bg-gray-50'
         }`}>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 w-full sm:w-auto">
             {task.isCompleted ? (
-              <div className="w-5 h-5 rounded bg-green-500 border-green-500 flex items-center justify-center">
+              <div className="w-5 h-5 rounded bg-green-500 border-green-500 flex items-center justify-center flex-shrink-0">
                 <CheckCircle className="w-3 h-3 text-white" />
               </div>
             ) : (
@@ -74,14 +74,14 @@ export function StudentDailyTasks({ tasks }: StudentDailyTasksProps) {
                 onTaskComplete={() => window.location.reload()}
               />
             )}
-            <div className="flex-1">
-              <p className={`font-medium ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+            <div className="flex-1 min-w-0">
+              <p className={`font-medium ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'} truncate`}>
                 {task.title}
               </p>
-              <p className="text-sm text-gray-600">{task.subject} - {task.completedQuantity}/{task.targetQuantity} {task.taskType}</p>
+              <p className="text-sm text-gray-600 truncate">{task.subject} - {task.completedQuantity}/{task.targetQuantity} {task.taskType}</p>
             </div>
           </div>
-          <Badge className={getPriorityColor(task.priority)}>
+          <Badge className={getPriorityColor(task.priority)} shrink-0>
             {getPriorityLabel(task.priority)}
           </Badge>
         </div>

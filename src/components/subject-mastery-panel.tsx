@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BarChart3, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { BarChart3, TrendingUp, AlertCircle, CheckCircle, Plus } from "lucide-react";
 import { SUBJECTS } from "@/constants/curriculum";
+import { toast } from "sonner";
 
 interface SubjectResult {
   subjectName: string;
@@ -27,13 +29,50 @@ interface SubjectMasteryPanelProps {
   subjectResults: SubjectResult[];
   dailyTasks: DailyTask[];
   subjectAnalysis: any[];
+  studentId?: string;
 }
 
 export function SubjectMasteryPanel({ 
   subjectResults, 
   dailyTasks, 
-  subjectAnalysis 
+  subjectAnalysis,
+  studentId
 }: SubjectMasteryPanelProps) {
+  
+  const convertSuggestionToTask = async (subject: string, suggestion: string) => {
+    if (!studentId) {
+      toast.error('Öğrenci ID gerekli');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/advisor/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentProfileId: studentId,
+          title: `${subject} - Önerilen Çalışma`,
+          description: suggestion,
+          subject: subject,
+          taskType: 'REVIEW',
+          targetQuantity: 20,
+          estimatedPomodoros: 2,
+          priority: 'high',
+          taskDate: new Date().toISOString().split('T')[0]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Görev oluşturulamadı');
+      }
+
+      toast.success('Öneri göreve dönüştürüldü!');
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast.error(error instanceof Error ? error.message : 'Bir hata oluştu');
+    }
+  };
   
   // Calculate mastery percentage for each subject
   const calculateMastery = (subject: string) => {
@@ -272,31 +311,43 @@ export function SubjectMasteryPanel({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {weakSubjects.map((data) => (
-                <div key={data.subject} className="bg-white p-3 rounded border border-red-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-red-900">{data.subject}</h4>
-                    <Badge className="bg-red-100 text-red-700">{data.mastery}% Hakimiyet</Badge>
+              {weakSubjects.map((data) => {
+                let suggestion = '';
+                if (data.examCount === 0 && data.taskCount === 0) {
+                  suggestion = `Bu ders için henüz deneme veya görev verisi yok. Önce temel konulara çalışıp bir deneme çözerek başlangıç seviyenizi belirleyin.`;
+                } else if (data.examCount === 0 && data.taskCount > 0) {
+                  suggestion = `${data.taskCount} görev tamamlandı ancak deneme verisi eksik. Çalıştığınız konuları pekiştirmek için bir branş denemesi çözün.`;
+                } else if (data.examCount > 0 && data.taskCount === 0) {
+                  suggestion = `${data.examCount} deneme çözüldü ama görev çalışması yok. Deneme sonuçlarına göre en çok hata yapılan konulara öncelikli görev ekleyin.`;
+                } else if (data.examCount > 0 && data.taskCount > 0 && data.topics.length > 0) {
+                  suggestion = `${data.topics.slice(0, 2).join(' ve ')} konularında ${data.taskCount} görev tamamladınız. Deneme performansınızı artırmak için bu konuları tekrar edip yeni bir deneme çözün.`;
+                } else if (data.examCount > 0 && data.taskCount > 0 && data.topics.length === 0) {
+                  suggestion = `${data.examCount} deneme ve ${data.taskCount} görev tamamlandı ancak konu belirtilmemiş. Görevlere konu ekleyerek daha detaylı analiz yapın.`;
+                }
+
+                return (
+                  <div key={data.subject} className="bg-white p-3 rounded border border-red-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-red-900">{data.subject}</h4>
+                          <Badge className="bg-red-100 text-red-700">{data.mastery}% Hakimiyet</Badge>
+                        </div>
+                        <p className="text-sm text-gray-700">{suggestion}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="ml-2 shrink-0"
+                        onClick={() => convertSuggestionToTask(data.subject, suggestion)}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Göreve Ekle
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-700">
-                    {data.examCount === 0 && data.taskCount === 0 && (
-                      `Bu ders için henüz deneme veya görev verisi yok. Önce temel konulara çalışıp bir deneme çözerek başlangıç seviyenizi belirleyin.`
-                    )}
-                    {data.examCount === 0 && data.taskCount > 0 && (
-                      `${data.taskCount} görev tamamlandı ancak deneme verisi eksik. Çalıştığınız konuları pekiştirmek için bir branş denemesi çözün.`
-                    )}
-                    {data.examCount > 0 && data.taskCount === 0 && (
-                      `${data.examCount} deneme çözüldü ama görev çalışması yok. Deneme sonuçlarına göre en çok hata yapılan konulara öncelikli görev ekleyin.`
-                    )}
-                    {data.examCount > 0 && data.taskCount > 0 && data.topics.length > 0 && (
-                      `${data.topics.slice(0, 2).join(' ve ')} konularında ${data.taskCount} görev tamamladınız. Deneme performansınızı artırmak için bu konuları tekrar edip yeni bir deneme çözün.`
-                    )}
-                    {data.examCount > 0 && data.taskCount > 0 && data.topics.length === 0 && (
-                      `${data.examCount} deneme ve ${data.taskCount} görev tamamlandı ancak konu belirtilmemiş. Görevlere konu ekleyerek daha detaylı analiz yapın.`
-                    )}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

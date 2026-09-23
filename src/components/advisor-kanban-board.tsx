@@ -6,16 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddTaskDialog } from "@/components/add-task-dialog";
 import { TaskCompletionModal } from "@/components/task-completion-modal";
+import { TaskDetailModal } from "@/components/task-detail-modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { completeTaskWithPerformance } from "@/actions/add-task";
 
 interface Task {
   id: string;
   title: string;
+  description?: string;
   subject?: string;
+  topic?: string;
   priority: string;
   estimatedPomodoros: number;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  taskDate: Date;
   studentProfile: {
     id: string;
     user: {
@@ -33,9 +39,13 @@ interface AdvisorKanbanBoardProps {
 export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
+  const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const getPriorityColor = (priority: string) => {
     const colors: Record<string, string> = {
@@ -113,10 +123,34 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
   };
 
   const getTasksByStatus = (status: string) => {
-    const filteredTasks = selectedStudent === 'all'
-      ? localTasks
-      : localTasks.filter(task => task.studentProfile?.id === selectedStudent);
+    let filteredTasks = localTasks;
+    
+    // Filter by student
+    if (selectedStudent !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.studentProfile?.id === selectedStudent);
+    }
+    
+    // Filter by course/subject
+    if (selectedCourse !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.subject === selectedCourse);
+    }
+    
+    // Filter by date
+    if (selectedDate) {
+      filteredTasks = filteredTasks.filter(task => {
+        const taskDate = new Date(task.taskDate).toISOString().split('T')[0];
+        return taskDate === selectedDate;
+      });
+    }
+    
     return filteredTasks.filter(task => task.status === status);
+  };
+
+  const allCourses = [...new Set(localTasks.map(task => task.subject).filter((subject): subject is string => Boolean(subject)))];
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setDetailModalOpen(true);
   };
 
   const todoTasks = getTasksByStatus('TODO');
@@ -126,29 +160,54 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex items-center gap-4">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
             <CardTitle className="text-xl font-semibold text-gray-900">Görev Panosu</CardTitle>
-            <div className="w-64">
-              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Öğrenci Seç / Filtrele" />
-                </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm Öğrenciler</SelectItem>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
+              <div className="w-full md:w-48">
+                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Öğrenci Seç" />
+                  </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Öğrenciler</SelectItem>
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              </div>
+              <div className="w-full md:w-48">
+                <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ders Seç" />
+                  </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Dersler</SelectItem>
+                  {allCourses.map((course) => (
+                    <SelectItem key={course} value={course}>
+                      {course}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              </div>
+              <div className="w-full md:w-40">
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  placeholder="Tarih"
+                />
+              </div>
             </div>
           </div>
           <AddTaskDialog students={students} />
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {/* TODO Column */}
             <Droppable droppableId="TODO">
               {(provided) => (
@@ -169,7 +228,8 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="bg-white p-4 rounded border shadow-sm hover:shadow-md transition-shadow cursor-move"
+                              className="bg-white p-4 rounded border shadow-sm hover:shadow-md transition-shadow cursor-move w-full"
+                              onClick={() => handleTaskClick(task)}
                             >
                               <div className="flex items-start justify-between mb-2">
                                 <p className="font-medium text-sm">{task.title}</p>
@@ -222,7 +282,8 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="bg-white p-4 rounded border shadow-sm hover:shadow-md transition-shadow cursor-move"
+                              className="bg-white p-4 rounded border shadow-sm hover:shadow-md transition-shadow cursor-move w-full"
+                              onClick={() => handleTaskClick(task)}
                             >
                               <div className="flex items-start justify-between mb-2">
                                 <p className="font-medium text-sm">{task.title}</p>
@@ -318,6 +379,15 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
         onConfirm={handleTaskCompletion}
         taskTitle={taskToComplete?.title || ''}
         isLoading={isCompleting}
+      />
+      
+      <TaskDetailModal
+        isOpen={detailModalOpen}
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedTask(null);
+        }}
+        task={selectedTask}
       />
     </DragDropContext>
   );
