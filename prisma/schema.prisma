@@ -74,6 +74,7 @@ model StudentProfile {
   tasks                Task[]
   weeklyCheckIns       WeeklyCheckIn[]
   parentProfiles       ParentProfile[]    @relation("StudentParents")
+  worksheets           Worksheet[]
 
   @@map("student_profiles")
 }
@@ -899,4 +900,24 @@ model QuestionType {
 
   @@unique([topicId, name])
   @@map("question_types")
+}
+
+model Worksheet {
+  id                    String         @id @default(cuid())
+  studentProfileId      String
+  subject               String         // "Türkçe", "Matematik", etc.
+  topic                 String         // "Türev", "İntegral", etc.
+  correct               Int            @default(0)
+  wrong                 Int            @default(0)
+  empty                 Int            @default(0)
+  questionTypeAnalysis  Json           // JSON object with question type breakdown
+  ocrProcessed          Boolean        @default(false)
+  ocrConfidence         Float?
+  ocrStatus             String?
+  notes                 String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  studentProfile        StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("worksheets")
 }

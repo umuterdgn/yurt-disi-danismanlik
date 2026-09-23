@@ -4,6 +4,8 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { AdvisorKanbanBoard } from "@/components/advisor-kanban-board";
 import { updateTaskStatus } from "@/actions/add-task";
+import { AIWeeklySchedulerDialog } from "@/components/ai-weekly-scheduler-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default async function TasksPage() {
   const cookieStore = await cookies();
@@ -23,6 +25,7 @@ export default async function TasksPage() {
   
   let tasks: any[] = [];
   let students: { id: string; name: string }[] = [];
+  let aiRecommendations: any[] = [];
   let userName = 'Danışman';
 
   if (user?.email) {
@@ -53,6 +56,16 @@ export default async function TasksPage() {
           },
           orderBy: { taskDate: 'desc' }
         });
+
+        // Get AI recommendations for all students
+        aiRecommendations = await prisma.aIRecommendation.findMany({
+          where: {
+            studentId: { in: allStudents.map(s => s.id) },
+            isResolved: false
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        });
       } else if (dbUser.advisorProfile) {
         const advisorStudents = await prisma.studentProfile.findMany({
           where: { advisorId: dbUser.advisorProfile.id },
@@ -75,6 +88,16 @@ export default async function TasksPage() {
           },
           orderBy: { taskDate: 'desc' }
         });
+
+        // Get AI recommendations for advisor's students
+        aiRecommendations = await prisma.aIRecommendation.findMany({
+          where: {
+            studentId: { in: advisorStudents.map(s => s.id) },
+            isResolved: false
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        });
       }
     }
   }
@@ -92,9 +115,32 @@ export default async function TasksPage() {
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Görevler & Pomodoro</h1>
-          <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Görevler & Pomodoro</h1>
+            <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+          </div>
+          {students.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Select defaultValue={students[0].id}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Öğrenci seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map(student => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <AIWeeklySchedulerDialog 
+                studentId={students[0].id} 
+                studentName={students[0].name}
+                onSuccess={() => window.location.reload()}
+              />
+            </div>
+          )}
         </div>
 
         {/* Summary Cards */}
@@ -132,6 +178,7 @@ export default async function TasksPage() {
           tasks={normalizedTasks} 
           students={students}
           onTaskMove={updateTaskStatus}
+          aiRecommendations={aiRecommendations}
         />
       </div>
     </div>

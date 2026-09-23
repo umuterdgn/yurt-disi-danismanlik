@@ -5,8 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import { AlertBanner } from "@/components/notifications/alert-banner";
 import { AddStudentDialog } from "@/components/add-student-dialog";
+import { WorksheetUploadDialog } from "@/components/worksheet-upload-dialog";
 
 interface Student {
   id: string;
@@ -182,8 +184,19 @@ export default async function AdvisorDashboard() {
 
         {/* Students Table */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <CardTitle className="text-xl font-semibold text-gray-900">Öğrenci Listesi</CardTitle>
+            {transformedStudents.length > 0 && (
+              <WorksheetUploadDialog 
+                studentId={transformedStudents[0].id}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    📄 Yaprak Test Yükle
+                  </Button>
+                }
+              />
+            )}
           </CardHeader>
           <CardContent>
             <div className="w-full overflow-x-auto">

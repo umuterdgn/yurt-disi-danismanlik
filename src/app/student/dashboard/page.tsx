@@ -26,6 +26,7 @@ import { DocumentChecklist } from "@/components/document-checklist";
 import { MyJourney } from "@/components/my-journey";
 import { WeeklyQuests } from "@/components/weekly-quests";
 import { WeeklyCheckInDialog } from "@/components/weekly-check-in-dialog";
+import { WorksheetUploadDialog } from "@/components/worksheet-upload-dialog";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -520,7 +521,10 @@ export default async function StudentDashboard() {
               <TrendingUp className="w-5 h-5" />
               Deneme Sonuçları
             </CardTitle>
-            <AddAdvancedExamDialog students={[{ id: studentProfile.id, name: studentProfile.user.name }]} studentId={studentProfile.id} />
+            <div className="flex gap-2">
+              <WorksheetUploadDialog studentId={studentProfile.id} />
+              <AddAdvancedExamDialog students={[{ id: studentProfile.id, name: studentProfile.user.name }]} studentId={studentProfile.id} />
+            </div>
           </CardHeader>
           <CardContent>
             {studentProfile.examResults?.length === 0 ? (

@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { completeTaskWithPerformance } from "@/actions/add-task";
+import { Button } from "@/components/ui/button";
+import { Lightbulb, Sparkles } from "lucide-react";
 
 interface Task {
   id: string;
@@ -30,13 +32,23 @@ interface Task {
   };
 }
 
+interface AIRecommendation {
+  id: string;
+  type: string;
+  message: string;
+  suggestedAction: string;
+  priority: string;
+  isResolved: boolean;
+}
+
 interface AdvisorKanbanBoardProps {
   tasks: Task[];
   students: { id: string; name: string }[];
   onTaskMove: (taskId: string, newStatus: 'TODO' | 'IN_PROGRESS' | 'DONE') => Promise<{ success: boolean; error?: string; task?: any }>;
+  aiRecommendations?: AIRecommendation[];
 }
 
-export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanbanBoardProps) {
+export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendations = [] }: AdvisorKanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
@@ -46,6 +58,7 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
   const [isCompleting, setIsCompleting] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(true);
 
   const getPriorityColor = (priority: string) => {
     const colors: Record<string, string> = {
@@ -157,8 +170,55 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove }: AdvisorKanba
   const inProgressTasks = getTasksByStatus('IN_PROGRESS');
   const doneTasks = getTasksByStatus('DONE');
 
+  const unresolvedRecommendations = aiRecommendations.filter(rec => !rec.isResolved && rec.type === 'ACADEMIC');
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
+      {/* AI Recommendations for Weak Question Types */}
+      {unresolvedRecommendations.length > 0 && showRecommendations && (
+        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-purple-900">
+              <Sparkles className="w-5 h-5" />
+              AI Önerileri - Soru Tipi Analizi
+            </CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowRecommendations(false)}
+            >
+              Gizle
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {unresolvedRecommendations.slice(0, 5).map((recommendation) => (
+                <div key={recommendation.id} className="p-4 bg-white rounded-lg border border-purple-100 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={
+                          recommendation.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
+                          recommendation.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }>
+                          {recommendation.priority === 'HIGH' ? 'Yüksek Öncelik' :
+                           recommendation.priority === 'MEDIUM' ? 'Orta Öncelik' :
+                           'Düşük Öncelik'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 mb-1">{recommendation.message}</p>
+                      <p className="text-sm text-gray-600">{recommendation.suggestedAction}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
