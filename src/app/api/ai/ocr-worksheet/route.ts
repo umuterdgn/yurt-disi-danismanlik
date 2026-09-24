@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     console.log("WORKSHEET_TOPIC:", topic);
 
     // FALLBACK MODEL DİZİSİ
-    const models = ["gemini-3.6-flash"];
+    const FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
 
     const prompt = `You are an expert Turkish worksheet/homework analysis system.
 
@@ -108,7 +108,7 @@ Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
     let successfulModel: string | null = null;
     let lastError: any = null;
 
-    for (const modelName of models) {
+    for (const modelName of FALLBACK_MODELS) {
       console.log(`GEMINI_MODEL: Trying ${modelName}...`);
       
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
