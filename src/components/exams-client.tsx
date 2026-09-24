@@ -9,7 +9,7 @@ import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
 import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
 import { HolisticAnalysis } from "@/components/holistic-analysis";
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SubjectResult {
@@ -72,6 +72,8 @@ interface ExamsClientProps {
 export function ExamsClient({ examResults, subjectAnalysis, students, userName }: ExamsClientProps) {
   const [selectedExam, setSelectedExam] = useState<ExamResult | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [selectedStudent, setSelectedStudent] = useState<string>('all');
+  const [selectedExamType, setSelectedExamType] = useState<string>('all');
 
   // Filter data based on selected grade
   const filteredStudents = selectedGrade === 'all'
@@ -80,15 +82,64 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
 
   const filteredStudentIds = new Set(filteredStudents.map(s => s.id));
 
+  // Filter exams based on grade, student, and exam type
   const filteredExamResults = examResults.filter(exam => {
     const studentId = (exam as any).studentProfile?.id;
-    return studentId && filteredStudentIds.has(studentId);
+    const examType = (exam as any).examType || exam.examType;
+    
+    // Filter by grade
+    if (!studentId || !filteredStudentIds.has(studentId)) return false;
+    
+    // Filter by student
+    if (selectedStudent !== 'all' && studentId !== selectedStudent) return false;
+    
+    // Filter by exam type
+    if (selectedExamType !== 'all' && examType !== selectedExamType) return false;
+    
+    return true;
   });
 
+  // Filter subject analysis based on grade and student
   const filteredSubjectAnalysis = subjectAnalysis.filter(analysis => {
     const studentId = (analysis as any).studentProfile?.id;
-    return studentId && filteredStudentIds.has(studentId);
+    
+    // Filter by grade
+    if (!studentId || !filteredStudentIds.has(studentId)) return false;
+    
+    // Filter by student
+    if (selectedStudent !== 'all' && studentId !== selectedStudent) return false;
+    
+    return true;
   });
+
+  // Chart data: Only for selected student and exam type, sorted by date
+  const getChartData = () => {
+    if (selectedStudent === 'all' || selectedExamType === 'all') {
+      return []; // Return empty if no specific selection
+    }
+
+    const studentExams = filteredExamResults.filter(exam => {
+      const studentId = (exam as any).studentProfile?.id;
+      const examType = (exam as any).examType || exam.examType;
+      return studentId === selectedStudent && examType === selectedExamType;
+    });
+
+    // Sort by date (oldest to newest for chart)
+    const sortedExams = [...studentExams].sort((a, b) => {
+      const dateA = new Date(a.examDate || a.date || Date.now());
+      const dateB = new Date(b.examDate || b.date || Date.now());
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return sortedExams.map((e) => ({
+      name: e.studentProfile.user.name,
+      date: new Date(e.examDate || e.date || Date.now()).toLocaleDateString('tr-TR'),
+      score: e.actualScore || e.totalNet || 0,
+      target: e.targetScore || e.totalScore || 0
+    }));
+  };
+
+  const chartData = getChartData();
 
   const getProficiencyBadge = (level: string) => {
     switch (level) {
@@ -135,13 +186,6 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
     : 0;
 
   const improvementCount = filteredExamResults.filter(e => e.change > 0).length;
-
-  const chartData = filteredExamResults.slice(-20).map((e) => ({
-    name: e.studentProfile.user.name,
-    date: new Date(e.examDate || e.date || Date.now()).toLocaleDateString('tr-TR'),
-    score: e.actualScore || e.totalNet || 0,
-    target: e.targetScore || e.totalScore || 0
-  }));
 
   return (
     <div className="p-4 md:p-8">
@@ -192,21 +236,60 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
 
         {/* Progress Chart */}
         <Card className="mb-6 md:mb-8">
-          <CardHeader>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <CardTitle className="text-lg md:text-xl">Öğrenci Gelişim Grafiği</CardTitle>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
+              <div className="w-full md:w-48">
+                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Öğrenci Seçiniz" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Öğrenciler</SelectItem>
+                    {filteredStudents.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full md:w-48">
+                <Select value={selectedExamType} onValueChange={setSelectedExamType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sınav Türü" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Sınavlar</SelectItem>
+                    <SelectItem value="TYT">TYT</SelectItem>
+                    <SelectItem value="AYT">AYT</SelectItem>
+                    <SelectItem value="YKS">YKS</SelectItem>
+                    <SelectItem value="LGS">LGS</SelectItem>
+                    <SelectItem value="Diğer">Diğer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300} minHeight={250}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={10} />
-                <YAxis fontSize={10} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="score" stroke="#3b82f6" name="Gerçek Net" strokeWidth={2} />
-                <Line type="monotone" dataKey="target" stroke="#10b981" name="Hedef Net" strokeWidth={2} strokeDasharray="5 5" />
-              </LineChart>
-            </ResponsiveContainer>
+            {chartData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <BarChart3 className="w-12 h-12 text-gray-400 mb-4" />
+                <p className="text-gray-600 text-sm">Gelişim grafiğini görüntülemek için lütfen bir öğrenci ve sınav türü seçin.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300} minHeight={250}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" fontSize={10} />
+                  <YAxis fontSize={10} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="score" stroke="#3b82f6" name="Gerçek Net" strokeWidth={2} />
+                  <Line type="monotone" dataKey="target" stroke="#10b981" name="Hedef Net" strokeWidth={2} strokeDasharray="5 5" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -215,19 +298,47 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
               <CardTitle className="text-lg md:text-xl font-semibold text-gray-900">Deneme Sonuçları</CardTitle>
-              <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sınıf Seçiniz" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Sınıflar</SelectItem>
-                  <SelectItem value="9">9. Sınıf</SelectItem>
-                  <SelectItem value="10">10. Sınıf</SelectItem>
-                  <SelectItem value="11">11. Sınıf</SelectItem>
-                  <SelectItem value="12">12. Sınıf</SelectItem>
-                  <SelectItem value="Mezun">Mezun</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Sınıf" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Sınıflar</SelectItem>
+                    <SelectItem value="9">9. Sınıf</SelectItem>
+                    <SelectItem value="10">10. Sınıf</SelectItem>
+                    <SelectItem value="11">11. Sınıf</SelectItem>
+                    <SelectItem value="12">12. Sınıf</SelectItem>
+                    <SelectItem value="Mezun">Mezun</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Öğrenci" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Öğrenciler</SelectItem>
+                    {filteredStudents.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedExamType} onValueChange={setSelectedExamType}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Sınav Türü" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Sınavlar</SelectItem>
+                    <SelectItem value="TYT">TYT</SelectItem>
+                    <SelectItem value="AYT">AYT</SelectItem>
+                    <SelectItem value="YKS">YKS</SelectItem>
+                    <SelectItem value="LGS">LGS</SelectItem>
+                    <SelectItem value="Diğer">Diğer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <AddAdvancedExamDialog students={filteredStudents} />
           </CardHeader>
