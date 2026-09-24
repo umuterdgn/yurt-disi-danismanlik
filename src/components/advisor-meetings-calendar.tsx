@@ -391,7 +391,7 @@ export function AdvisorMeetingsCalendar({ meetings, students, userName }: Adviso
 
                         <div className="mt-4 pt-4 border-t">
                           <Link 
-                            href={`/advisor/students/${meeting.studentProfileId}`}
+                            href={`/advisor/students/${meeting.studentProfile?.id}`}
                             className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                           >
                             Öğrenci Detayına Git →
