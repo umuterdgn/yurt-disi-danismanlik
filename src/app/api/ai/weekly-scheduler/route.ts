@@ -129,77 +129,41 @@ Başlangıç tarihi: ${startDate || new Date().toISOString().split('T')[0]}
 Return ONLY valid JSON. Do NOT include markdown blocks, text, or explanations.`;
 
     // FALLBACK MODEL DİZİSİ
-    const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+    const models = ['gemini-1.5-flash'];
 
     const prompt = `${systemPrompt}
 
 Lütfen ${level} seviyesinde, günlük ${dailyTargetHours} saat çalışma hedefi olan öğrenci için optimize edilmiş haftalık program oluştur.`;
 
-    // FALLBACK MECANİZMASI İLE MODEL DENEYİŞİ
-    let schedule: WeeklySchedule | null = null;
-    let successfulModel: string | null = null;
-    let lastError: any = null;
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    for (const modelName of models) {
-      console.log(`SCHEDULER_AI: Trying ${modelName}...`);
+    console.log('SCHEDULER_AI: Using gemini-1.5-flash with native JSON mode');
 
-      try {
-        // Initialize Gemini with current model
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        const model = genAI.getGenerativeModel({ model: modelName });
-
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-
-        console.log(`SCHEDULER_AI: ${modelName} response received`);
-
-        // JSON Sanitization - Markdown temizliği
-        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        // Parse JSON from response
-        try {
-          // Extract JSON from response (in case there's extra text)
-          const jsonMatch = cleanJson.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            schedule = JSON.parse(jsonMatch[0]);
-          } else {
-            schedule = JSON.parse(cleanJson);
-          }
-          successfulModel = modelName;
-          console.log(`SCHEDULER_AI: ${modelName} worked!`);
-          break; // Başarılı, döngüden çık
-        } catch (parseError) {
-          console.error(`SCHEDULER_AI_PARSE_ERROR: ${modelName} -`, parseError);
-          console.error(`SCHEDULER_AI_PARSE_ERROR: Response text:`, cleanJson);
-          lastError = { status: 'parse', model: modelName, error: parseError };
-          continue; // Parse hatası - bir sonraki modele geç
-        }
-      } catch (modelError: any) {
-        console.error(`SCHEDULER_AI_ERROR: ${modelName} -`, modelError);
-        lastError = { status: 'model', model: modelName, error: modelError };
-
-        // Timeout veya rate limit kontrolü
-        if (modelError.message?.includes('timeout') || modelError.message?.includes('ETIME')) {
-          console.warn(`${modelName} timeout, bir sonraki modele geçiliyor...`);
-          continue;
-        }
-
-        // Diğer hatalar - bir sonraki modele geç
-        continue;
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
       }
-    }
+    });
+    const responseText = result.response.text();
 
-    // Tüm modeller başarısız oldu
-    if (!schedule) {
-      console.error('SCHEDULER_AI_FATAL_ERROR: All models failed');
-      console.error('SCHEDULER_AI_FATAL_ERROR: Last error:', lastError);
+    console.log('SCHEDULER_AI: Response received');
+
+    // Parse JSON from response (native JSON mode should return clean JSON)
+    let schedule: WeeklySchedule;
+    try {
+      schedule = JSON.parse(responseText);
+      console.log('SCHEDULER_AI: JSON parsed successfully');
+    } catch (parseError) {
+      console.error('SCHEDULER_AI_PARSE_ERROR:', parseError);
+      console.error('SCHEDULER_AI_PARSE_ERROR: Response text:', responseText);
       return NextResponse.json({
         success: false,
-        error: 'Haftalık program oluşturulurken hata oluştu. Lütfen daha sonra tekrar deneyin.'
+        error: 'AI yanıtını işlerken hata oluştu'
       }, { status: 500 });
     }
-
-    console.log(`SCHEDULER_AI_SUCCESS: Used model ${successfulModel}`);
 
     // Validate schedule structure
     if (!schedule || !schedule.days || !Array.isArray(schedule.days) || schedule.days.length !== 7) {
