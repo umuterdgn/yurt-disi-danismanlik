@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CURRICULUM, getSubjectsForExamType, getTopicsForSubject } from '@/lib/constants/curriculum';
 
 interface WeeklyScheduleRequest {
@@ -135,23 +134,53 @@ Return ONLY valid JSON. Do NOT include markdown blocks, text, or explanations.`;
 
 Lütfen ${level} seviyesinde, günlük ${dailyTargetHours} saat çalışma hedefi olan öğrenci için optimize edilmiş haftalık program oluştur.`;
 
-    // Initialize Gemini
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // REST API çağrısı (OCR sistemindeki gibi)
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY eksik.' }, { status: 500 });
+    }
 
-    console.log('SCHEDULER_AI: Using gemini-1.5-flash with native JSON mode');
+    const modelName = 'gemini-1.5-flash-latest';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
+    console.log(`SCHEDULER_AI: Using ${modelName} via REST API`);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      })
     });
-    const responseText = result.response.text();
+
+    console.log(`SCHEDULER_AI: Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('SCHEDULER_AI_ERROR:', errorText);
+      return NextResponse.json({
+        success: false,
+        error: 'Haftalık program oluşturulurken hata oluştu'
+      }, { status: response.status });
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!responseText) {
+      console.error('SCHEDULER_AI_ERROR: Empty response');
+      return NextResponse.json({
+        success: false,
+        error: 'AI yanıt boş döndü'
+      }, { status: 500 });
+    }
 
     console.log('SCHEDULER_AI: Response received');
 
-    // Parse JSON from response (native JSON mode should return clean JSON)
+    // Parse JSON from response
     let schedule: WeeklySchedule;
     try {
       schedule = JSON.parse(responseText);
