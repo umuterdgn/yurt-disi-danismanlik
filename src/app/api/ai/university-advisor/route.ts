@@ -113,7 +113,7 @@ IMPORTANT:
 Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
 
     // FALLBACK MODEL DİZİSİ
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
+    const models = ["gemini-2.5-flash"];
 
     let parsedData: any = null;
     let successfulModel: string | null = null;

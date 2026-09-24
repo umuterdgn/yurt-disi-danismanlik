@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     console.log("GEMINI_REQUEST_IMAGES:", images.length);
 
     // FALLBACK MODEL DİZİSİ
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
+    const models = ["gemini-2.5-flash"];
 
     const prompt = `You are an expert Turkish exam answer-sheet and exam-question OCR system.
 

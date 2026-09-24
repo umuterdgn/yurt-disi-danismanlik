@@ -127,9 +127,6 @@ Başlangıç tarihi: ${startDate || new Date().toISOString().split('T')[0]}
 
 Return ONLY valid JSON. Do NOT include markdown blocks, text, or explanations.`;
 
-    // FALLBACK MODEL DİZİSİ
-    const models = ['gemini-1.5-flash'];
-
     const prompt = `${systemPrompt}
 
 Lütfen ${level} seviyesinde, günlük ${dailyTargetHours} saat çalışma hedefi olan öğrenci için optimize edilmiş haftalık program oluştur.`;
@@ -140,7 +137,7 @@ Lütfen ${level} seviyesinde, günlük ${dailyTargetHours} saat çalışma hedef
       return NextResponse.json({ error: 'GEMINI_API_KEY eksik.' }, { status: 500 });
     }
 
-    const modelName = 'gemini-1.5-flash-latest';
+    const modelName = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
     console.log(`SCHEDULER_AI: Using ${modelName} via REST API`);

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     console.log("WORKSHEET_TOPIC:", topic);
 
     // FALLBACK MODEL DİZİSİ
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro"];
+    const models = ["gemini-2.5-flash"];
 
     const prompt = `You are an expert Turkish worksheet/homework analysis system.
 
