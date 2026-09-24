@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddTaskDialog } from "@/components/add-task-dialog";
@@ -12,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { completeTaskWithPerformance } from "@/actions/add-task";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, Sparkles } from "lucide-react";
+import { Lightbulb, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Task {
   id: string;
@@ -54,13 +53,20 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
-  const [selectedDate, setSelectedDate] = useState<string>('');
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Pazartesi'den başla
+    const monday = new Date(now.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  });
 
   const getPriorityColor = (priority: string) => {
     const colors: Record<string, string> = {
@@ -80,33 +86,81 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
     return labels[priority] || priority;
   };
 
-  const onDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+  const handleWeekChange = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentWeekStart);
+    const daysToAdd = direction === 'next' ? 7 : -7;
+    newDate.setDate(newDate.getDate() + daysToAdd);
+    setCurrentWeekStart(newDate);
+  };
 
-    if (!destination) return;
-
-    if (destination.droppableId === source.droppableId) return;
-
-    const newStatus = destination.droppableId as 'TODO' | 'IN_PROGRESS' | 'DONE';
+  const getWeekDays = () => {
+    const days = [];
+    const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     
-    // If moving to DONE, show performance modal
-    if (newStatus === 'DONE') {
-      const task = localTasks.find(t => t.id === draggableId);
-      if (task) {
-        setTaskToComplete(task);
-        setCompletionModalOpen(true);
-        return; // Don't update yet, wait for modal confirmation
-      }
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(currentWeekStart);
+      date.setDate(date.getDate() + i);
+      days.push({
+        name: dayNames[i],
+        date: date,
+        dateString: date.toISOString().split('T')[0]
+      });
     }
     
-    // Update local state immediately for better UX
-    const updatedTasks = localTasks.map(task => 
-      task.id === draggableId ? { ...task, status: newStatus } : task
-    );
-    setLocalTasks(updatedTasks);
+    return days;
+  };
 
-    // Call the server action to update the database
-    await onTaskMove(draggableId, newStatus);
+  const getTasksForDay = (dateString: string) => {
+    let filteredTasks = localTasks;
+
+    // Filter by grade first
+    if (selectedGrade !== 'all') {
+      filteredTasks = filteredTasks.filter(task => {
+        const student = students.find(s => s.id === task.studentProfile?.id);
+        return student?.grade === selectedGrade;
+      });
+    }
+
+    // Filter by student
+    if (selectedStudent !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.studentProfile?.id === selectedStudent);
+    }
+
+    // Filter by course/subject
+    if (selectedCourse !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.subject === selectedCourse);
+    }
+
+    // Filter by task date (only tasks for this specific day)
+    return filteredTasks.filter(task => {
+      const taskDate = new Date(task.taskDate).toISOString().split('T')[0];
+      return taskDate === dateString;
+    });
+  };
+
+  const getUnscheduledTasks = () => {
+    let filteredTasks = localTasks;
+
+    // Filter by grade first
+    if (selectedGrade !== 'all') {
+      filteredTasks = filteredTasks.filter(task => {
+        const student = students.find(s => s.id === task.studentProfile?.id);
+        return student?.grade === selectedGrade;
+      });
+    }
+
+    // Filter by student
+    if (selectedStudent !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.studentProfile?.id === selectedStudent);
+    }
+
+    // Filter by course/subject
+    if (selectedCourse !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.subject === selectedCourse);
+    }
+
+    // Return tasks without a valid date
+    return filteredTasks.filter(task => !task.taskDate || task.taskDate === null);
   };
 
   const handleTaskCompletion = async (correct: number, wrong: number, empty: number) => {
@@ -137,38 +191,6 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
     }
   };
 
-  const getTasksByStatus = (status: string) => {
-    let filteredTasks = localTasks;
-
-    // Filter by grade first
-    if (selectedGrade !== 'all') {
-      filteredTasks = filteredTasks.filter(task => {
-        const student = students.find(s => s.id === task.studentProfile?.id);
-        return student?.grade === selectedGrade;
-      });
-    }
-
-    // Filter by student
-    if (selectedStudent !== 'all') {
-      filteredTasks = filteredTasks.filter(task => task.studentProfile?.id === selectedStudent);
-    }
-
-    // Filter by course/subject
-    if (selectedCourse !== 'all') {
-      filteredTasks = filteredTasks.filter(task => task.subject === selectedCourse);
-    }
-
-    // Filter by date
-    if (selectedDate) {
-      filteredTasks = filteredTasks.filter(task => {
-        const taskDate = new Date(task.taskDate).toISOString().split('T')[0];
-        return taskDate === selectedDate;
-      });
-    }
-
-    return filteredTasks.filter(task => task.status === status);
-  };
-
   const allCourses = [...new Set(localTasks.map(task => task.subject).filter((subject): subject is string => Boolean(subject)))];
 
   // Filter students based on selected grade
@@ -181,14 +203,27 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
     setDetailModalOpen(true);
   };
 
-  const todoTasks = getTasksByStatus('TODO');
-  const inProgressTasks = getTasksByStatus('IN_PROGRESS');
-  const doneTasks = getTasksByStatus('DONE');
-
+  const weekDays = getWeekDays();
+  const unscheduledTasks = getUnscheduledTasks();
   const unresolvedRecommendations = aiRecommendations.filter(rec => !rec.isResolved && rec.type === 'ACADEMIC');
 
+  const getSubjectColor = (subject: string) => {
+    const colors: Record<string, string> = {
+      'Matematik': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Türkçe': 'bg-green-100 text-green-700 border-green-200',
+      'Fizik': 'bg-purple-100 text-purple-700 border-purple-200',
+      'Kimya': 'bg-orange-100 text-orange-700 border-orange-200',
+      'Biyoloji': 'bg-pink-100 text-pink-700 border-pink-200',
+      'Tarih': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      'Coğrafya': 'bg-teal-100 text-teal-700 border-teal-200',
+      'Felsefe': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'Edebiyat': 'bg-rose-100 text-rose-700 border-rose-200',
+    };
+    return colors[subject] || 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <>
       {/* AI Recommendations for Weak Question Types */}
       {unresolvedRecommendations.length > 0 && showRecommendations && (
         <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
@@ -237,13 +272,34 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
       <Card>
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
-            <CardTitle className="text-xl font-semibold text-gray-900">Görev Panosu</CardTitle>
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
-              <div className="w-full md:w-48">
-                <Select value={selectedGrade} onValueChange={(value) => { setSelectedGrade(value); setSelectedStudent('all'); }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sınıf Seç" />
-                  </SelectTrigger>
+            <CardTitle className="text-xl font-semibold text-gray-900">Haftalık Çalışma Programı</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleWeekChange('prev')}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium text-gray-600 min-w-[200px] text-center">
+                {weekDays[0].date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - 
+                {weekDays[6].date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleWeekChange('next')}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
+            <div className="w-full md:w-48">
+              <Select value={selectedGrade} onValueChange={(value) => { setSelectedGrade(value); setSelectedStudent('all'); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sınıf Seç" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Sınıflar</SelectItem>
                   <SelectItem value="9">9. Sınıf</SelectItem>
@@ -253,12 +309,12 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
                   <SelectItem value="Mezun">Mezun</SelectItem>
                 </SelectContent>
               </Select>
-              </div>
-              <div className="w-full md:w-48">
-                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Öğrenci Seç" />
-                  </SelectTrigger>
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Öğrenci Seç" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Öğrenciler</SelectItem>
                   {filteredStudents.map((student) => (
@@ -268,12 +324,12 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
                   ))}
                 </SelectContent>
               </Select>
-              </div>
-              <div className="w-full md:w-48">
-                <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Ders Seç" />
-                  </SelectTrigger>
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Ders Seç" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Dersler</SelectItem>
                   {allCourses.map((course) => (
@@ -283,180 +339,131 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
                   ))}
                 </SelectContent>
               </Select>
-              </div>
-              <div className="w-full md:w-40">
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  placeholder="Tarih"
-                />
-              </div>
             </div>
+            <AddTaskDialog students={students} />
           </div>
-          <AddTaskDialog students={students} />
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            {/* TODO Column */}
-            <Droppable droppableId="TODO">
-              {(provided) => (
+          {/* Weekly Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 overflow-x-auto">
+            {weekDays.map((day) => {
+              const dayTasks = getTasksForDay(day.dateString);
+              const isToday = new Date().toISOString().split('T')[0] === day.dateString;
+              
+              return (
                 <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="bg-gray-50 rounded-lg p-4"
+                  key={day.dateString}
+                  className={`min-w-[200px] ${isToday ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border'} rounded-lg p-3`}
                 >
-                  <h3 className="font-semibold mb-4 text-gray-700">Yapılacak</h3>
-                  <div className="space-y-3">
-                    {todoTasks.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
+                  <div className="flex flex-col items-center mb-3">
+                    <h3 className={`font-semibold text-sm ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
+                      {day.name}
+                    </h3>
+                    <span className={`text-xs ${isToday ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                      {day.date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {dayTasks.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-2">Görev yok</p>
                     ) : (
-                      todoTasks.map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="bg-white p-4 rounded border shadow-sm hover:shadow-md transition-shadow cursor-move w-full"
-                              onClick={() => handleTaskClick(task)}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <p className="font-medium text-sm">{task.title}</p>
-                                <Badge className={getPriorityColor(task.priority)}>
-                                  {getPriorityLabel(task.priority)}
-                                </Badge>
-                              </div>
-                              {task.subject && (
-                                <Badge className="mt-2 text-xs bg-blue-100 text-blue-700">
-                                  {task.subject}
-                                </Badge>
-                              )}
-                              <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
-                                <span className="font-medium">{task.studentProfile?.user?.name || '-'}</span>
-                                {task.estimatedPomodoros > 0 && (
-                                  <span className="flex items-center gap-1">
-                                    <span>🍅</span>
-                                    <span>{task.estimatedPomodoros} Pomodoro</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                      dayTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className={`bg-white p-3 rounded border shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full ${task.status === 'DONE' ? 'opacity-60' : ''}`}
+                          onClick={() => handleTaskClick(task)}
+                        >
+                          {/* Subject Badge - Most Prominent */}
+                          {task.subject && (
+                            <Badge className={`mb-2 text-xs font-medium border ${getSubjectColor(task.subject)}`}>
+                              {task.subject}
+                            </Badge>
                           )}
-                        </Draggable>
+                          
+                          {/* Task Title */}
+                          <p className={`text-xs font-medium mb-1 ${task.status === 'DONE' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                            {task.title}
+                          </p>
+                          
+                          {/* Topic */}
+                          {task.topic && (
+                            <p className="text-xs text-gray-500 mb-2 truncate">
+                              {task.topic}
+                            </p>
+                          )}
+                          
+                          {/* Footer Info */}
+                          <div className="flex items-center justify-between text-xs text-gray-400">
+                            <span className="truncate max-w-[80px]">
+                              {task.studentProfile?.user?.name?.split(' ')[0] || '-'}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {task.estimatedPomodoros > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <span>🍅</span>
+                                  <span>{task.estimatedPomodoros}</span>
+                                </span>
+                              )}
+                              {task.status === 'DONE' && (
+                                <span className="text-green-500">✓</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       ))
                     )}
-                    {provided.placeholder}
                   </div>
                 </div>
-              )}
-            </Droppable>
-
-            {/* IN_PROGRESS Column */}
-            <Droppable droppableId="IN_PROGRESS">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="bg-blue-50 rounded-lg p-4"
-                >
-                  <h3 className="font-semibold mb-4 text-blue-700">Devam Ediyor</h3>
-                  <div className="space-y-3">
-                    {inProgressTasks.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
-                    ) : (
-                      inProgressTasks.map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="bg-white p-4 rounded border shadow-sm hover:shadow-md transition-shadow cursor-move w-full"
-                              onClick={() => handleTaskClick(task)}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <p className="font-medium text-sm">{task.title}</p>
-                                <Badge className={getPriorityColor(task.priority)}>
-                                  {getPriorityLabel(task.priority)}
-                                </Badge>
-                              </div>
-                              {task.subject && (
-                                <Badge className="mt-2 text-xs bg-blue-100 text-blue-700">
-                                  {task.subject}
-                                </Badge>
-                              )}
-                              <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
-                                <span className="font-medium">{task.studentProfile?.user?.name || '-'}</span>
-                                {task.estimatedPomodoros > 0 && (
-                                  <span className="flex items-center gap-1">
-                                    <span>🍅</span>
-                                    <span>{task.estimatedPomodoros} Pomodoro</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))
-                    )}
-                    {provided.placeholder}
-                  </div>
-                </div>
-              )}
-            </Droppable>
-
-            {/* DONE Column */}
-            <Droppable droppableId="DONE">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="bg-green-50 rounded-lg p-4"
-                >
-                  <h3 className="font-semibold mb-4 text-green-700">Bitti</h3>
-                  <div className="space-y-3">
-                    {doneTasks.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-4">Görev yok</p>
-                    ) : (
-                      doneTasks.map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="bg-white p-4 rounded border shadow-sm opacity-75 hover:shadow-md transition-shadow cursor-move"
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <p className="font-medium text-sm line-through">{task.title}</p>
-                                <Badge className="bg-green-100 text-green-700">✓</Badge>
-                              </div>
-                              {task.subject && (
-                                <Badge className="mt-2 text-xs bg-blue-100 text-blue-700">
-                                  {task.subject}
-                                </Badge>
-                              )}
-                              <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
-                                <span className="font-medium">{task.studentProfile?.user?.name || '-'}</span>
-                                {task.estimatedPomodoros > 0 && (
-                                  <span className="flex items-center gap-1">
-                                    <span>🍅</span>
-                                    <span>{task.estimatedPomodoros} Pomodoro</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))
-                    )}
-                    {provided.placeholder}
-                  </div>
-                </div>
-              )}
-            </Droppable>
+              );
+            })}
           </div>
+
+          {/* Unscheduled Tasks */}
+          {unscheduledTasks.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-semibold text-sm text-gray-700 mb-3">Planlanmamış Görevler</h3>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {unscheduledTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="bg-white p-3 rounded border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => handleTaskClick(task)}
+                    >
+                      {task.subject && (
+                        <Badge className={`mb-2 text-xs font-medium border ${getSubjectColor(task.subject)}`}>
+                          {task.subject}
+                        </Badge>
+                      )}
+                      
+                      <p className="text-xs font-medium mb-1 text-gray-900">
+                        {task.title}
+                      </p>
+                      
+                      {task.topic && (
+                        <p className="text-xs text-gray-500 mb-2 truncate">
+                          {task.topic}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <span className="truncate max-w-[80px]">
+                          {task.studentProfile?.user?.name?.split(' ')[0] || '-'}
+                        </span>
+                        {task.estimatedPomodoros > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span>🍅</span>
+                            <span>{task.estimatedPomodoros}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -479,6 +486,6 @@ export function AdvisorKanbanBoard({ tasks, students, onTaskMove, aiRecommendati
         }}
         task={selectedTask}
       />
-    </DragDropContext>
+    </>
   );
 }
