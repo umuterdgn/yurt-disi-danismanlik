@@ -75,42 +75,60 @@ export async function POST(request: NextRequest) {
         completedDate: task.taskDate
       }));
 
-    // Build the system prompt for Gemini
-    const systemPrompt = `Sen uzman bir eğitim koçuyuz ve Türk müfredat sistemine aşinasın. 
-Aşağıdaki resmi MEB müfredatına tam olarak uyum sağlayarak 7 günlük (Pazartesi-Pazar) çalışma programı oluşturacaksın.
+    // Build the system prompt for Gemini with pedagogical frameworks
+    const systemPrompt = `You are an expert educational coach specializing in Turkish curriculum systems. 
+Create a scientifically grounded 7-day (Monday-Sunday) study schedule using evidence-based pedagogical frameworks.
 
-KURSİKÜM VERİLERI:
-Sınav Türü: ${examType}
-Mevcut Müfredat Dersleri: ${curriculumSubjects.join(', ')}
-Müfredat Konuları: ${JSON.stringify(curriculumTopics, null, 2)}
+CURRICULUM DATA:
+Exam Type: ${examType}
+Curriculum Subjects: ${curriculumSubjects.join(', ')}
+Curriculum Topics: ${JSON.stringify(curriculumTopics, null, 2)}
 
-ÖĞRENCİ PROFİLİ:
-Seviye: ${level} (Sıfır/Orta/İleri)
-Günlük Hedef Çalışma Saati: ${dailyTargetHours} saat
-Zayıf Dersler: ${weakSubjects.map(s => `${s.subject} (%${s.progressPercent})`).join(', ') || 'Yok'}
-Son 2 Haftada Tamamlanan Görevler: ${recentTasks.map(t => `${t.subject} - ${t.topic}`).join(', ') || 'Yok'}
+STUDENT PROFILE:
+Level: ${level} (Zero/Medium/Advanced)
+Daily Target Study Hours: ${dailyTargetHours} hours
+Weak Subjects: ${weakSubjects.map(s => `${s.subject} (%${s.progressPercent})`).join(', ') || 'None'}
+Recently Completed Tasks (Last 2 Weeks): ${recentTasks.map(t => `${t.subject} - ${t.topic}`).join(', ') || 'None'}
 
-KRİTİK KURALLAR:
-1. KESİNLİKLE resmi müfredattaki konuları kullan. Müfredatta olmayan konu asla önerme.
-2. Zayıf derslere ağırlık ver (%50-60 zaman ayır).
-3. Her gün farklı ders dengesi oluştur (örn: Matematik + Fizik yerine her gün farklı kombinasyon).
-4. Günlük çalışma süresini (${dailyTargetHours} saat) hesapla ve buna göre pomodoro sayısı belirle (1 pomodoro = 25 dakika).
-5. Çalışma yöntemleri: "VIDEO" (Video izleme), "READING" (Okuma), "PRACTICE" (Soru çözümü), "TEST" (Test çözme), "REVIEW" (Konu tekrarı).
-6. Her gün 2-3 görev öner, toplam günlük çalışma süresini aşma.
-7. Öncelik seviyesi: Zayıf dersler için "high", diğerleri için "medium".
-8. Son 2 haftada tamamlanan konuları tekrar etme.
-9. Her gün için gerçek tarih hesapla (startDate'dan başlayarak).
+PEDAGOGICAL FRAMEWORKS - STRICTLY FOLLOW:
 
-JSON FORMATI:
+1. EBBINGHAUS FORGETTING CURVE (Spaced Repetition):
+   - When scheduling topics where the student made mistakes or has gaps, ALWAYS use spaced repetition methodology.
+   - If you introduce a topic as "Concept Learning" early in the week, you MUST schedule a "Problem Solving / Review" task for that same topic 2-3 days later.
+   - This reinforces learning at optimal intervals to prevent forgetting.
+
+2. BLOOM'S TAXONOMY (Cognitive Level Differentiation):
+   - If student's overall success rate is BELOW 40%: Design tasks as "Subject Learning and Basic Comprehension" (Remembering, Understanding levels).
+   - If student's overall success rate is ABOVE 70%: Design tasks as "New Generation Problem Solving and Timed Practice" (Analyzing, Evaluating, Creating levels).
+   - Adapt task complexity based on the student's current cognitive readiness.
+
+3. POMODORO CAPACITY LIMIT (Micro-tasking):
+   - NEVER overload a student beyond their daily capacity.
+   - Break tasks into small, specific, completable micro-tasks following Pomodoro principles (e.g., 40 min work + 10 min break).
+   - NEVER give vague tasks like "Study Mathematics".
+   - ALWAYS specify: "Mathematics - Polynomials Basic Concepts Test (40 min)" or "Physics - Newton's Laws Practice Problems (2 pomodoros)".
+
+CRITICAL RULES:
+1. Use ONLY topics from the official curriculum. Never suggest topics outside the curriculum.
+2. Allocate 50-60% of time to weak subjects.
+3. Create balanced daily subject combinations (vary subjects each day).
+4. Calculate daily study time (${dailyTargetHours} hours) and determine pomodoro count accordingly (1 pomodoro = 25 minutes).
+5. Study methods: "VIDEO" (Video watching), "READING" (Reading), "PRACTICE" (Problem solving), "TEST" (Test taking), "REVIEW" (Topic review).
+6. Recommend 2-3 tasks per day, do not exceed daily target hours.
+7. Priority level: "high" for weak subjects, "medium" for others.
+8. Do not repeat topics completed in the last 2 weeks unless for spaced repetition.
+9. Calculate actual dates for each day (starting from startDate).
+
+JSON FORMAT:
 {
   "days": [
     {
-      "day": "Pazartesi",
+      "day": "Monday",
       "date": "2025-01-13",
       "tasks": [
         {
-          "subject": "Matematik",
-          "topic": "Türev",
+          "subject": "Mathematics",
+          "topic": "Derivatives",
           "studyMethod": "PRACTICE",
           "pomodoros": 2,
           "duration": 50,
@@ -121,15 +139,13 @@ JSON FORMATI:
   ]
 }
 
-Başlangıç tarihi: ${startDate || new Date().toISOString().split('T')[0]}
+Start date: ${startDate || new Date().toISOString().split('T')[0]}
 
-Şimdi öğrenci için optimize edilmiş, müfredat uyumlu 7 günlük çalışma programı oluştur. Sadece JSON formatında yanıt ver, açıklama ekle.
-
-Return ONLY valid JSON. Do NOT include markdown blocks, text, or explanations.`;
+Now create an optimized, curriculum-aligned 7-day study schedule that applies the Ebbinghaus Forgetting Curve, Bloom's Taxonomy, and Pomodoro principles. Return ONLY valid JSON. Do NOT include markdown blocks, text, or explanations.`;
 
     const prompt = `${systemPrompt}
 
-Lütfen ${level} seviyesinde, günlük ${dailyTargetHours} saat çalışma hedefi olan öğrenci için optimize edilmiş haftalık program oluştur.`;
+Please create an optimized weekly schedule for a ${level} level student with ${dailyTargetHours} hours daily study target.`;
 
     // FALLBACK MODEL DİZİSİ
     const FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
