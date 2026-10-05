@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { SuperAdminDashboard } from "@/components/super-admin-dashboard";
 
 export default async function SuperAdminPage() {
@@ -20,7 +21,17 @@ export default async function SuperAdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return <div>Unauthorized</div>;
+    redirect('/login');
+  }
+
+  // Check if user is SUPER_ADMIN
+  const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+
+  if (!dbUser || dbUser.role !== 'SUPER_ADMIN') {
+    redirect('/');
   }
 
   // Get summary stats
