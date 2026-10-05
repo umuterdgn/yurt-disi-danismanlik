@@ -22,7 +22,7 @@ interface Advisor {
   aiUsageCount: number;
   advisorProfile: {
     students: any[];
-  };
+  } | null;
 }
 
 interface SuperAdminDashboardProps {

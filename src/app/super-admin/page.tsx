@@ -51,6 +51,15 @@ export default async function SuperAdminPage() {
     orderBy: { createdAt: 'desc' }
   });
 
+  // Format advisors - ensure advisorProfile.students is properly handled
+  const formattedAdvisors = advisors.map(advisor => ({
+    ...advisor,
+    advisorProfile: advisor.advisorProfile ? {
+      ...advisor.advisorProfile,
+      students: advisor.advisorProfile.students || []
+    } : null
+  }));
+
   const stats = {
     totalAdvisors,
     totalStudents,
@@ -58,5 +67,5 @@ export default async function SuperAdminPage() {
     expiringSoon
   };
 
-  return <SuperAdminDashboard stats={stats} advisors={advisors} />;
+  return <SuperAdminDashboard stats={stats} advisors={formattedAdvisors} />;
 }
