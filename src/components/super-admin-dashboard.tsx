@@ -27,7 +27,7 @@ interface Advisor {
 
 interface SuperAdminDashboardProps {
   stats: {
-    totalAdvisors: number;
+    totalAdmins: number;
     totalStudents: number;
     totalAIUsage: number;
     expiringSoon: number;
@@ -158,7 +158,7 @@ export function SuperAdminDashboard({ stats, advisors }: SuperAdminDashboardProp
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{stats.totalAdvisors}</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.totalAdmins}</div>
             </CardContent>
           </Card>
 

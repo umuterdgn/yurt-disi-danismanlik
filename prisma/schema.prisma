@@ -747,6 +747,7 @@ model QuestProgress {
 
 enum UserRole {
   SUPER_ADMIN
+  ADMIN
   ADVISOR
   STUDENT
   PARENT

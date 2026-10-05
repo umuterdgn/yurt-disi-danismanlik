@@ -35,13 +35,13 @@ export default async function SuperAdminPage() {
   }
 
   // Get summary stats
-  const [totalAdvisors, totalStudents, totalAIUsage, expiringSoon] = await Promise.all([
-    prisma.user.count({ where: { role: 'ADVISOR' } }),
+  const [totalAdmins, totalStudents, totalAIUsage, expiringSoon] = await Promise.all([
+    prisma.user.count({ where: { role: 'ADMIN' } }),
     prisma.studentProfile.count(),
     prisma.user.aggregate({ _sum: { aiUsageCount: true } }),
     prisma.user.count({
       where: {
-        role: 'ADVISOR',
+        role: 'ADMIN',
         subscriptionEndsAt: {
           lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         }
@@ -49,9 +49,9 @@ export default async function SuperAdminPage() {
     })
   ]);
 
-  // Get all advisors with their student counts
-  const advisors = await prisma.user.findMany({
-    where: { role: 'ADVISOR' },
+  // Get all admins (organization owners) with their advisor profiles
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN' },
     include: {
       advisorProfile: {
         include: {
@@ -62,21 +62,21 @@ export default async function SuperAdminPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  // Format advisors - ensure advisorProfile.students is properly handled
-  const formattedAdvisors = advisors.map(advisor => ({
-    ...advisor,
-    advisorProfile: advisor.advisorProfile ? {
-      ...advisor.advisorProfile,
-      students: advisor.advisorProfile.students || []
+  // Format admins - ensure advisorProfile.students is properly handled
+  const formattedAdmins = admins.map(admin => ({
+    ...admin,
+    advisorProfile: admin.advisorProfile ? {
+      ...admin.advisorProfile,
+      students: admin.advisorProfile.students || []
     } : null
   }));
 
   const stats = {
-    totalAdvisors,
+    totalAdmins,
     totalStudents,
     totalAIUsage: totalAIUsage._sum.aiUsageCount || 0,
     expiringSoon
   };
 
-  return <SuperAdminDashboard stats={stats} advisors={formattedAdvisors} />;
+  return <SuperAdminDashboard stats={stats} advisors={formattedAdmins} />;
 }

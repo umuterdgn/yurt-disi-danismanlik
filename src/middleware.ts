@@ -49,6 +49,30 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    // SUPER_ADMIN should not access /admin, redirect to /super-admin
+    if (url.pathname.startsWith('/admin') && session) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        // Get user role from database via API
+        try {
+          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/user-role`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+          })
+          const userData = await userResponse.json()
+
+          if (userData.role === 'SUPER_ADMIN') {
+            url.pathname = '/super-admin'
+            return NextResponse.redirect(url)
+          }
+        } catch (error) {
+          console.error('Error checking user role in middleware:', error)
+          // On error, allow request to continue
+        }
+      }
+    }
+
     // Response with cookie management
     return response
   } catch (error) {

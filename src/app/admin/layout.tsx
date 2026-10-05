@@ -17,8 +17,8 @@ export default async function AdminLayout({
       redirect('/login');
     }
 
-    // Role check
-    if (userRole !== 'SUPER_ADMIN') {
+    // Role check - ADMIN role for organization owners
+    if (userRole !== 'ADMIN') {
       redirect('/login');
     }
 
@@ -34,7 +34,7 @@ export default async function AdminLayout({
       redirect('/login');
     }
 
-    if (!dbUser || dbUser.role !== 'SUPER_ADMIN') {
+    if (!dbUser || dbUser.role !== 'ADMIN') {
       redirect('/login');
     }
 
