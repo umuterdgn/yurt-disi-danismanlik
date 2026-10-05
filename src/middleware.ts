@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Middleware for authentication and subscription checks
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
   const protectedPaths = ['/dashboard', '/student', '/advisor', '/parent', '/admin', '/super-admin']
