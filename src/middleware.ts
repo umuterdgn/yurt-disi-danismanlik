@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
-  const protectedPaths = ['/dashboard', '/student', '/advisor', '/parent', '/admin']
+  const protectedPaths = ['/dashboard', '/student', '/advisor', '/parent', '/admin', '/super-admin']
 
   // API rotalarını middleware kontrolünden hariç tut
   if (url.pathname.startsWith('/api')) {
@@ -44,6 +44,43 @@ export async function middleware(request: NextRequest) {
   if (isProtectedPath && !session) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  // Super Admin kontrolü
+  if (url.pathname.startsWith('/super-admin') && session) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email) {
+      // Get user role from database
+      const userResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/user-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email })
+      })
+      const userData = await userResponse.json()
+
+      if (userData.role !== 'SUPER_ADMIN') {
+        url.pathname = '/advisor'
+        return NextResponse.redirect(url)
+      }
+    }
+  }
+
+  // Subscription expired kontrolü (Advisor için)
+  if (url.pathname.startsWith('/advisor') && session) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email) {
+      const userResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/subscription-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email })
+      })
+      const userData = await userResponse.json()
+
+      if (!userData.isSubscriptionActive || userData.isExpired) {
+        url.pathname = '/subscription-expired'
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
   // Response with cookie management

@@ -252,7 +252,12 @@ export async function createAdvancedExam(formData: FormData) {
                 needsReview: qr.needsReview || false,
                 topic: qr.topic || null,
                 subTopic: qr.subTopic || null,
-                learningOutcome: qr.learningOutcome || null
+                learningOutcome: qr.learningOutcome || null,
+                errorType: qr.errorType || null,
+                questionStructure: qr.questionStructure || null,
+                difficultyLevel: qr.difficultyLevel || null,
+                isBlank: qr.isBlank || false,
+                interdisciplinaryTag: qr.interdisciplinaryTag || null
               }
             });
           }

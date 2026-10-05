@@ -44,7 +44,8 @@ export async function GET(
         user: true,
         advisor: {
           include: { user: true }
-        }
+        },
+        simulationProfile: true
       }
     });
 
@@ -74,7 +75,13 @@ export async function GET(
       grade: student.grade,
       targetUniversities: student.targetUniversities,
       currentScore: student.currentScore,
-      targetScore: student.targetScore
+      targetScore: student.targetScore,
+      learningDNA: student.learningDNA,
+      simulationProfile: student.simulationProfile ? {
+        targetUniversity: student.simulationProfile.targetUniversity,
+        burnoutRiskScore: student.simulationProfile.burnoutRiskScore,
+        ghostCompetitorGap: student.simulationProfile.ghostCompetitorGap
+      } : null
     };
 
     return NextResponse.json({

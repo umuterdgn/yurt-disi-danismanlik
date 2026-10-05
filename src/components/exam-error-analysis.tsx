@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, TrendingDown, Clock, Brain, XCircle } from "lucide-react";
+import { AlertCircle, TrendingDown, Brain, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { updateQuestionErrorType } from "@/actions/exam-error-analysis";
 
@@ -26,7 +26,14 @@ interface QuestionResult {
   subTopic?: string;
   result: string;
   errorType?: string;
+  questionStructure?: string;
+  difficultyLevel?: string;
+  isBlank?: boolean;
+  interdisciplinaryTag?: string;
   timeSpent: number;
+  questionNumber?: number;
+  markedAnswer?: string;
+  correctAnswer?: string;
 }
 
 interface Exam {
@@ -45,10 +52,24 @@ interface ExamErrorAnalysisProps {
 }
 
 const ERROR_TYPES = [
-  { value: 'İŞLEM_HATASI', label: 'İşlem Hatası', icon: <XCircle className="w-4 h-4" />, color: 'bg-orange-100 text-orange-700' },
-  { value: 'KONU_EKSİĞİ', label: 'Konu Eksiği', icon: <Brain className="w-4 h-4" />, color: 'bg-red-100 text-red-700' },
-  { value: 'DİKKAT_HATASI', label: 'Dikkat Hatası', icon: <AlertCircle className="w-4 h-4" />, color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'ZAMAN_YÖNETİMİ', label: 'Zaman Yönetimi', icon: <Clock className="w-4 h-4" />, color: 'bg-blue-100 text-blue-700' },
+  { value: 'KNOWLEDGE_GAP', label: 'Bilgi Eksikliği', icon: <Brain className="w-4 h-4" />, color: 'bg-red-100 text-red-700' },
+  { value: 'LOGIC_ERROR', label: 'Mantık Hatası', icon: <AlertCircle className="w-4 h-4" />, color: 'bg-purple-100 text-purple-700' },
+  { value: 'CALCULATION_ERROR', label: 'İşlem Hatası', icon: <XCircle className="w-4 h-4" />, color: 'bg-orange-100 text-orange-700' },
+];
+
+const QUESTION_STRUCTURE_TYPES = [
+  { value: 'YENI_NESIL', label: 'Yeni Nesil', icon: '🎯', color: 'bg-blue-100 text-blue-700' },
+  { value: 'KLASIK', label: 'Klasik', icon: '📝', color: 'bg-gray-100 text-gray-700' },
+  { value: 'ONCULLU', label: 'Öncüllü', icon: '📋', color: 'bg-teal-100 text-teal-700' },
+  { value: 'GRAFIK_TABLO', label: 'Grafik/Tablo', icon: '📊', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'PARAGRAF', label: 'Paragraf', icon: '📖', color: 'bg-amber-100 text-amber-700' },
+];
+
+const DIFFICULTY_LEVELS = [
+  { value: 'KOLAY', label: 'Kolay', color: 'bg-green-100 text-green-700' },
+  { value: 'ORTA', label: 'Orta', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'ZOR', label: 'Zor', color: 'bg-red-100 text-red-700' },
+  { value: 'AYIRT_EDICI', label: 'Ayırt Edici', color: 'bg-purple-100 text-purple-700' },
 ];
 
 export function ExamErrorAnalysis({ exam, studentId }: ExamErrorAnalysisProps) {
@@ -87,28 +108,41 @@ export function ExamErrorAnalysis({ exam, studentId }: ExamErrorAnalysisProps) {
     );
   };
 
+  const getQuestionStructureBadge = (questionStructure?: string) => {
+    if (!questionStructure) return null;
+    const structureConfig = QUESTION_STRUCTURE_TYPES.find(qst => qst.value === questionStructure);
+    if (!structureConfig) return null;
+    
+    return (
+      <Badge className={structureConfig.color}>
+        <span className="mr-1">{structureConfig.icon}</span>
+        <span>{structureConfig.label}</span>
+      </Badge>
+    );
+  };
+
+  const getDifficultyBadge = (difficultyLevel?: string) => {
+    if (!difficultyLevel) return null;
+    const difficultyConfig = DIFFICULTY_LEVELS.find(dl => dl.value === difficultyLevel);
+    if (!difficultyConfig) return null;
+    
+    return (
+      <Badge className={difficultyConfig.color}>
+        {difficultyConfig.label}
+      </Badge>
+    );
+  };
+
   const getSubjectWithWrongAnswers = () => {
     return exam.subjectResults.filter(subject => subject.wrong > 0);
   };
 
-  const getMockQuestionResults = (subjectResult: SubjectResult) => {
-    // This is a placeholder - in real implementation, these would come from the database
-    // For now, we'll generate mock question results for demonstration
-    const mockQuestions: QuestionResult[] = [];
-    const topics = ['Türev', 'İntegral', 'Logaritma', 'Fonksiyon', 'Dizi', 'Limit'];
+  const getQuestionResultsForSubject = (subjectResult: SubjectResult) => {
+    // Use real question results from database
+    const questionResults = subjectResult.questionResults || [];
     
-    for (let i = 0; i < Math.min(subjectResult.wrong, 6); i++) {
-      mockQuestions.push({
-        id: `mock-${subjectResult.id}-${i}`,
-        topic: topics[i % topics.length],
-        subTopic: `Alt konu ${i + 1}`,
-        result: 'WRONG',
-        timeSpent: Math.floor(Math.random() * 120) + 30, // 30-150 seconds
-        errorType: undefined
-      });
-    }
-    
-    return mockQuestions;
+    // Filter for WRONG answers only
+    return questionResults.filter(q => q.result === 'WRONG');
   };
 
   const subjectsWithWrongAnswers = getSubjectWithWrongAnswers();
@@ -177,7 +211,7 @@ export function ExamErrorAnalysis({ exam, studentId }: ExamErrorAnalysisProps) {
                   const subject = exam.subjectResults.find(s => s.id === selectedSubject);
                   if (!subject) return null;
 
-                  const questionResults = subject.questionResults || getMockQuestionResults(subject);
+                  const questionResults = getQuestionResultsForSubject(subject);
 
                   return (
                     <div className="space-y-4">
@@ -192,31 +226,45 @@ export function ExamErrorAnalysis({ exam, studentId }: ExamErrorAnalysisProps) {
                           {questionResults.map((question) => (
                             <div key={question.id} className="border rounded-lg p-4 bg-red-50">
                               <div className="flex justify-between items-start mb-3">
-                                <div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className="font-semibold">Soru {question.questionNumber || '-'}</span>
+                                    {getDifficultyBadge(question.difficultyLevel)}
+                                    {getQuestionStructureBadge(question.questionStructure)}
+                                    {getErrorTypeBadge(question.errorType)}
+                                  </div>
                                   <h4 className="font-medium">{question.topic}</h4>
                                   {question.subTopic && (
                                     <p className="text-sm text-gray-600">{question.subTopic}</p>
                                   )}
+                                  {question.interdisciplinaryTag && (
+                                    <div className="flex items-center gap-1 mt-1 text-xs text-red-600 font-medium">
+                                      <AlertCircle className="w-3 h-3" />
+                                      <span>Kök Neden: {question.interdisciplinaryTag}</span>
+                                    </div>
+                                  )}
+                                  {question.markedAnswer && question.correctAnswer && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      İşaretlenen: {question.markedAnswer} | Doğru: {question.correctAnswer}
+                                    </p>
+                                  )}
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right ml-4">
                                   <span className="text-xs text-gray-500">
                                     {Math.floor(question.timeSpent / 60)}d {question.timeSpent % 60}s
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  {getErrorTypeBadge(question.errorType)}
-                                </div>
+                              <div className="flex items-center justify-between mt-3 pt-3 border-t border-red-200">
                                 <div className="flex items-center gap-2">
-                                  <label className="text-sm">Hata Tipi:</label>
+                                  <label className="text-sm font-medium">Hata Tipi:</label>
                                   <Select
-                                    value={question.errorType || undefined}
+                                    value={question.errorType || ''}
                                     onValueChange={(value) => handleErrorTypeChange(question.id, value)}
                                     disabled={loading}
                                   >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger className="w-[200px]">
                                       <SelectValue placeholder="Seçin" />
                                     </SelectTrigger>
                                     <SelectContent>

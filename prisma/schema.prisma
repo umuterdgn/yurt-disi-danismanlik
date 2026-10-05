@@ -17,6 +17,10 @@ model User {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   organizationId          String?
+  subscriptionEndsAt      DateTime?
+  studentQuota            Int                      @default(30)
+  isSubscriptionActive     Boolean                  @default(true)
+  aiUsageCount            Int                      @default(0)
   advisorProfile          AdvisorProfile?
   participantAppointments AppointmentParticipant[]
   createdAppointments     Appointment[]            @relation("AppointmentCreator")
@@ -58,6 +62,7 @@ model StudentProfile {
   targetUniversities   String[]
   targetUniversity     String?           // Specific target university
   targetMajor         String?           // Target major/program
+  learningDNA          Json?             // Learning DNA: { preferredLearningStyle, peakFocusTime, failedStrategies }
   aiRecommendations    AIRecommendation[]
   applications         Application[]
   dailyTasks           DailyTask[]
@@ -75,6 +80,7 @@ model StudentProfile {
   weeklyCheckIns       WeeklyCheckIn[]
   parentProfiles       ParentProfile[]    @relation("StudentParents")
   worksheets           Worksheet[]
+  simulationProfile    SimulationProfile?
 
   @@map("student_profiles")
 }
@@ -148,6 +154,8 @@ model DailyTask {
   emptyCount         Int?           @default(0)
   taskType           TaskType       @default(OTHER)
   studyMethod        String?        // "VIDEO", "READING", "PRACTICE", "TEST"
+  feedback           String?        // Student feedback: "EASY", "HARD", "MODERATE"
+  feedbackNotes      String?        // Additional feedback notes
   studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
   curriculumSubject  Subject?       @relation("TaskSubject", fields: [subjectId], references: [id])
   curriculumTopic    Topic?         @relation("TaskTopic", fields: [topicId], references: [id])
@@ -238,6 +246,27 @@ enum QuestionResultStatus {
   UNCERTAIN
 }
 
+enum CognitiveErrorType {
+  KNOWLEDGE_GAP
+  LOGIC_ERROR
+  CALCULATION_ERROR
+}
+
+enum QuestionStructureType {
+  YENI_NESIL
+  KLASIK
+  ONCULLU
+  GRAFIK_TABLO
+  PARAGRAF
+}
+
+enum DifficultyLevel {
+  KOLAY
+  ORTA
+  ZOR
+  AYIRT_EDICI
+}
+
 model QuestionResult {
   id               String              @id @default(cuid())
   subjectResultId  String
@@ -255,7 +284,11 @@ model QuestionResult {
   topic             String?             // Türev, İntegral vb.
   subTopic         String?
   learningOutcome  String?
-  errorType         String?             // İşlem, Konu, Dikkat vb.
+  errorType         CognitiveErrorType? // Bilgi Eksikliği, Mantık Hatası, İşlem Hatası
+  questionStructure QuestionStructureType? // Yeni Nesil, Klasik, Öncüllü, Grafik/Tablo, Paragraf
+  difficultyLevel   DifficultyLevel?    // Kolay, Orta, Zor, Ayırt Edici
+  isBlank           Boolean             @default(false) // Boş mu bırakıldı
+  interdisciplinaryTag String?          // Kök neden başka ders/konu ise (Örn: 'Matematik - Trigonometri')
   timeSpent         Int                 @default(0) // saniye
 
   createdAt DateTime @default(now())
@@ -530,6 +563,19 @@ model WeeklyCheckIn {
 
   @@unique([studentProfileId, weekNumber, year])
   @@map("weekly_check_ins")
+}
+
+model SimulationProfile {
+  id                   String          @id @default(cuid())
+  studentProfileId     String          @unique
+  targetUniversity     String?         // Hedef üniversite
+  burnoutRiskScore     Int             @default(0) // Tükenmişlik Skoru 0-100
+  ghostCompetitorGap   Float?          // Gölge rakibe olan uzaklık (net farkı)
+  lastUpdated          DateTime        @default(now())
+  simulationData       Json?           // Ek simülasyon verileri
+  studentProfile       StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("simulation_profiles")
 }
 
 model AuditLog {

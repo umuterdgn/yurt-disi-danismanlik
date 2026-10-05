@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { AdvisorKanbanBoard } from "@/components/advisor-kanban-board";
 import { updateTaskStatus } from "@/actions/add-task";
 import { AIWeeklySchedulerDialog } from "@/components/ai-weekly-scheduler-dialog";
+import { SimulationProfileDialog } from "@/components/simulation-profile-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default async function TasksPage() {
@@ -122,20 +123,12 @@ export default async function TasksPage() {
           </div>
           {students.length > 0 && (
             <div className="flex items-center gap-2">
-              <Select defaultValue={students[0].id}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Öğrenci seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map(student => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <AIWeeklySchedulerDialog 
-                studentId={students[0].id} 
+              <SimulationProfileDialog
+                studentId={students[0].id}
+                studentName={students[0].name}
+              />
+              <AIWeeklySchedulerDialog
+                studentId={students[0].id}
                 studentName={students[0].name}
               />
             </div>

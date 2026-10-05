@@ -37,7 +37,7 @@ export async function updateQuestionErrorType(questionResultId: string, errorTyp
     // Update question result error type
     const updatedQuestionResult = await prisma.questionResult.update({
       where: { id: questionResultId },
-      data: { errorType }
+      data: { errorType: errorType as any }
     });
 
     // Create audit log

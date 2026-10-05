@@ -55,14 +55,14 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
       // Get student data for subject analysis and recent tasks
       const studentResponse = await fetch(`/api/advisor/students/${studentId}`);
       const studentData = await studentResponse.json();
-      
+
       // Get recent tasks (last 2 weeks)
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      
+
       const tasksResponse = await fetch(`/api/advisor/students/${studentId}/tasks?since=${twoWeeksAgo.toISOString()}`);
       const tasksData = await tasksResponse.json();
-      
+
       const response = await fetch('/api/ai/weekly-scheduler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +73,11 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
           subjectAnalysis: studentData.subjectAnalysis || [],
           recentTasks: tasksData.tasks || [],
           examType,
-          startDate
+          startDate,
+          learningDNA: studentData.learningDNA || null,
+          burnoutRiskScore: studentData.simulationProfile?.burnoutRiskScore || 0,
+          targetUniversity: studentData.simulationProfile?.targetUniversity || null,
+          ghostCompetitorGap: studentData.simulationProfile?.ghostCompetitorGap || null
         })
       });
 
@@ -85,7 +89,12 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
       const data = await response.json();
       setSchedule(data.schedule);
       setGenerated(true);
-      toast.success('Haftalık program başarıyla oluşturuldu!');
+
+      if (data.metadata.isDeLoadWeek) {
+        toast.warning('De-Load Haftası: Tükenmişlik riski yüksek, program yükü %40 azaltıldı');
+      } else {
+        toast.success('Haftalık program başarıyla oluşturuldu!');
+      }
     } catch (error) {
       console.error('Error generating schedule:', error);
       toast.error(error instanceof Error ? error.message : 'Program oluşturulurken hata oluştu');

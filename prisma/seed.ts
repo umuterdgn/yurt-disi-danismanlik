@@ -59,7 +59,11 @@ async function main() {
   // Super Admin kullanıcısı
   const superAdmin = await prisma.user.upsert({
     where: { email: 'admin@test.com' },
-    update: { password: '123456' },
+    update: { 
+      password: '123456',
+      studentQuota: 9999,
+      isSubscriptionActive: true
+    },
     create: {
       email: 'admin@test.com',
       password: '123456',
@@ -67,6 +71,9 @@ async function main() {
       role: UserRole.SUPER_ADMIN,
       isApproved: true,
       isActive: true,
+      studentQuota: 9999,
+      isSubscriptionActive: true,
+      aiUsageCount: 0
     },
   })
   console.log('✅ Super Admin kullanıcısı oluşturuldu:', superAdmin.email)
@@ -90,7 +97,12 @@ async function main() {
   // Advisor kullanıcısı
   const advisor = await prisma.user.upsert({
     where: { email: 'advisor@test.com' },
-    update: { password: '123456' },
+    update: { 
+      password: '123456',
+      studentQuota: 30,
+      subscriptionEndsAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      isSubscriptionActive: true
+    },
     create: {
       email: 'advisor@test.com',
       password: '123456',
@@ -98,6 +110,10 @@ async function main() {
       role: UserRole.ADVISOR,
       isApproved: true,
       isActive: true,
+      studentQuota: 30,
+      subscriptionEndsAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      isSubscriptionActive: true,
+      aiUsageCount: 0
     },
   })
   console.log('✅ Advisor kullanıcısı oluşturuldu:', advisor.email)

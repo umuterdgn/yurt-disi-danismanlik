@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +9,8 @@ import { AddAdvancedExamDialog } from "@/components/advanced-exam-dialog";
 import { ExamErrorAnalysis } from "@/components/exam-error-analysis";
 import { MasteryMap } from "@/components/mastery-map";
 import { HolisticAnalysis } from "@/components/holistic-analysis";
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
+import { BehavioralAnalysisBanner } from "@/components/behavioral-analysis-banner";
+import { TrendingUp, TrendingDown, Minus, BarChart3, Brain, AlertCircle, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SubjectResult {
@@ -25,7 +26,14 @@ interface SubjectResult {
     subTopic?: string;
     result: string;
     errorType?: string;
+    questionStructure?: string;
+    difficultyLevel?: string;
+    isBlank?: boolean;
+    interdisciplinaryTag?: string;
     timeSpent: number;
+    questionNumber?: number;
+    markedAnswer?: string;
+    correctAnswer?: string;
   }[];
 }
 
@@ -69,11 +77,132 @@ interface ExamsClientProps {
   userName: string;
 }
 
+const ERROR_TYPES = [
+  { value: 'KNOWLEDGE_GAP', label: 'Bilgi Eksikliği', icon: <Brain className="w-3 h-3" />, color: 'bg-red-100 text-red-700' },
+  { value: 'LOGIC_ERROR', label: 'Mantık Hatası', icon: <AlertCircle className="w-3 h-3" />, color: 'bg-purple-100 text-purple-700' },
+  { value: 'CALCULATION_ERROR', label: 'İşlem Hatası', icon: <XCircle className="w-3 h-3" />, color: 'bg-orange-100 text-orange-700' },
+];
+
+const QUESTION_STRUCTURE_TYPES = [
+  { value: 'YENI_NESIL', label: 'Yeni Nesil', icon: '🎯', color: 'bg-blue-100 text-blue-700' },
+  { value: 'KLASIK', label: 'Klasik', icon: '📝', color: 'bg-gray-100 text-gray-700' },
+  { value: 'ONCULLU', label: 'Öncüllü', icon: '📋', color: 'bg-teal-100 text-teal-700' },
+  { value: 'GRAFIK_TABLO', label: 'Grafik/Tablo', icon: '📊', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'PARAGRAF', label: 'Paragraf', icon: '📖', color: 'bg-amber-100 text-amber-700' },
+];
+
+const DIFFICULTY_LEVELS = [
+  { value: 'KOLAY', label: 'Kolay', color: 'bg-green-100 text-green-700' },
+  { value: 'ORTA', label: 'Orta', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'ZOR', label: 'Zor', color: 'bg-red-100 text-red-700' },
+  { value: 'AYIRT_EDICI', label: 'Ayırt Edici', color: 'bg-purple-100 text-purple-700' },
+];
+
+const getErrorTypeBadge = (errorType?: string) => {
+  if (!errorType) return null;
+  const errorTypeConfig = ERROR_TYPES.find(et => et.value === errorType);
+  if (!errorTypeConfig) return null;
+  
+  return (
+    <Badge className={`${errorTypeConfig.color} text-xs`}>
+      {errorTypeConfig.icon}
+      <span className="ml-1">{errorTypeConfig.label}</span>
+    </Badge>
+  );
+};
+
+const getQuestionStructureBadge = (questionStructure?: string) => {
+  if (!questionStructure) return null;
+  const structureConfig = QUESTION_STRUCTURE_TYPES.find(qst => qst.value === questionStructure);
+  if (!structureConfig) return null;
+  
+  return (
+    <Badge className={`${structureConfig.color} text-xs`}>
+      <span className="mr-1">{structureConfig.icon}</span>
+      <span>{structureConfig.label}</span>
+    </Badge>
+  );
+};
+
+const getDifficultyBadge = (difficultyLevel?: string) => {
+  if (!difficultyLevel) return null;
+  const difficultyConfig = DIFFICULTY_LEVELS.find(dl => dl.value === difficultyLevel);
+  if (!difficultyConfig) return null;
+  
+  return (
+    <Badge className={`${difficultyConfig.color} text-xs`}>
+      {difficultyConfig.label}
+    </Badge>
+  );
+};
+
 export function ExamsClient({ examResults, subjectAnalysis, students, userName }: ExamsClientProps) {
   const [selectedExam, setSelectedExam] = useState<ExamResult | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [selectedExamType, setSelectedExamType] = useState<string>('all');
+
+  // Behavioral Analysis for selected exam
+  const behavioralAnalysis = useMemo(() => {
+    if (!selectedExam || !selectedExam.subjectResults) return null;
+
+    const allQuestionResults = selectedExam.subjectResults.flatMap(sr => sr.questionResults || []);
+    if (allQuestionResults.length === 0) return null;
+
+    const insights: string[] = [];
+    const totalQuestions = allQuestionResults.length;
+
+    // Fatigue Analysis
+    const wrongAnswers = allQuestionResults.filter(q => q.result === 'WRONG');
+    if (wrongAnswers.length > 0) {
+      const lastQuarterStart = Math.ceil(totalQuestions * 0.75);
+      const wrongInLastQuarter = wrongAnswers.filter(q => (q.questionNumber || 0) >= lastQuarterStart);
+      const wrongInFirstThreeQuarters = wrongAnswers.filter(q => (q.questionNumber || 0) < lastQuarterStart);
+      
+      if (wrongInLastQuarter.length > wrongInFirstThreeQuarters.length * 1.5) {
+        insights.push('Mental Fatigue / Odak Kaybı: Hatalar sınavın son çeyreğinde yoğunlaşıyor');
+      }
+    }
+
+    // Blank Behavior Analysis
+    const blankQuestions = allQuestionResults.filter(q => q.isBlank || q.result === 'EMPTY');
+    if (blankQuestions.length > 0) {
+      const lastQuarterStart = Math.ceil(totalQuestions * 0.75);
+      const blankInLastQuarter = blankQuestions.filter(q => (q.questionNumber || 0) >= lastQuarterStart);
+      const blankInFirstThreeQuarters = blankQuestions.filter(q => (q.questionNumber || 0) < lastQuarterStart);
+      
+      if (blankInLastQuarter.length > blankInFirstThreeQuarters.length * 2) {
+        insights.push('Zaman Yönetimi Problemi: Boş sorular sınavın sonuna blok halinde yığılmış');
+      } else if (blankInFirstThreeQuarters.length > 0) {
+        insights.push('Özgüven/Konu Eksikliği: Boş sorular sınav boyunca aralıklı');
+      }
+    }
+
+    // Interdisciplinary Gap Analysis
+    const interdisciplinaryGaps = allQuestionResults.filter(q => q.interdisciplinaryTag);
+    if (interdisciplinaryGaps.length > 0) {
+      const gapSubjects = [...new Set(interdisciplinaryGaps.map(q => q.interdisciplinaryTag))];
+      insights.push(`Disiplinlerarası Eksiklik: ${gapSubjects.join(', ')}`);
+    }
+
+    // Difficulty Level Analysis
+    const difficultyDistribution = wrongAnswers.reduce((acc, q) => {
+      if (q.difficultyLevel) {
+        acc[q.difficultyLevel] = (acc[q.difficultyLevel] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    if (difficultyDistribution['ZOR'] > 0 || difficultyDistribution['AYIRT_EDICI'] > 0) {
+      insights.push('Zor Soru Performansı: Gelişim alanı zor sorularda yoğunlaşmış');
+    }
+
+    return {
+      insights,
+      fatiguePattern: insights.find(i => i.includes('Fatigue')) || undefined,
+      blankBehavior: insights.find(i => i.includes('Zaman') || i.includes('Özgüven')) || undefined
+    };
+  }, [selectedExam]);
 
   // Filter data based on selected grade
   const filteredStudents = selectedGrade === 'all'
@@ -442,6 +571,15 @@ export function ExamsClient({ examResults, subjectAnalysis, students, userName }
         {/* Selected Exam Error Analysis */}
         {selectedExam && (selectedExam as any).studentProfile?.id && (
           <div className="mb-6 md:mb-8">
+            {/* Behavioral Analysis Banner */}
+            {behavioralAnalysis && behavioralAnalysis.insights.length > 0 && (
+              <BehavioralAnalysisBanner
+                insights={behavioralAnalysis.insights}
+                fatiguePattern={behavioralAnalysis.fatiguePattern}
+                blankBehavior={behavioralAnalysis.blankBehavior}
+              />
+            )}
+            
             <ExamErrorAnalysis 
               exam={selectedExam as any} 
               studentId={(selectedExam as any).studentProfile.id} 

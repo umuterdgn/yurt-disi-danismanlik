@@ -91,6 +91,17 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Danışman profili oluşturma hatası' };
     }
 
+    // Check student quota (only for ADVISOR role, not SUPER_ADMIN)
+    if (dbUser.role === 'ADVISOR') {
+      const currentStudentCount = await prisma.studentProfile.count({
+        where: { advisorId: advisor.id }
+      });
+
+      if (currentStudentCount >= (dbUser.studentQuota || 30)) {
+        return { success: false, error: 'Öğrenci kotanız doldu. Paketinizi yükseltmek için yöneticinizle iletişime geçin.' };
+      }
+    }
+
     // Check if email already exists
     let existingUser = null;
     try {

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Camera, Plus, Brain, AlertCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { createAdvancedExam } from "@/actions/advanced-exam";
 import { ExamTaskSuggestions } from "@/components/exam-task-suggestions";
@@ -22,6 +23,65 @@ interface AddAdvancedExamDialogProps {
   students: { id: string; name: string }[];
   studentId?: string;
 }
+
+const ERROR_TYPES = [
+  { value: 'KNOWLEDGE_GAP', label: 'Bilgi Eksikliği', icon: <Brain className="w-3 h-3" />, color: 'bg-red-100 text-red-700' },
+  { value: 'LOGIC_ERROR', label: 'Mantık Hatası', icon: <AlertCircle className="w-3 h-3" />, color: 'bg-purple-100 text-purple-700' },
+  { value: 'CALCULATION_ERROR', label: 'İşlem Hatası', icon: <XCircle className="w-3 h-3" />, color: 'bg-orange-100 text-orange-700' },
+];
+
+const QUESTION_STRUCTURE_TYPES = [
+  { value: 'YENI_NESIL', label: 'Yeni Nesil', icon: '🎯', color: 'bg-blue-100 text-blue-700' },
+  { value: 'KLASIK', label: 'Klasik', icon: '📝', color: 'bg-gray-100 text-gray-700' },
+  { value: 'ONCULLU', label: 'Öncüllü', icon: '📋', color: 'bg-teal-100 text-teal-700' },
+  { value: 'GRAFIK_TABLO', label: 'Grafik/Tablo', icon: '📊', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'PARAGRAF', label: 'Paragraf', icon: '📖', color: 'bg-amber-100 text-amber-700' },
+];
+
+const DIFFICULTY_LEVELS = [
+  { value: 'KOLAY', label: 'Kolay', color: 'bg-green-100 text-green-700' },
+  { value: 'ORTA', label: 'Orta', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'ZOR', label: 'Zor', color: 'bg-red-100 text-red-700' },
+  { value: 'AYIRT_EDICI', label: 'Ayırt Edici', color: 'bg-purple-100 text-purple-700' },
+];
+
+const getErrorTypeBadge = (errorType?: string) => {
+  if (!errorType) return null;
+  const errorTypeConfig = ERROR_TYPES.find(et => et.value === errorType);
+  if (!errorTypeConfig) return null;
+  
+  return (
+    <Badge className={`${errorTypeConfig.color} text-xs`}>
+      {errorTypeConfig.icon}
+      <span className="ml-1">{errorTypeConfig.label}</span>
+    </Badge>
+  );
+};
+
+const getQuestionStructureBadge = (questionStructure?: string) => {
+  if (!questionStructure) return null;
+  const structureConfig = QUESTION_STRUCTURE_TYPES.find(qst => qst.value === questionStructure);
+  if (!structureConfig) return null;
+  
+  return (
+    <Badge className={`${structureConfig.color} text-xs`}>
+      <span className="mr-1">{structureConfig.icon}</span>
+      <span>{structureConfig.label}</span>
+    </Badge>
+  );
+};
+
+const getDifficultyBadge = (difficultyLevel?: string) => {
+  if (!difficultyLevel) return null;
+  const difficultyConfig = DIFFICULTY_LEVELS.find(dl => dl.value === difficultyLevel);
+  if (!difficultyConfig) return null;
+  
+  return (
+    <Badge className={`${difficultyConfig.color} text-xs`}>
+      {difficultyConfig.label}
+    </Badge>
+  );
+};
 
 function QuestionReviewDialog({ 
   open, 
@@ -57,6 +117,17 @@ function QuestionReviewDialog({
                     <h4 className="font-semibold">Soru {qr.questionNumber}</h4>
                     <p className="text-sm text-gray-600">{qr.subject}</p>
                     {qr.topic && <p className="text-xs text-gray-500">Konu: {qr.topic}</p>}
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {getDifficultyBadge(qr.difficultyLevel)}
+                      {getQuestionStructureBadge(qr.questionStructure)}
+                      {getErrorTypeBadge(qr.errorType)}
+                    </div>
+                    {qr.interdisciplinaryTag && (
+                      <div className="flex items-center gap-1 mt-2 text-xs text-red-600 font-medium">
+                        <AlertCircle className="w-3 h-3" />
+                        <span>Kök Neden: {qr.interdisciplinaryTag}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-yellow-600">

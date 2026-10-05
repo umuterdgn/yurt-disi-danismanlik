@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Circle, Plus, Calendar, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CheckCircle, Circle, Plus, Calendar, Clock, ThumbsUp, ThumbsDown, Minus } from "lucide-react";
 import { createBrowserClient } from '@supabase/ssr';
+import { toast } from "sonner";
 
 interface DailyTask {
   id: string;
@@ -24,6 +26,8 @@ export default function StudentTasksPage() {
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('Öğrenci');
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTasks();
@@ -69,6 +73,13 @@ export default function StudentTasksPage() {
   };
 
   const toggleTaskCompletion = async (taskId: string, isCompleted: boolean) => {
+    // If marking as completed, show feedback dialog first
+    if (isCompleted && !tasks.find(t => t.id === taskId)?.isCompleted) {
+      setPendingTaskId(taskId);
+      setFeedbackDialogOpen(true);
+      return;
+    }
+
     try {
       const response = await fetch('/api/student/tasks', {
         method: 'PATCH',
@@ -77,12 +88,46 @@ export default function StudentTasksPage() {
       });
 
       if (response.ok) {
-        setTasks(tasks.map(task => 
+        setTasks(tasks.map(task =>
           task.id === taskId ? { ...task, isCompleted } : task
         ));
       }
     } catch (error) {
       console.error('Error updating task:', error);
+    }
+  };
+
+  const submitTaskFeedback = async (feedback: 'EASY' | 'HARD' | 'MODERATE') => {
+    if (!pendingTaskId) return;
+
+    try {
+      const response = await fetch('/api/student/tasks/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: pendingTaskId, feedback })
+      });
+
+      if (response.ok) {
+        toast.success('Geri bildiriminiz kaydedildi!');
+        // Now mark the task as completed
+        await fetch('/api/student/tasks', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: pendingTaskId, isCompleted: true })
+        });
+
+        setTasks(tasks.map(task =>
+          task.id === pendingTaskId ? { ...task, isCompleted: true } : task
+        ));
+      } else {
+        toast.error('Geri bildirim kaydedilemedi');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Bir hata oluştu');
+    } finally {
+      setFeedbackDialogOpen(false);
+      setPendingTaskId(null);
     }
   };
 
@@ -263,6 +308,44 @@ export default function StudentTasksPage() {
           })
         )}
       </div>
+
+      {/* Task Feedback Dialog */}
+      <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Görev Geri Bildirimi</DialogTitle>
+            <DialogDescription>
+              Bu görev sizin için nasıldı? AI size gelecekte daha iyi görevler hazırlamak için bu bilgiyi kullanacak.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              onClick={() => submitTaskFeedback('EASY')}
+              className="flex items-center gap-2 h-12 text-base"
+              variant="outline"
+            >
+              <ThumbsUp className="w-5 h-5 text-green-600" />
+              <span>Kolaydı</span>
+            </Button>
+            <Button
+              onClick={() => submitTaskFeedback('MODERATE')}
+              className="flex items-center gap-2 h-12 text-base"
+              variant="outline"
+            >
+              <Minus className="w-5 h-5 text-yellow-600" />
+              <span>Tam Kararındaydı</span>
+            </Button>
+            <Button
+              onClick={() => submitTaskFeedback('HARD')}
+              className="flex items-center gap-2 h-12 text-base"
+              variant="outline"
+            >
+              <ThumbsDown className="w-5 h-5 text-red-600" />
+              <span>Zordu</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
