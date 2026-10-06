@@ -57,32 +57,45 @@ export async function createUser(data: {
     }
 
     // Prisma'da kullanıcı oluştur with nested profile creation
-    const prismaUser = await prisma.user.create({
-      data: {
-        id: authUser.user.id,
-        email: data.email,
-        password: hashedPassword, // Store hashed password
-        name: data.name,
-        role: data.role,
-        isApproved: true,
-        // Nested profile creation
-        ...(data.role === UserRole.ADVISOR && data.profileData?.advisorProfile ? {
-          advisorProfile: {
-            create: data.profileData.advisorProfile
-          }
-        } : {}),
-        ...(data.role === UserRole.STUDENT && data.profileData?.studentProfile ? {
-          studentProfile: {
-            create: data.profileData.studentProfile
-          }
-        } : {}),
-        ...(data.role === UserRole.PARENT && data.profileData?.parentProfile ? {
-          parentProfile: {
-            create: data.profileData.parentProfile
-          }
-        } : {})
+    let prismaUser = null
+    try {
+      prismaUser = await prisma.user.create({
+        data: {
+          id: authUser.user.id, // KİLİT: Supabase ID'si Prisma ID'si olarak kullanılır
+          email: data.email,
+          password: hashedPassword, // Store hashed password
+          name: data.name,
+          role: data.role,
+          isApproved: true,
+          // Nested profile creation
+          ...(data.role === UserRole.ADVISOR && data.profileData?.advisorProfile ? {
+            advisorProfile: {
+              create: data.profileData.advisorProfile
+            }
+          } : {}),
+          ...(data.role === UserRole.STUDENT && data.profileData?.studentProfile ? {
+            studentProfile: {
+              create: data.profileData.studentProfile
+            }
+          } : {}),
+          ...(data.role === UserRole.PARENT && data.profileData?.parentProfile ? {
+            parentProfile: {
+              create: data.profileData.parentProfile
+            }
+          } : {})
+        }
+      })
+    } catch (error) {
+      console.error('Prisma user creation error:', error)
+      // Rollback: Supabase kullanıcısını sil
+      try {
+        await supabase.auth.admin.deleteUser(authUser.user.id)
+        console.log('Rolled back: Deleted Supabase user due to Prisma error')
+      } catch (rollbackError) {
+        console.error('Failed to rollback Supabase user:', rollbackError)
       }
-    })
+      return { success: false, error: 'Kullanıcı kaydı oluşturma hatası' }
+    }
 
     revalidatePath('/admin/users')
 

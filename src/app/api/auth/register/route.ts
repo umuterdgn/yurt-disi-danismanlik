@@ -51,38 +51,62 @@ export async function POST(request: NextRequest) {
     // Şifreyi hash'le
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Prisma'da kullanıcı oluştur (Supabase user ID ile)
-    const user = await prisma.user.create({
-      data: {
-        id: supabaseUserId,
-        email,
-        password: hashedPassword, // Hash'lenmiş şifreyi kaydet
-        name,
-        role: role as UserRole,
+    // Prisma'da kullanıcı oluştur (Supabase user ID ile) ve nested create ile profil oluştur
+    let user = null
+    try {
+      user = await prisma.user.create({
+        data: {
+          id: supabaseUserId, // KİLİT: Supabase ID'si Prisma ID'si olarak kullanılır
+          email,
+          password: hashedPassword, // Hash'lenmiş şifreyi kaydet
+          name,
+          role: role as UserRole,
+          // Nested profile creation - tek işlemde oluştur
+          ...(role === 'STUDENT' ? {
+            studentProfile: {
+              create: {
+                grade: '11',
+                school: 'Belirtilmemiş',
+                targetScore: 300,
+                currentScore: 0,
+                xp: 0,
+                streak: 0,
+                studentSymbol: '🎓',
+                healthScore: 100,
+                riskStatus: 'GREEN',
+                applicationReadiness: 0,
+                targetUniversities: [],
+                serviceType: 'BOTH'
+              }
+            }
+          } : {}),
+          ...(role === 'ADVISOR' ? {
+            advisorProfile: {
+              create: {
+                maxStudents: 20
+              }
+            }
+          } : {}),
+          ...(role === 'PARENT' ? {
+            parentProfile: {
+              create: {}
+            }
+          } : {})
+        }
+      })
+    } catch (error) {
+      console.error('Prisma user creation error:', error)
+      // Rollback: Supabase kullanıcısını sil
+      try {
+        await supabase.auth.admin.deleteUser(supabaseUserId)
+        console.log('Rolled back: Deleted Supabase user due to Prisma error')
+      } catch (rollbackError) {
+        console.error('Failed to rollback Supabase user:', rollbackError)
       }
-    })
-
-    // Role göre profil oluştur
-    if (role === 'STUDENT') {
-      await prisma.studentProfile.create({
-        data: {
-          userId: user.id,
-          grade: '11',
-        }
-      })
-    } else if (role === 'ADVISOR') {
-      await prisma.advisorProfile.create({
-        data: {
-          userId: user.id,
-          maxStudents: 20,
-        }
-      })
-    } else if (role === 'PARENT') {
-      await prisma.parentProfile.create({
-        data: {
-          userId: user.id,
-        }
-      })
+      return NextResponse.json(
+        { success: false, error: 'Kullanıcı kaydı oluşturma hatası' },
+        { status: 500 }
+      )
     }
 
     // Kullanıcı bilgilerini hazırla (şifre hariç)
