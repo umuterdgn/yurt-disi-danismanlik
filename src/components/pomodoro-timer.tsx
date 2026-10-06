@@ -47,21 +47,28 @@ export function PomodoroTimer() {
 
   const handlePomodoroComplete = async () => {
     try {
-      // Get current user from localStorage or session
-      const userData = localStorage.getItem('userProfile');
-      if (userData) {
-        const user = JSON.parse(userData);
-        const result = await addStudentXP(user.studentId, 20);
-        
-        if (result.success) {
-          toast.success("Tebrikler! 🎉", {
-            description: "25 dakika odaklı çalıştın! +20 XP kazandın!",
-            icon: <Sparkles className="w-5 h-5 text-yellow-500" />
-          });
+      // Get current user from localStorage (custom auth system)
+      const authUserStr = localStorage.getItem('auth_user');
+      if (authUserStr) {
+        const authUser = JSON.parse(authUserStr);
+        // Get student profile ID from auth user
+        const studentId = authUser.studentProfileId;
+        if (studentId) {
+          const result = await addStudentXP(studentId, 20);
+
+          if (result.success) {
+            toast.success("Tebrikler! 🎉", {
+              description: "25 dakika odaklı çalıştın! +20 XP kazandın!",
+              icon: <Sparkles className="w-5 h-5 text-yellow-500" />
+            });
+          } else {
+            toast.error(result.error || "XP eklenirken hata oluştu");
+          }
         }
       }
     } catch (error) {
       console.error('XP reward error:', error);
+      toast.error("XP eklenirken hata oluştu");
     }
   };
 

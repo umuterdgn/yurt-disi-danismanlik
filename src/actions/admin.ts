@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import { UserRole, NotificationType } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { cookies } from 'next/headers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -231,16 +232,34 @@ export async function addAdvisorNote(studentId: string, note: string) {
 
 export async function addStudentXP(studentId: string, xpAmount: number) {
   try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+    const userRole = cookieStore.get('user_role')?.value
+
+    // Validate that the requesting user is a student and owns this profile
+    if (!userId || userRole !== 'STUDENT') {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { userId: true }
+    })
+
+    if (!studentProfile || studentProfile.userId !== userId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
     const updatedProfile = await prisma.studentProfile.update({
       where: { id: studentId },
-      data: { 
+      data: {
         xp: { increment: xpAmount }
       }
     })
-    
+
     revalidatePath('/student/dashboard')
     revalidatePath('/leaderboard')
-    
+
     return { success: true, profile: updatedProfile, newXP: updatedProfile.xp }
   } catch (error) {
     console.error('XP addition error:', error)

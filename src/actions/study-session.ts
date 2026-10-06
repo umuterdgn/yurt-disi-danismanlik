@@ -3,30 +3,18 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 
 async function getStudentData() {
   const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-      },
-    }
-  )
+  const userId = cookieStore.get('user_id')?.value
+  const userRole = cookieStore.get('user_role')?.value
 
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user?.email) {
+  if (!userId || userRole !== 'STUDENT') {
     return null
   }
 
   const dbUser = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { id: userId },
     include: {
       studentProfile: true
     }
