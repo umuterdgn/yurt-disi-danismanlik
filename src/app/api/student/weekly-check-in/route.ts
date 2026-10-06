@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
@@ -17,23 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stress and motivation levels must be between 1 and 5' }, { status: 400 });
     }
 
-    // Authenticate user
+    // Authenticate user using custom cookie-based auth
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.email) {
+    if (!userId || userRole !== 'STUDENT') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -43,7 +31,7 @@ export async function POST(request: NextRequest) {
       include: { user: true }
     });
 
-    if (!studentProfile || studentProfile.user.email !== user.email) {
+    if (!studentProfile || studentProfile.userId !== userId) {
       return NextResponse.json({ error: 'Student profile not found or unauthorized' }, { status: 403 });
     }
 
@@ -115,23 +103,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
     }
 
-    // Authenticate user
+    // Authenticate user using custom cookie-based auth
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.email) {
+    if (!userId || userRole !== 'STUDENT') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

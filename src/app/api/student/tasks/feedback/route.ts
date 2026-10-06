@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
@@ -12,27 +11,16 @@ export async function POST(request: NextRequest) {
     }
 
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user?.email) {
+    if (!userId || userRole !== 'STUDENT') {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get student profile
     const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
+      where: { id: userId },
       include: { studentProfile: true }
     });
 
