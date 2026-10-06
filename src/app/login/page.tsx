@@ -68,6 +68,9 @@ export default function LoginPage() {
         const redirectPath = loginData.redirect || redirectMap[loginData.user.role] || '/dashboard'
         console.log('LOGIN_REDIRECT:', redirectPath, 'for role:', loginData.user.role)
         
+        // Cookie'lerin yüklenmesi için kısa bir bekleme süresi
+        await new Promise(resolve => setTimeout(resolve, 300))
+        
         // Güvenilir yönlendirme için hem router.push hem window.location kullan
         setLoading(false)
         router.push(redirectPath)
