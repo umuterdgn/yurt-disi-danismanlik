@@ -8,6 +8,7 @@ import { FileText, Clock, CheckCircle, AlertCircle, Building2, Globe, Calendar }
 import { updateApplicationStatus } from "@/actions/update-application-status";
 import { KanbanBoard } from "@/components/kanban-board";
 import { ApplicationAddDialog } from "@/components/application-add-dialog";
+import { cookies } from 'next/headers';
 
 const KANBAN_COLUMNS = [
   { status: 'INITIAL_INTERVIEW', label: 'Ön Görüşme', color: 'bg-blue-50 border-blue-200' },
