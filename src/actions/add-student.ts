@@ -6,9 +6,6 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 
-// Use the SSR helper for consistent cookie handling
-import { createClient as createSupabaseServerClient } from '@/utils/supabase/server';
-
 // Helper function to generate random password
 function generatePassword(): string {
   const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
@@ -49,58 +46,44 @@ export async function addStudent(formData: FormData) {
       }
     }
 
-    // Get current advisor from session using Supabase Server Client with cookies
+    // Get current advisor from session using cookies (custom auth system)
     const cookieStore = await cookies();
-    const supabase = createSupabaseServerClient(cookieStore);
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
 
-    console.log('Attempting to get Supabase session...');
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log('Supabase user:', user);
-    console.log('Supabase user error:', userError);
+    console.log('Attempting to get user from cookies...');
+    console.log('User ID:', userId);
+    console.log('User Role:', userRole);
 
-    if (userError) {
-      console.error('Supabase Auth error:', userError);
-      return { success: false, error: `Oturum hatası: ${userError.message}` };
-    }
-
-    if (!user) {
-      console.error('No user found in Supabase session');
+    if (!userId || !userRole) {
+      console.error('No user_id or user_role found in cookies');
       return { success: false, error: 'Oturum bulunamadı - Kullanıcı girişi yapılmamış' };
     }
 
-    if (!user.email) {
-      console.error('User found but no email in session');
-      return { success: false, error: 'Oturum hatası - E-posta bilgisi eksik' };
+    // Check if user has proper role
+    if (userRole !== 'ADVISOR' && userRole !== 'SUPER_ADMIN') {
+      console.error('User does not have ADVISOR or SUPER_ADMIN role:', userRole);
+      return { success: false, error: `Yetki hatası: Bu işlem için ADVISOR veya SUPER_ADMIN rolü gereklidir. Mevcut rol: ${userRole}` };
     }
 
-    console.log('Session user found:', user.email, 'ID:', user.id);
+    console.log('Session user found:', userId, 'Role:', userRole);
 
-    // Sync current user to Prisma User table (upsert to avoid foreign key errors)
-    // Use email as unique key to handle duplicate IDs from previous tests
+    // Get user from Prisma database
     let dbUser = null;
     try {
-      console.log('Upserting Prisma user for:', user.email);
-      dbUser = await prisma.user.upsert({
-        where: { email: user.email },
-        update: {}, // User exists, just return it
-        create: {
-          id: user.id,
-          email: user.email,
-          name: user.user_metadata?.name || user.email,
-          role: (user.user_metadata?.role as any) || 'ADVISOR',
-          password: ''
-        }
+      console.log('Fetching Prisma user for:', userId);
+      dbUser = await prisma.user.findUnique({
+        where: { id: userId }
       });
-      console.log('Prisma user upserted:', dbUser.id, 'Role:', dbUser.role);
+      console.log('Prisma user fetched:', dbUser?.id, 'Role:', dbUser?.role);
     } catch (error) {
-      console.error('Prisma error upserting advisor user:', error);
+      console.error('Prisma error fetching advisor user:', error);
       return { success: false, error: 'Kullanıcı senkronizasyon hatası: ' + (error instanceof Error ? error.message : String(error)) };
     }
 
-    // Check if user has proper role
-    if (dbUser.role !== 'ADVISOR' && dbUser.role !== 'SUPER_ADMIN') {
-      console.error('User does not have ADVISOR or SUPER_ADMIN role:', dbUser.role);
-      return { success: false, error: `Yetki hatası: Bu işlem için ADVISOR veya SUPER_ADMIN rolü gereklidir. Mevcut rol: ${dbUser.role}` };
+    if (!dbUser) {
+      console.error('User not found in Prisma database');
+      return { success: false, error: 'Kullanıcı veritabanında bulunamadı' };
     }
 
     // Get or create advisor profile (upsert for safety)
@@ -148,9 +131,16 @@ export async function addStudent(formData: FormData) {
     }
 
     // Create user in Supabase Auth using service role for admin operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return { success: false, error: 'Supabase yapılandırma hatası: Environment değişkenleri eksik' };
+    }
+
     const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      supabaseUrl,
+      supabaseServiceKey
     );
 
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
