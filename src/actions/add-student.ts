@@ -5,12 +5,19 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
+
+// Helper function to generate random password
+function generatePassword(): string {
+  const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+  return `Nexa${randomDigits}`;
+}
 
 export async function addStudent(formData: FormData) {
   try {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    let password = formData.get('password') as string;
     const grade = formData.get('grade') as string;
     const domain = formData.get('domain') as string;
     const targetUniversitiesJson = formData.get('targetUniversities') as string;
@@ -18,10 +25,17 @@ export async function addStudent(formData: FormData) {
     const studentSymbol = formData.get('studentSymbol') as string;
     const serviceType = formData.get('serviceType') as string || 'BOTH';
 
-    // Validation
-    if (!name || !email || !password || !grade || !domain) {
+    // Validation (password is now optional)
+    if (!name || !email || !grade || !domain) {
       return { success: false, error: 'Tüm zorunlu alanları doldurunuz' };
     }
+
+    // Generate password if not provided
+    const generatedPassword = password || generatePassword();
+    const plainPassword = generatedPassword; // Keep plain password for response
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
     // Parse target universities array
     let targetUniversities: string[] = [];
@@ -124,7 +138,7 @@ export async function addStudent(formData: FormData) {
 
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password,
+      password: plainPassword, // Use plain password for Supabase Auth
       email_confirm: true,
       user_metadata: {
         name,
@@ -137,7 +151,7 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Kullanıcı oluşturma hatası: ' + authError.message };
     }
 
-    // Create user in Prisma (password hash is handled by Supabase, we store a placeholder)
+    // Create user in Prisma with hashed password
     // Use upsert to handle edge cases where user might already exist
     let newUser = null;
     try {
@@ -147,7 +161,7 @@ export async function addStudent(formData: FormData) {
         create: {
           id: authData.user.id,
           email,
-          password: '', // Password is managed by Supabase Auth
+          password: hashedPassword, // Store hashed password in Prisma
           name,
           role: 'STUDENT',
           isApproved: true // Auto-approve students added by advisors
@@ -195,7 +209,8 @@ export async function addStudent(formData: FormData) {
         grade: studentProfile.grade,
         domain: studentProfile.domain,
         targetUniversities: studentProfile.targetUniversities
-      }
+      },
+      generatedPassword: plainPassword // Return the plain password for display
     };
 
   } catch (error) {

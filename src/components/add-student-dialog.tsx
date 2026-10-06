@@ -78,15 +78,24 @@ export function AddStudentDialog() {
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError("");
-    
+
     // Add selected universities and domain to form data
     formData.append('targetUniversities', JSON.stringify(selectedUniversities));
     formData.append('domain', domain);
-    
+
     const result = await addStudent(formData);
-    
+
     if (result.success) {
-      toast.success("Öğrenci başarıyla eklendi!");
+      // Show success toast with login credentials
+      const password = result.generatedPassword || 'Formda girilen şifre';
+      toast.success(
+        "Öğrenci başarıyla eklendi!",
+        {
+          description: `E-posta: ${result.student.email}\nŞifre: ${password}\nLütfen bu bilgileri öğrenciye iletin.`,
+          duration: 10000, // Show for 10 seconds
+        }
+      );
+
       setOpen(false);
       setLoading(false);
       // Refresh the page to show the new student
@@ -142,15 +151,14 @@ export function AddStudentDialog() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
               <Label htmlFor="password" className="md:text-right">
-                Şifre
+                Giriş Şifresi <span className="text-gray-400">(Opsiyonel)</span>
               </Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="******"
+                placeholder="Boş bırakılırsa otomatik oluşturulur"
                 className="col-span-1 md:col-span-3 w-full"
-                required
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">

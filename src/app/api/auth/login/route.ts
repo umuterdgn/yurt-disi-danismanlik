@@ -4,6 +4,7 @@ import { UserRole } from '@prisma/client'
 import { updateStudentStreak } from '@/actions/admin'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,8 +34,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Şifre kontrolü
-    if (user.password !== password) {
+    // Şifre kontrolü (using bcrypt for hashed passwords)
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return NextResponse.json(
         { success: false, error: 'Hatalı şifre' },
         { status: 401 }
