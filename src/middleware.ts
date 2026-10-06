@@ -43,32 +43,45 @@ export async function middleware(request: NextRequest) {
 
     const { data: { session } } = await supabase.auth.getSession()
 
+    // Check for custom auth cookies (legacy support)
+    const userId = request.cookies.get('user_id')?.value
+    const userRole = request.cookies.get('user_role')?.value
+
     // Kullanıcı giriş yapmamışsa ve korumalı bir sayfaya girmeye çalışıyorsa login'e yönlendir
-    if (isProtectedPath && !session) {
+    // Check both Supabase session and custom cookies
+    if (isProtectedPath && !session && !userId) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
 
     // SUPER_ADMIN should not access /admin, redirect to /super-admin
-    if (url.pathname.startsWith('/admin') && session) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.email) {
-        // Get user role from database via API
-        try {
-          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/user-role`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: user.email })
-          })
-          const userData = await userResponse.json()
+    if (url.pathname.startsWith('/admin') && (session || userId)) {
+      // Check role from custom cookie first (faster)
+      if (userRole === 'SUPER_ADMIN') {
+        url.pathname = '/super-admin'
+        return NextResponse.redirect(url)
+      }
 
-          if (userData.role === 'SUPER_ADMIN') {
-            url.pathname = '/super-admin'
-            return NextResponse.redirect(url)
+      // Fallback: check via Supabase user email
+      if (session) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.email) {
+          try {
+            const userResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/user-role`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: user.email })
+            })
+            const userData = await userResponse.json()
+
+            if (userData.role === 'SUPER_ADMIN') {
+              url.pathname = '/super-admin'
+              return NextResponse.redirect(url)
+            }
+          } catch (error) {
+            console.error('Error checking user role in middleware:', error)
+            // On error, allow request to continue
           }
-        } catch (error) {
-          console.error('Error checking user role in middleware:', error)
-          // On error, allow request to continue
         }
       }
     }
