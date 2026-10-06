@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SuperAdminDashboardContent } from "@/components/super-admin-dashboard-content";
 
-export default async function SuperAdminPage() {
+export default async function CustomersPage() {
   const cookieStore = await cookies();
 
   // Check custom auth cookies first (legacy support)
@@ -88,5 +88,5 @@ export default async function SuperAdminPage() {
     expiringSoon
   };
 
-  return <SuperAdminDashboardContent stats={stats} advisors={formattedAdmins} showAll={false} />;
+  return <SuperAdminDashboardContent stats={stats} advisors={formattedAdmins} showAll={true} />;
 }
