@@ -1,11 +1,13 @@
 'use server';
 
 import { prisma } from "@/lib/prisma";
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
+
+// Use the SSR helper for consistent cookie handling
+import { createClient as createSupabaseServerClient } from '@/utils/supabase/server';
 
 // Helper function to generate random password
 function generatePassword(): string {
@@ -49,17 +51,7 @@ export async function addStudent(formData: FormData) {
 
     // Get current advisor from session using Supabase Server Client with cookies
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const supabase = createSupabaseServerClient(cookieStore);
 
     console.log('Attempting to get Supabase session...');
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -156,7 +148,7 @@ export async function addStudent(formData: FormData) {
     }
 
     // Create user in Supabase Auth using service role for admin operations
-    const supabaseAdmin = createClient(
+    const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
