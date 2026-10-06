@@ -35,12 +35,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Şifre kontrolü (using bcrypt for hashed passwords)
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    let isPasswordValid = await bcrypt.compare(password, user.password);
+    let needsPasswordHashing = false;
+
+    // Fallback: Eğer bcrypt başarısız olduysa, düz metin kontrolü yap (geriye dönük uyumluluk)
+    if (!isPasswordValid) {
+      const isHashed = user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$');
+      
+      if (!isHashed && user.password === password) {
+        // Şifre düz metin ve eşleşiyor - giriş izni ver
+        isPasswordValid = true;
+        needsPasswordHashing = true;
+        console.log("LOGIN_FALLBACK: Plain text password matched for", email, "- will hash on successful login");
+      }
+    }
+
     if (!isPasswordValid) {
       return NextResponse.json(
         { success: false, error: 'Hatalı şifre' },
         { status: 401 }
       )
+    }
+
+    // Auto-Fix: Eğer şifre düz metindi ve eşleştiyse, hash'leyip veritabanını güncelle
+    if (needsPasswordHashing) {
+      try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashedPassword }
+        });
+        console.log("LOGIN_AUTO_FIX: Successfully hashed password for", email);
+      } catch (hashError) {
+        console.error("LOGIN_AUTO_FIX_ERROR: Failed to hash password for", email, hashError);
+        // Don't fail login if hashing fails, just log it
+      }
     }
 
     // Kullanıcı onay kontrolü
