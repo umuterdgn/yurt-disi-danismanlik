@@ -163,7 +163,8 @@ export async function POST(request: NextRequest) {
 
     // Role göre redirect path belirle
     const redirectMap: Record<string, string> = {
-      'SUPER_ADMIN': '/admin/dashboard',
+      'SUPER_ADMIN': '/super-admin',
+      'ADMIN': '/admin/dashboard',
       'ADVISOR': '/advisor/dashboard',
       'STUDENT': '/student/dashboard',
       'PARENT': '/parent/dashboard'

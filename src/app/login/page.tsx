@@ -59,7 +59,8 @@ export default function LoginPage() {
 
         // Role göre yönlendirme
         const redirectMap: Record<string, string> = {
-          'SUPER_ADMIN': '/admin/dashboard',
+          'SUPER_ADMIN': '/super-admin',
+          'ADMIN': '/admin/dashboard',
           'ADVISOR': '/advisor/dashboard',
           'STUDENT': '/student/dashboard',
           'PARENT': '/parent/dashboard'
