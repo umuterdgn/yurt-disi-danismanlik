@@ -125,6 +125,22 @@ export async function createStudent(data: {
   examDate?: Date
   advisorId?: string
 }) {
+  // Check student quota if advisorId is provided
+  if (data.advisorId) {
+    const currentStudentCount = await prisma.studentProfile.count({
+      where: { advisorId: data.advisorId }
+    });
+
+    const advisorUser = await prisma.user.findUnique({
+      where: { id: data.advisorId },
+      select: { studentQuota: true }
+    });
+
+    if (advisorUser && currentStudentCount >= (advisorUser.studentQuota || 30)) {
+      return { success: false, error: 'Öğrenci Kotanız Dolmuştur. Lütfen limitinizi artırmak için Nexa Edu ile iletişime geçin.' }
+    }
+  }
+
   return createUser({
     email: data.email,
     password: data.password,

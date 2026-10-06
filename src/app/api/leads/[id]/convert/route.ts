@@ -20,6 +20,25 @@ export async function POST(
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
+    // Check student quota for the assigned advisor
+    if (lead.assignedAdvisorId) {
+      const currentStudentCount = await prisma.studentProfile.count({
+        where: { advisorId: lead.assignedAdvisorId }
+      });
+
+      const advisorUser = await prisma.user.findUnique({
+        where: { id: lead.assignedAdvisorId },
+        select: { studentQuota: true }
+      });
+
+      if (advisorUser && currentStudentCount >= (advisorUser.studentQuota || 30)) {
+        return NextResponse.json(
+          { error: 'Öğrenci Kotanız Dolmuştur. Lütfen limitinizi artırmak için Nexa Edu ile iletişime geçin.' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Check if user with this email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: lead.email },

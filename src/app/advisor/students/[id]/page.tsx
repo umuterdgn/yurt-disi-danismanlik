@@ -30,6 +30,7 @@ import { UniversityMatcherForm } from "@/components/university-matcher-form";
 import { AITaskSuggestions } from "@/components/ai-task-suggestions";
 import { SubjectMasteryPanel } from "@/components/subject-mastery-panel";
 import { EditStudentDialog } from "@/components/edit-student-dialog";
+import { ExamOCRAnalyzer } from "@/components/exam-ocr-analyzer";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -643,12 +644,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    <AIAnalysisButton 
+                    <AIAnalysisButton
                       studentId={id}
                       examResults={[]}
                       subjectAnalysis={subjectAnalysis}
                     />
-                    
+
                     {Object.keys(groupedSubjects).length > 0 && (
                       <div className="space-y-6">
                         <h3 className="font-semibold">Mevcut Konu Analizi</h3>
@@ -672,6 +673,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Exam OCR Analyzer */}
+              <ExamOCRAnalyzer studentId={id} />
 
               {/* Full Exam History */}
               <Card>

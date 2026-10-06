@@ -98,7 +98,7 @@ export async function addStudent(formData: FormData) {
       });
 
       if (currentStudentCount >= (dbUser.studentQuota || 30)) {
-        return { success: false, error: 'Öğrenci kotanız doldu. Paketinizi yükseltmek için yöneticinizle iletişime geçin.' };
+        return { success: false, error: 'Öğrenci Kotanız Dolmuştur. Lütfen limitinizi artırmak için Nexa Edu ile iletişime geçin.' };
       }
     }
 
