@@ -85,7 +85,7 @@ export function AddStudentDialog() {
 
     const result = await addStudent(formData);
 
-    if (result.success) {
+    if (result.success && result.student) {
       // Show success toast with login credentials
       const password = result.generatedPassword || 'Formda girilen şifre';
       toast.success(
