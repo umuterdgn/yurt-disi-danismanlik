@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Force role to STUDENT for security - no role selection from public registration
-    const role = 'STUDENT'
+    const role: UserRole = 'STUDENT'
 
     // Supabase Admin Client oluştur
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -62,36 +62,22 @@ export async function POST(request: NextRequest) {
           name,
           role: role as UserRole,
           // Nested profile creation - tek işlemde oluştur
-          ...(role === 'STUDENT' ? {
-            studentProfile: {
-              create: {
-                grade: '11',
-                school: 'Belirtilmemiş',
-                targetScore: 300,
-                currentScore: 0,
-                xp: 0,
-                streak: 0,
-                studentSymbol: '🎓',
-                healthScore: 100,
-                riskStatus: 'GREEN',
-                applicationReadiness: 0,
-                targetUniversities: [],
-                serviceType: 'BOTH'
-              }
+          studentProfile: {
+            create: {
+              grade: '11',
+              school: 'Belirtilmemiş',
+              targetScore: 300,
+              currentScore: 0,
+              xp: 0,
+              streak: 0,
+              studentSymbol: '🎓',
+              healthScore: 100,
+              riskStatus: 'GREEN',
+              applicationReadiness: 0,
+              targetUniversities: [],
+              serviceType: 'BOTH'
             }
-          } : {}),
-          ...(role === 'ADVISOR' ? {
-            advisorProfile: {
-              create: {
-                maxStudents: 20
-              }
-            }
-          } : {}),
-          ...(role === 'PARENT' ? {
-            parentProfile: {
-              create: {}
-            }
-          } : {})
+          }
         }
       })
     } catch (error) {
