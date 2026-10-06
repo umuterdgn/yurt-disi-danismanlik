@@ -61,17 +61,33 @@ export async function addStudent(formData: FormData) {
       }
     );
 
+    console.log('Attempting to get Supabase session...');
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('Supabase user:', user);
+    console.log('Supabase user error:', userError);
 
-    if (userError || !user?.email) {
-      console.error('Auth error:', userError);
-      return { success: false, error: 'Oturum bulunamadı' };
+    if (userError) {
+      console.error('Supabase Auth error:', userError);
+      return { success: false, error: `Oturum hatası: ${userError.message}` };
     }
+
+    if (!user) {
+      console.error('No user found in Supabase session');
+      return { success: false, error: 'Oturum bulunamadı - Kullanıcı girişi yapılmamış' };
+    }
+
+    if (!user.email) {
+      console.error('User found but no email in session');
+      return { success: false, error: 'Oturum hatası - E-posta bilgisi eksik' };
+    }
+
+    console.log('Session user found:', user.email, 'ID:', user.id);
 
     // Sync current user to Prisma User table (upsert to avoid foreign key errors)
     // Use email as unique key to handle duplicate IDs from previous tests
     let dbUser = null;
     try {
+      console.log('Upserting Prisma user for:', user.email);
       dbUser = await prisma.user.upsert({
         where: { email: user.email },
         update: {}, // User exists, just return it
@@ -79,19 +95,27 @@ export async function addStudent(formData: FormData) {
           id: user.id,
           email: user.email,
           name: user.user_metadata?.name || user.email,
-          role: 'ADVISOR',
+          role: (user.user_metadata?.role as any) || 'ADVISOR',
           password: ''
         }
       });
+      console.log('Prisma user upserted:', dbUser.id, 'Role:', dbUser.role);
     } catch (error) {
       console.error('Prisma error upserting advisor user:', error);
-      return { success: false, error: 'Kullanıcı senkronizasyon hatası' };
+      return { success: false, error: 'Kullanıcı senkronizasyon hatası: ' + (error instanceof Error ? error.message : String(error)) };
+    }
+
+    // Check if user has proper role
+    if (dbUser.role !== 'ADVISOR' && dbUser.role !== 'SUPER_ADMIN') {
+      console.error('User does not have ADVISOR or SUPER_ADMIN role:', dbUser.role);
+      return { success: false, error: `Yetki hatası: Bu işlem için ADVISOR veya SUPER_ADMIN rolü gereklidir. Mevcut rol: ${dbUser.role}` };
     }
 
     // Get or create advisor profile (upsert for safety)
     // Use dbUser.id to ensure correct foreign key relationship
     let advisor = null;
     try {
+      console.log('Upserting advisor profile for user:', dbUser.id);
       advisor = await prisma.advisorProfile.upsert({
         where: { userId: dbUser.id },
         update: {},
@@ -100,9 +124,10 @@ export async function addStudent(formData: FormData) {
           specialization: 'GENERAL'
         }
       });
+      console.log('Advisor profile upserted:', advisor.id);
     } catch (error) {
       console.error('Prisma error upserting advisor profile:', error);
-      return { success: false, error: 'Danışman profili oluşturma hatası' };
+      return { success: false, error: 'Danışman profili oluşturma hatası: ' + (error instanceof Error ? error.message : String(error)) };
     }
 
     // Check student quota (only for ADVISOR role, not SUPER_ADMIN)
