@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { addTask } from "@/actions/add-task";
 import { CURRICULUM, getSubjectsForExamType, getTopicsForSubject, getAllExamTypes } from "@/lib/constants/curriculum";
-import { Plus } from "lucide-react";
+import { Plus, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddTaskDialogProps {
@@ -26,10 +26,22 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedQuestionType, setSelectedQuestionType] = useState("");
-  
+  const [taskDate, setTaskDate] = useState("");
+
   const [examTypes, setExamTypes] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [topics, setTopics] = useState<string[]>([]);
+
+  // Set default date to today when dialog opens
+  useEffect(() => {
+    if (open) {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      setTaskDate(`${yyyy}-${mm}-${dd}`);
+    }
+  }, [open]);
 
   // Load curriculum data when dialog opens
   useEffect(() => {
@@ -74,7 +86,7 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError("");
-    
+
     // Add curriculum data to form data
     if (selectedExamType) {
       formData.append('examType', selectedExamType);
@@ -85,9 +97,20 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
     if (selectedTopic) {
       formData.append('topic', selectedTopic);
     }
-    
+
+    // Ensure taskDate is set (use today if not set)
+    if (!taskDate) {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      formData.append('taskDate', `${yyyy}-${mm}-${dd}`);
+    } else {
+      formData.append('taskDate', taskDate);
+    }
+
     const result = await addTask(formData);
-    
+
     if (result.success) {
       toast.success("Görev başarıyla eklendi!");
       setOpen(false);
@@ -297,13 +320,18 @@ export function AddTaskDialog({ students, studentId }: AddTaskDialogProps) {
               <Label htmlFor="taskDate" className="md:text-right">
                 Tarih
               </Label>
-              <Input
-                id="taskDate"
-                name="taskDate"
-                type="date"
-                className="col-span-1 md:col-span-3"
-                required
-              />
+              <div className="col-span-1 md:col-span-3 flex items-center gap-2">
+                <Input
+                  id="taskDate"
+                  name="taskDate"
+                  type="date"
+                  value={taskDate}
+                  onChange={(e) => setTaskDate(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Calendar className="w-4 h-4 text-gray-400" />
+              </div>
             </div>
           </div>
           {error && (

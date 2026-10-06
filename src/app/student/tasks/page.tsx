@@ -62,6 +62,20 @@ export default function StudentTasksPage() {
     }
   };
 
+  // Format date as "6 Ekim 2026, Salı"
+  const formatDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric',
+      weekday: 'long'
+    };
+    return date.toLocaleDateString('tr-TR', options);
+  };
+
+  // Get today's date for display
+  const today = new Date();
+
   const toggleTaskCompletion = async (taskId: string, isCompleted: boolean) => {
     // If marking as completed, show feedback dialog first
     if (isCompleted && !tasks.find(t => t.id === taskId)?.isCompleted) {
@@ -172,8 +186,16 @@ export default function StudentTasksPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Günlük Görevler</h1>
-        <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Günlük Görevler</h1>
+            <p className="text-gray-600 mt-2">Hoş Geldiniz, {userName}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-500">Bugün</p>
+            <p className="text-lg font-semibold text-gray-900">{formatDate(today)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Progress Overview */}
