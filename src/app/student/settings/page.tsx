@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { updateStudentSettings } from "@/actions/update-student-settings";
 import StudentSettingsClient from "./client";
@@ -26,27 +25,16 @@ const SYMBOLS = [
 
 export default async function StudentSettingsPage() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
   let studentProfile = null;
   let userName = 'Öğrenci';
 
-  if (user?.email) {
+  if (userId) {
     try {
       const dbUser = await prisma.user.findUnique({
-        where: { email: user.email },
+        where: { id: userId },
         include: { studentProfile: true }
       });
 

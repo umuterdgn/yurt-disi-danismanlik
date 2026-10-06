@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CheckCircle, Circle, Plus, Calendar, Clock, ThumbsUp, ThumbsDown, Minus } from "lucide-react";
-import { createBrowserClient } from '@supabase/ssr';
 import { toast } from "sonner";
 
 interface DailyTask {
@@ -36,21 +35,12 @@ export default function StudentTasksPage() {
 
   const loadUserName = async () => {
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-      );
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        const response = await fetch('/api/auth/user-name', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email })
-        });
-        const data = await response.json();
-        if (data.success && data.name) {
-          setUserName(data.name);
+      // Get user from localStorage (custom auth system)
+      const authUserStr = localStorage.getItem('auth_user');
+      if (authUserStr) {
+        const authUser = JSON.parse(authUserStr);
+        if (authUser.name) {
+          setUserName(authUser.name);
         }
       }
     } catch (error) {

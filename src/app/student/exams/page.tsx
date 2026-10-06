@@ -1,28 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { TrendingUp, Calendar, Target } from 'lucide-react';
 import { MasteryMap } from "@/components/mastery-map";
 
 export default async function StudentExams() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user?.email) {
+  if (!userId || userRole !== 'STUDENT') {
     return <div className="p-8">Giriş yapmalısınız</div>;
   }
 
@@ -31,7 +19,7 @@ export default async function StudentExams() {
   try {
     studentProfile = await prisma.studentProfile.findUnique({
       where: {
-        userId: user.id
+        userId: userId
       },
       include: {
         user: true,
