@@ -5,76 +5,70 @@ import { AdvisorMeetingsCalendar } from "@/components/advisor-meetings-calendar"
 
 export default async function MeetingsPage() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  let meetingNotes: any[] = [];
-  let students: { id: string; name: string }[] = [];
+  let advisorProfileId = null;
   let userName = 'Danışman';
 
-  if (user?.email) {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      include: {
-        advisorProfile: true
+  if (userId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          advisorProfile: true
+        }
+      });
+      if (dbUser) {
+        advisorProfileId = dbUser.advisorProfile?.id;
+        userName = dbUser.name;
       }
-    });
-
-    if (dbUser) {
-      userName = dbUser.name;
-
-      // Get students for the dialog
-      if (dbUser.role === 'SUPER_ADMIN') {
-        const allStudents = await prisma.studentProfile.findMany({
-          include: { user: true }
-        });
-        students = allStudents.map(s => ({ id: s.id, name: s.user.name }));
-        
-        meetingNotes = await prisma.meetingNote.findMany({
-          include: {
-            studentProfile: {
-              include: {
-                user: true
-              }
-            }
-          },
-          orderBy: { meetingDate: 'desc' }
-        });
-      } else if (dbUser.advisorProfile) {
-        const advisorStudents = await prisma.studentProfile.findMany({
-          where: { advisorId: dbUser.advisorProfile.id },
-          include: { user: true }
-        });
-        students = advisorStudents.map(s => ({ id: s.id, name: s.user.name }));
-        
-        meetingNotes = await prisma.meetingNote.findMany({
-          where: {
-            studentProfile: {
-              advisorId: dbUser.advisorProfile.id
-            }
-          },
-          include: {
-            studentProfile: {
-              include: {
-                user: true
-              }
-            }
-          },
-          orderBy: { meetingDate: 'desc' }
-        });
-      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
     }
+  }
+
+  let meetingNotes: any[] = [];
+  let students: { id: string; name: string }[] = [];
+
+  if (userRole === 'SUPER_ADMIN') {
+    const allStudents = await prisma.studentProfile.findMany({
+      include: { user: true }
+    });
+    students = allStudents.map(s => ({ id: s.id, name: s.user.name }));
+
+    meetingNotes = await prisma.meetingNote.findMany({
+      include: {
+        studentProfile: {
+          include: {
+            user: true
+          }
+        }
+      },
+      orderBy: { meetingDate: 'desc' }
+    });
+  } else if (advisorProfileId) {
+    const advisorStudents = await prisma.studentProfile.findMany({
+      where: { advisorId: advisorProfileId },
+      include: { user: true }
+    });
+    students = advisorStudents.map(s => ({ id: s.id, name: s.user.name }));
+
+    meetingNotes = await prisma.meetingNote.findMany({
+      where: {
+        studentProfile: {
+          advisorId: advisorProfileId
+        }
+      },
+      include: {
+        studentProfile: {
+          include: {
+            user: true
+          }
+        }
+      },
+      orderBy: { meetingDate: 'desc' }
+    });
   }
 
   return (

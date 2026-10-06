@@ -1,31 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const userId = cookieStore.get('user_id')?.value;
+    const userRole = cookieStore.get('user_role')?.value;
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user?.email) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
+      where: { id: userId },
       include: {
         advisorProfile: true
       }
@@ -35,8 +23,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get students based on role
-    const whereClause = dbUser.role === 'SUPER_ADMIN' 
+    // Get students based on role (use cookie userRole instead of dbUser.role)
+    const whereClause = userRole === 'SUPER_ADMIN'
       ? {}
       : { advisorId: dbUser.advisorProfile?.id };
 

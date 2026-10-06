@@ -7,38 +7,32 @@ import { UniversityMatcherForm } from "@/components/university-matcher-form";
 
 export default async function UniversitiesPage() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-
+  let advisorProfileId = null;
   let userName = 'Danışman';
-  let userRole = null;
 
-  if (user?.email) {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      select: { role: true, name: true }
-    });
+  if (userId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, advisorProfile: { select: { id: true } } }
+      });
 
-    if (dbUser) {
-      userName = dbUser.name;
-      userRole = dbUser.role;
+      if (dbUser) {
+        userName = dbUser.name;
+        advisorProfileId = dbUser.advisorProfile?.id;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
     }
   }
 
-  // Get students for assignment functionality
+  // Get students for assignment functionality (filtered by role)
   const students = await prisma.studentProfile.findMany({
     include: { user: true },
+    where: userRole === 'SUPER_ADMIN' ? {} : { advisorId: advisorProfileId },
     orderBy: { user: { name: 'asc' } }
   });
 

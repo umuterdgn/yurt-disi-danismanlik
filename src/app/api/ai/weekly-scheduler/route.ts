@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CURRICULUM, getSubjectsForExamType, getTopicsForSubject } from '@/lib/constants/curriculum';
 import { incrementAIUsage } from '@/lib/ai-usage';
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 interface WeeklyScheduleRequest {
   studentId: string;
@@ -339,23 +339,22 @@ Please create an optimized weekly schedule for a ${level} level student with ${d
 
     console.log(`SCHEDULER_AI_SUCCESS: Used model ${successfulModel}`);
 
-    // Increment AI usage for the requesting user
+    // Increment AI usage for the requesting user (use custom cookie auth)
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
-      }
-    );
+    const userId = cookieStore.get('user_id')?.value;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.email) {
-      await incrementAIUsage(user.email);
+    if (userId) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true }
+        });
+        if (dbUser?.email) {
+          await incrementAIUsage(dbUser.email);
+        }
+      } catch (error) {
+        console.error('Error incrementing AI usage:', error);
+      }
     }
 
     // Validate schedule structure

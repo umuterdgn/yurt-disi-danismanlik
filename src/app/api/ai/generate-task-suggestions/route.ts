@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user using custom cookie-based auth
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      console.error('AI Generate Task Suggestions: Unauthorized - No user_id in cookies');
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { studentId } = body;
 

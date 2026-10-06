@@ -2,9 +2,31 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VisaKanbanBoard } from "@/components/visa-kanban-board";
 import { Plane, FileText, AlertCircle } from 'lucide-react';
+import { cookies } from 'next/headers';
 
 export default async function AdvisorVisaPage() {
-  // Get all visa processes with application details
+  const cookieStore = await cookies();
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
+
+  let advisorProfileId = null;
+
+  if (userId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { advisorProfile: { select: { id: true } } }
+      });
+
+      if (dbUser) {
+        advisorProfileId = dbUser.advisorProfile?.id;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  }
+
+  // Get visa processes with application details (filtered by role)
   const visaProcesses = await prisma.visaProcess.findMany({
     include: {
       application: {
@@ -18,6 +40,7 @@ export default async function AdvisorVisaPage() {
         }
       }
     },
+    where: userRole === 'SUPER_ADMIN' ? {} : { application: { studentProfile: { advisorId: advisorProfileId } } },
     orderBy: { createdAt: 'desc' }
   });
 

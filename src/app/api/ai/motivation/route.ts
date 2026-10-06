@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
+import { cookies } from 'next/headers';
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -7,9 +8,21 @@ const groq = new Groq({
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user using custom cookie-based auth
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      console.error('AI Motivation: Unauthorized - No user_id in cookies');
+      return NextResponse.json(
+        { success: false, error: 'Yetkisiz erişim' },
+        { status: 401 }
+      );
+    }
+
     // Check if API key is configured
     if (!process.env.GROQ_API_KEY) {
-      console.error('GROQ_API_KEY is not configured');
+      console.error('AI Motivation: GROQ_API_KEY is not configured');
       return NextResponse.json(
         { success: false, error: 'AI servisi yapılandırılmamış' },
         { status: 500 }

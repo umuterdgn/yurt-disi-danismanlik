@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { YKS_CURRICULUM } from '@/constants/curriculum';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate user using custom cookie-based auth
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      console.error('AI Task Suggestions: Unauthorized - No user_id in cookies');
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get('studentId');
 

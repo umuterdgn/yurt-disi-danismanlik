@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { matchOCRToCurriculum } from "@/lib/curriculum-matcher";
 import { incrementAIUsage } from "@/lib/ai-usage";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 function analyzeBehavioralPatterns(questionResults: QuestionResult[]) {
   const insights: string[] = [];
@@ -99,8 +99,18 @@ interface OCRResponse {
 
 export async function POST(req: Request) {
   try {
+    // Authenticate user using custom cookie-based auth
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      console.error('AI OCR Exam: Unauthorized - No user_id in cookies');
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error('AI OCR Exam: GEMINI_API_KEY is not configured');
       return NextResponse.json({ error: "GEMINI_API_KEY eksik." }, { status: 500 });
     }
 
@@ -448,23 +458,19 @@ Do not include markdown formatting (no \`\`\`json or \`\`\`).`;
       behavioralAnalysis
     };
 
-    // Increment AI usage for the requesting user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-        },
+    // Increment AI usage for the requesting user (use custom cookie auth)
+    if (userId) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true }
+        });
+        if (dbUser?.email) {
+          await incrementAIUsage(dbUser.email);
+        }
+      } catch (error) {
+        console.error('Error incrementing AI usage:', error);
       }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.email) {
-      await incrementAIUsage(user.email);
     }
 
     return NextResponse.json(ocrResponse);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from 'next/headers';
 
 interface ReportData {
   studentName: string;
@@ -33,8 +34,21 @@ interface ReportData {
 
 export async function POST(req: Request) {
   try {
+    // Authenticate user using custom cookie-based auth
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      console.error('AI Report Summary: Unauthorized - No user_id in cookies');
+      return NextResponse.json(
+        { success: false, error: 'Yetkisiz erişim' },
+        { status: 401 }
+      );
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error('AI Report Summary: GEMINI_API_KEY is not configured');
       return NextResponse.json({ error: "GEMINI_API_KEY eksik." }, { status: 500 });
     }
 

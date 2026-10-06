@@ -13,93 +13,86 @@ import { DocumentAddDialog } from "@/components/document-add-dialog";
 
 export default async function DocumentsPage() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  let advisorProfileId = null;
+  let userName = 'Danışman';
+
+  if (userId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          advisorProfile: true
+        }
+      });
+      if (dbUser) {
+        advisorProfileId = dbUser.advisorProfile?.id;
+        userName = dbUser.name;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  }
+
   let documents: any[] = [];
   let students: any[] = [];
-  let userName = 'Danışman';
-  let userRole = null;
 
-  if (user?.email) {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
+  if (userRole === 'SUPER_ADMIN') {
+    documents = await prisma.document.findMany({
       include: {
-        advisorProfile: true
-      }
+        application: {
+          include: {
+            studentProfile: {
+              include: { user: true }
+            },
+            university: {
+              include: { country: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
-    if (dbUser) {
-      userName = dbUser.name;
-      userRole = dbUser.role;
-
-      if (dbUser.role === 'SUPER_ADMIN') {
-        documents = await prisma.document.findMany({
-          include: {
-            application: {
-              include: {
-                studentProfile: {
-                  include: { user: true }
-                },
-                university: {
-                  include: { country: true }
-                }
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        });
-        
-        students = await prisma.studentProfile.findMany({
-          select: { 
-            id: true, 
-            user: { select: { name: true } } 
-          }
-        });
-      } else if (dbUser.advisorProfile) {
-        documents = await prisma.document.findMany({
-          where: {
-            application: {
-              studentProfile: {
-                advisorId: dbUser.advisorProfile.id
-              }
-            }
-          },
-          include: {
-            application: {
-              include: {
-                studentProfile: {
-                  include: { user: true }
-                },
-                university: {
-                  include: { country: true }
-                }
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        });
-        
-        students = await prisma.studentProfile.findMany({
-          where: { advisorId: dbUser.advisorProfile.id },
-          select: { 
-            id: true, 
-            user: { select: { name: true } } 
-          }
-        });
+    students = await prisma.studentProfile.findMany({
+      select: {
+        id: true,
+        user: { select: { name: true } }
       }
-    }
+    });
+  } else if (advisorProfileId) {
+    documents = await prisma.document.findMany({
+      where: {
+        application: {
+          studentProfile: {
+            advisorId: advisorProfileId
+          }
+        }
+      },
+      include: {
+        application: {
+          include: {
+            studentProfile: {
+              include: { user: true }
+            },
+            university: {
+              include: { country: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    students = await prisma.studentProfile.findMany({
+      where: { advisorId: advisorProfileId },
+      select: {
+        id: true,
+        user: { select: { name: true } }
+      }
+    });
   }
 
   const getStatusBadge = (status: DocumentStatus) => {

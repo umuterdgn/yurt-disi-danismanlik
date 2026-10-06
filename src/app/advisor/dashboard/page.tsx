@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
@@ -23,29 +22,17 @@ interface Student {
 
 export default async function AdvisorDashboard() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
   
   let students: any[] = [];
   let userName = 'Danışman';
-  let userRole = '';
 
-  if (user?.email) {
+  if (userId) {
     try {
       // Get user role and name from Prisma
       const dbUser = await prisma.user.findUnique({
-        where: { email: user.email },
+        where: { id: userId },
         include: {
           advisorProfile: true
         }
@@ -53,10 +40,9 @@ export default async function AdvisorDashboard() {
 
       if (dbUser) {
         userName = dbUser.name;
-        userRole = dbUser.role;
 
-        // Get students based on role
-        if (dbUser.role === 'SUPER_ADMIN') {
+        // Get students based on role (use cookie userRole instead of dbUser.role)
+        if (userRole === 'SUPER_ADMIN') {
           students = await prisma.studentProfile.findMany({
             include: {
               user: true

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeWorksheetTopics } from "@/actions/worksheet-analysis";
+import { cookies } from 'next/headers';
 
 interface QuestionTypeAnalysis {
   questionType: string;
@@ -22,8 +23,18 @@ interface WorksheetResponse {
 
 export async function POST(req: Request) {
   try {
+    // Authenticate user using custom cookie-based auth
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      console.error('AI OCR Worksheet: Unauthorized - No user_id in cookies');
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error('AI OCR Worksheet: GEMINI_API_KEY is not configured');
       return NextResponse.json({ error: "GEMINI_API_KEY eksik." }, { status: 500 });
     }
 

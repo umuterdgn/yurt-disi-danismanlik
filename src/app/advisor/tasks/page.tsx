@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { AdvisorKanbanBoard } from "@/components/advisor-kanban-board";
 import { updateTaskStatus } from "@/actions/add-task";
@@ -10,28 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default async function TasksPage() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
   
   let tasks: any[] = [];
   let students: { id: string; name: string; grade: string }[] = [];
   let aiRecommendations: any[] = [];
   let userName = 'Danışman';
 
-  if (user?.email) {
+  if (userId) {
     const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
+      where: { id: userId },
       include: {
         advisorProfile: true
       }
@@ -40,13 +28,13 @@ export default async function TasksPage() {
     if (dbUser) {
       userName = dbUser.name;
 
-      // Get students for the dialog
-      if (dbUser.role === 'SUPER_ADMIN') {
+      // Get students for the dialog (use cookie userRole instead of dbUser.role)
+      if (userRole === 'SUPER_ADMIN') {
         const allStudents = await prisma.studentProfile.findMany({
           include: { user: true }
         });
         students = allStudents.map(s => ({ id: s.id, name: s.user.name, grade: s.grade }));
-        
+
         tasks = await prisma.dailyTask.findMany({
           include: {
             studentProfile: {
@@ -73,7 +61,7 @@ export default async function TasksPage() {
           include: { user: true }
         });
         students = advisorStudents.map(s => ({ id: s.id, name: s.user.name, grade: s.grade }));
-        
+
         tasks = await prisma.dailyTask.findMany({
           where: {
             studentProfile: {

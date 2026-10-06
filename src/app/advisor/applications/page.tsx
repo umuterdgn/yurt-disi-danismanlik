@@ -21,12 +21,34 @@ const KANBAN_COLUMNS = [
 ];
 
 export default async function AdvisorApplicationsPage() {
-  // Get students for the dialog
-  const students = await prisma.studentProfile.findMany({
-    select: { 
-      id: true, 
-      user: { select: { name: true } } 
+  const cookieStore = await cookies();
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
+
+  let advisorProfileId = null;
+  if (userId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          advisorProfile: true
+        }
+      });
+      if (dbUser) {
+        advisorProfileId = dbUser.advisorProfile?.id;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
     }
+  }
+
+  // Get students for the dialog (filtered by role)
+  const students = await prisma.studentProfile.findMany({
+    select: {
+      id: true,
+      user: { select: { name: true } }
+    },
+    where: userRole === 'SUPER_ADMIN' ? {} : { advisorId: advisorProfileId }
   });
 
   // Get universities for the dialog
@@ -46,6 +68,7 @@ export default async function AdvisorApplicationsPage() {
         include: { country: true }
       }
     },
+    where: userRole === 'SUPER_ADMIN' ? {} : { studentProfile: { advisorId: advisorProfileId } },
     orderBy: { updatedAt: 'desc' }
   });
 
