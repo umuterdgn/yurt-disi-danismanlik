@@ -1,40 +1,26 @@
 import { prisma } from "@/lib/prisma";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { AdvisorStudentsClient } from "@/components/advisor-students-client";
 
 export default async function AdvisorStudentsPage() {
-  // Get current user from Supabase
+  // Get current user from cookies (custom auth system)
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
   // Get user role and ID from Prisma
-  let userRole = null;
   let advisorProfileId = null;
   let userName = 'Danışman';
   
-  if (user?.email) {
+  if (userId) {
     try {
       const dbUser = await prisma.user.findUnique({
-        where: { email: user.email },
+        where: { id: userId },
         include: {
           advisorProfile: true
         }
       });
       if (dbUser) {
-        userRole = dbUser.role;
         advisorProfileId = dbUser.advisorProfile?.id;
         userName = dbUser.name;
       }
@@ -66,7 +52,7 @@ export default async function AdvisorStudentsPage() {
   return (
     <AdvisorStudentsClient 
       students={students} 
-      userRole={userRole} 
+      userRole={userRole || null} 
       userName={userName} 
     />
   );

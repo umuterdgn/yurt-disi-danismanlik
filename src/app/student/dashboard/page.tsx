@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar, Flame, Globe, Plane } from 'lucide-react';
 import { StudentDailyTasks } from "@/components/student-daily-tasks";
@@ -30,31 +29,20 @@ import { WorksheetUploadDialog } from "@/components/worksheet-upload-dialog";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-      },
-    }
-  );
+  const userId = cookieStore.get('user_id')?.value;
+  const userRole = cookieStore.get('user_role')?.value;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user?.email) {
+  if (!userId || userRole !== 'STUDENT') {
     return <div className="p-8">Giriş yapmalısınız</div>;
   }
 
   // Get student profile with security check
   let studentProfile = null;
   try {
-    console.log('Fetching student profile for user ID:', user.id);
+    console.log('Fetching student profile for user ID:', userId);
     studentProfile = await prisma.studentProfile.findUnique({
       where: {
-        userId: user.id
+        userId: userId
       },
       include: {
         user: true,
@@ -115,13 +103,13 @@ export default async function StudentDashboard() {
   }
 
   if (!studentProfile) {
-    console.error('Student profile not found for user ID:', user.id);
+    console.error('Student profile not found for user ID:', userId);
     return (
       <div className="p-8">
         <div className="max-w-md mx-auto text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Profil Bulunamadı</h2>
           <p className="text-gray-600">Öğrenci profiliniz bulunamadı. Lütfen sistem yöneticisi ile iletişime geçin.</p>
-          <p className="text-sm text-gray-500 mt-2">Supabase User ID: {user.id}</p>
+          <p className="text-sm text-gray-500 mt-2">User ID: {userId}</p>
         </div>
       </div>
     );
