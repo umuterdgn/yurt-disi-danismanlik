@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,12 +48,15 @@ export async function POST(request: NextRequest) {
 
     const supabaseUserId = authData.user.id
 
+    // Şifreyi hash'le
+    const hashedPassword = await bcrypt.hash(password, 10)
+
     // Prisma'da kullanıcı oluştur (Supabase user ID ile)
     const user = await prisma.user.create({
       data: {
         id: supabaseUserId,
         email,
-        password, // Supabase zaten hash'ledi, ama Prisma'da da tutuyoruz
+        password: hashedPassword, // Hash'lenmiş şifreyi kaydet
         name,
         role: role as UserRole,
       }

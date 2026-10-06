@@ -17,11 +17,11 @@ model User {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   organizationId          String?
-  institutionName         String?
-  subscriptionEndsAt      DateTime?
-  studentQuota            Int                      @default(30)
-  isSubscriptionActive     Boolean                  @default(true)
   aiUsageCount            Int                      @default(0)
+  isSubscriptionActive    Boolean                  @default(true)
+  studentQuota            Int                      @default(30)
+  subscriptionEndsAt      DateTime?
+  institutionName         String?
   advisorProfile          AdvisorProfile?
   participantAppointments AppointmentParticipant[]
   createdAppointments     Appointment[]            @relation("AppointmentCreator")
@@ -61,9 +61,9 @@ model StudentProfile {
   updatedAt            DateTime           @updatedAt
   domain               YKSDomain?
   targetUniversities   String[]
-  targetUniversity     String?           // Specific target university
-  targetMajor         String?           // Target major/program
-  learningDNA          Json?             // Learning DNA: { preferredLearningStyle, peakFocusTime, failedStrategies }
+  targetMajor          String?
+  targetUniversity     String?
+  learningDNA          Json?
   aiRecommendations    AIRecommendation[]
   applications         Application[]
   dailyTasks           DailyTask[]
@@ -73,15 +73,15 @@ model StudentProfile {
   meetingNotes         MeetingNote[]
   parentRelations      Parent[]           @relation("StudentProfile")
   questProgress        QuestProgress[]
+  simulationProfile    SimulationProfile?
   advisor              AdvisorProfile?    @relation(fields: [advisorId], references: [id])
   user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   studySessions        StudySession[]     @relation("StudentStudySessions")
   subjectAnalysis      SubjectAnalysis[]
   tasks                Task[]
   weeklyCheckIns       WeeklyCheckIn[]
-  parentProfiles       ParentProfile[]    @relation("StudentParents")
   worksheets           Worksheet[]
-  simulationProfile    SimulationProfile?
+  parentProfiles       ParentProfile[]    @relation("StudentParents")
 
   @@map("student_profiles")
 }
@@ -132,36 +132,36 @@ model Parent {
 }
 
 model DailyTask {
-  id                 String         @id @default(cuid())
-  studentProfileId   String
-  title              String
-  description        String?
-  subject            String         // Keep for backward compatibility
-  subjectId          String?        // Reference to Curriculum Subject
-  topic              String?        // Keep for backward compatibility
-  topicId            String?        // Reference to Curriculum Topic
-  questionTypeId     String?        // Reference to Curriculum QuestionType
-  targetQuantity     Int
-  estimatedPomodoros Int            @default(0)
-  completedQuantity  Int            @default(0)
-  isCompleted        Boolean        @default(false)
-  taskDate           DateTime
-  priority           String         @default("medium")
-  status             TaskStatus     @default(TODO)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  correctCount       Int?           @default(0)
-  wrongCount         Int?           @default(0)
-  emptyCount         Int?           @default(0)
-  taskType           TaskType       @default(OTHER)
-  studyMethod        String?        // "VIDEO", "READING", "PRACTICE", "TEST"
-  feedback           String?        // Student feedback: "EASY", "HARD", "MODERATE"
-  feedbackNotes      String?        // Additional feedback notes
-  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-  curriculumSubject  Subject?       @relation("TaskSubject", fields: [subjectId], references: [id])
-  curriculumTopic    Topic?         @relation("TaskTopic", fields: [topicId], references: [id])
-  curriculumQuestionType QuestionType? @relation("TaskQuestionType", fields: [questionTypeId], references: [id])
-  studySessions      StudySession[] @relation("TaskStudySessions")
+  id                     String         @id @default(cuid())
+  studentProfileId       String
+  title                  String
+  description            String?
+  subject                String
+  targetQuantity         Int
+  estimatedPomodoros     Int            @default(0)
+  completedQuantity      Int            @default(0)
+  isCompleted            Boolean        @default(false)
+  taskDate               DateTime
+  priority               String         @default("medium")
+  status                 TaskStatus     @default(TODO)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  correctCount           Int?           @default(0)
+  topic                  String?
+  wrongCount             Int?           @default(0)
+  taskType               TaskType       @default(OTHER)
+  emptyCount             Int?           @default(0)
+  questionTypeId         String?
+  studyMethod            String?
+  subjectId              String?
+  topicId                String?
+  feedback               String?
+  feedbackNotes          String?
+  curriculumQuestionType QuestionType?  @relation("TaskQuestionType", fields: [questionTypeId], references: [id])
+  studentProfile         StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  curriculumSubject      Subject?       @relation("TaskSubject", fields: [subjectId], references: [id])
+  curriculumTopic        Topic?         @relation("TaskTopic", fields: [topicId], references: [id])
+  studySessions          StudySession[] @relation("TaskStudySessions")
 
   @@map("daily_tasks")
 }
@@ -240,60 +240,29 @@ model SubjectResult {
   @@map("subject_results")
 }
 
-enum QuestionResultStatus {
-  CORRECT
-  WRONG
-  EMPTY
-  UNCERTAIN
-}
-
-enum CognitiveErrorType {
-  KNOWLEDGE_GAP
-  LOGIC_ERROR
-  CALCULATION_ERROR
-}
-
-enum QuestionStructureType {
-  YENI_NESIL
-  KLASIK
-  ONCULLU
-  GRAFIK_TABLO
-  PARAGRAF
-}
-
-enum DifficultyLevel {
-  KOLAY
-  ORTA
-  ZOR
-  AYIRT_EDICI
-}
-
 model QuestionResult {
-  id               String              @id @default(cuid())
-  subjectResultId  String
-  subjectResult   SubjectResult      @relation(fields: [subjectResultId], references: [id], onDelete: Cascade)
-
-  questionNumber   Int
-  subject          String
-  questionText     String?             @db.Text
-  markedAnswer     String?
-  correctAnswer    String?
-  result           QuestionResultStatus // "correct", "wrong", "empty", "uncertain"
-  confidence       Float?              // 0.0-1.0
-  needsReview      Boolean             @default(false)
-  
-  topic             String?             // Türev, İntegral vb.
-  subTopic         String?
-  learningOutcome  String?
-  errorType         CognitiveErrorType? // Bilgi Eksikliği, Mantık Hatası, İşlem Hatası
-  questionStructure QuestionStructureType? // Yeni Nesil, Klasik, Öncüllü, Grafik/Tablo, Paragraf
-  difficultyLevel   DifficultyLevel?    // Kolay, Orta, Zor, Ayırt Edici
-  isBlank           Boolean             @default(false) // Boş mu bırakıldı
-  interdisciplinaryTag String?          // Kök neden başka ders/konu ise (Örn: 'Matematik - Trigonometri')
-  timeSpent         Int                 @default(0) // saniye
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String                 @id @default(cuid())
+  subjectResultId      String
+  topic                String?
+  subTopic             String?
+  timeSpent            Int                    @default(0)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  confidence           Float?
+  correctAnswer        String?
+  learningOutcome      String?
+  markedAnswer         String?
+  needsReview          Boolean                @default(false)
+  questionNumber       Int
+  questionText         String?
+  subject              String
+  result               QuestionResultStatus
+  errorType            CognitiveErrorType?
+  questionStructure    QuestionStructureType?
+  difficultyLevel      DifficultyLevel?
+  interdisciplinaryTag String?
+  isBlank              Boolean                @default(false)
+  subjectResult        SubjectResult          @relation(fields: [subjectResultId], references: [id], onDelete: Cascade)
 
   @@map("question_results")
 }
@@ -320,33 +289,28 @@ model ExamResult {
 }
 
 model SubjectAnalysis {
-  id               String           @id @default(cuid())
-  studentProfileId String
-  subject          String
-  topic            String
-  proficiency      ProficiencyLevel
-  progressPercent  Int              @default(0)
-  lastStudiedAt    DateTime?
-  totalHours       Int              @default(0)
-  dataSource       String           @default("BOTH") // "EXAM", "TASK", "BOTH"
-  
-  // Holistic Analysis Data Sources
-  examNetScore     Float?           // Net score from exams
-  examTotalQuestions Int?          // Total questions from exams
-  examCorrect      Int?             // Correct answers from exams
-  taskNetScore     Float?           // Net score from tasks
-  taskTotalQuestions Int?          // Total questions from tasks
-  taskCorrect      Int?             // Correct answers from tasks
-  totalPomodoroMinutes Int?        // Total focus time in minutes
-  studyMethods     String[]         @default([]) // ["VIDEO", "PRACTICE", "TEST", "READING"]
-  
-  // References to Curriculum
-  subjectId        String?          // Reference to Curriculum Subject
-  topicId          String?          // Reference to Curriculum Topic
-  
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  studentProfile   StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  id                   String           @id @default(cuid())
+  studentProfileId     String
+  subject              String
+  topic                String
+  proficiency          ProficiencyLevel
+  progressPercent      Int              @default(0)
+  lastStudiedAt        DateTime?
+  totalHours           Int              @default(0)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  dataSource           String           @default("BOTH")
+  examCorrect          Int?
+  examNetScore         Float?
+  examTotalQuestions   Int?
+  studyMethods         String[]         @default([])
+  subjectId            String?
+  taskCorrect          Int?
+  taskNetScore         Float?
+  taskTotalQuestions   Int?
+  topicId              String?
+  totalPomodoroMinutes Int?
+  studentProfile       StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
   @@unique([studentProfileId, subject, topic])
   @@map("subject_analysis")
@@ -567,14 +531,14 @@ model WeeklyCheckIn {
 }
 
 model SimulationProfile {
-  id                   String          @id @default(cuid())
-  studentProfileId     String          @unique
-  targetUniversity     String?         // Hedef üniversite
-  burnoutRiskScore     Int             @default(0) // Tükenmişlik Skoru 0-100
-  ghostCompetitorGap   Float?          // Gölge rakibe olan uzaklık (net farkı)
-  lastUpdated          DateTime        @default(now())
-  simulationData       Json?           // Ek simülasyon verileri
-  studentProfile       StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(cuid())
+  studentProfileId   String         @unique
+  targetUniversity   String?
+  burnoutRiskScore   Int            @default(0)
+  ghostCompetitorGap Float?
+  lastUpdated        DateTime       @default(now())
+  simulationData     Json?
+  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
   @@map("simulation_profiles")
 }
@@ -746,12 +710,124 @@ model QuestProgress {
   @@map("quest_progress")
 }
 
+model GradeLevel {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  displayName String
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  subjects    Subject[]
+
+  @@map("grade_levels")
+}
+
+model Subject {
+  id           String      @id @default(cuid())
+  gradeLevelId String
+  name         String
+  code         String?
+  displayName  String?
+  isActive     Boolean     @default(true)
+  order        Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  dailyTasks   DailyTask[] @relation("TaskSubject")
+  gradeLevel   GradeLevel  @relation(fields: [gradeLevelId], references: [id], onDelete: Cascade)
+  topics       Topic[]
+
+  @@unique([gradeLevelId, name])
+  @@map("subjects")
+}
+
+model Topic {
+  id            String         @id @default(cuid())
+  subjectId     String
+  name          String
+  code          String?
+  isActive      Boolean        @default(true)
+  order         Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  dailyTasks    DailyTask[]    @relation("TaskTopic")
+  questionTypes QuestionType[]
+  subject       Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, name])
+  @@map("topics")
+}
+
+model QuestionType {
+  id         String      @id @default(cuid())
+  topicId    String
+  name       String
+  code       String?
+  isActive   Boolean     @default(true)
+  order      Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  dailyTasks DailyTask[] @relation("TaskQuestionType")
+  topic      Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, name])
+  @@map("question_types")
+}
+
+model Worksheet {
+  id                   String         @id @default(cuid())
+  studentProfileId     String
+  subject              String
+  topic                String
+  correct              Int            @default(0)
+  wrong                Int            @default(0)
+  empty                Int            @default(0)
+  questionTypeAnalysis Json
+  ocrProcessed         Boolean        @default(false)
+  ocrConfidence        Float?
+  ocrStatus            String?
+  notes                String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  studentProfile       StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("worksheets")
+}
+
+enum QuestionResultStatus {
+  CORRECT
+  WRONG
+  EMPTY
+  UNCERTAIN
+}
+
+enum CognitiveErrorType {
+  KNOWLEDGE_GAP
+  LOGIC_ERROR
+  CALCULATION_ERROR
+}
+
+enum QuestionStructureType {
+  YENI_NESIL
+  KLASIK
+  ONCULLU
+  GRAFIK_TABLO
+  PARAGRAF
+}
+
+enum DifficultyLevel {
+  KOLAY
+  ORTA
+  ZOR
+  AYIRT_EDICI
+}
+
 enum UserRole {
   SUPER_ADMIN
-  ADMIN
   ADVISOR
   STUDENT
   PARENT
+  ADMIN
 }
 
 enum ServiceType {
@@ -883,89 +959,4 @@ enum QuestType {
   STUDY_TIME
   DOCUMENT_UPLOAD
   MEETING_ATTENDANCE
-}
-
-// Curriculum Hierarchy (Ortak Payda)
-model GradeLevel {
-  id          String    @id @default(cuid())
-  name        String    @unique // "9. Sınıf", "10. Sınıf", etc.
-  displayName String    // "Lise 9. Sınıf"
-  isActive    Boolean   @default(true)
-  order       Int       @default(0)
-  subjects    Subject[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("grade_levels")
-}
-
-model Subject {
-  id           String      @id @default(cuid())
-  gradeLevelId String
-  name         String      // "Türkçe", "Matematik", etc.
-  code         String?     // "TR", "MAT", etc.
-  displayName  String?     // "Türkçe Dili ve Edebiyatı"
-  isActive     Boolean     @default(true)
-  order        Int         @default(0)
-  gradeLevel   GradeLevel  @relation(fields: [gradeLevelId], references: [id], onDelete: Cascade)
-  topics       Topic[]
-  dailyTasks   DailyTask[] @relation("TaskSubject")
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  @@unique([gradeLevelId, name])
-  @@map("subjects")
-}
-
-model Topic {
-  id        String    @id @default(cuid())
-  subjectId String
-  name      String    // "Türev", "İntegral", "Paragraf", etc.
-  code      String?   // "MAT-TU-01", etc.
-  isActive  Boolean   @default(true)
-  order     Int       @default(0)
-  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  questionTypes QuestionType[]
-  dailyTasks DailyTask[] @relation("TaskTopic")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@unique([subjectId, name])
-  @@map("topics")
-}
-
-model QuestionType {
-  id        String      @id @default(cuid())
-  topicId   String
-  name      String      // "Klasik", "Çoktan Seçmeli", "Boşluk Doldurma"
-  code      String?     // "KLASIK", "CS", "BD"
-  isActive  Boolean     @default(true)
-  order     Int         @default(0)
-  topic     Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  dailyTasks DailyTask[] @relation("TaskQuestionType")
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  @@unique([topicId, name])
-  @@map("question_types")
-}
-
-model Worksheet {
-  id                    String         @id @default(cuid())
-  studentProfileId      String
-  subject               String         // "Türkçe", "Matematik", etc.
-  topic                 String         // "Türev", "İntegral", etc.
-  correct               Int            @default(0)
-  wrong                 Int            @default(0)
-  empty                 Int            @default(0)
-  questionTypeAnalysis  Json           // JSON object with question type breakdown
-  ocrProcessed          Boolean        @default(false)
-  ocrConfidence         Float?
-  ocrStatus             String?
-  notes                 String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  studentProfile        StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-
-  @@map("worksheets")
 }
