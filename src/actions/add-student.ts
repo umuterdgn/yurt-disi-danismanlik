@@ -151,6 +151,8 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Kullanıcı oluşturma hatası: ' + authError.message };
     }
 
+    console.log('Supabase user created with ID:', authData.user.id);
+
     // Create user in Prisma with hashed password AND student profile in one transaction
     // Using nested create to ensure both records are created together
     let newUser = null;
@@ -183,9 +185,18 @@ export async function addStudent(formData: FormData) {
           studentProfile: true
         }
       });
+      console.log('Prisma user and student profile created successfully');
+      console.log('StudentProfile ID:', newUser.studentProfile?.id);
     } catch (error) {
       console.error('Prisma error creating user with student profile:', error);
-      return { success: false, error: 'Kullanıcı kaydı oluşturma hatası' };
+      // Rollback: Delete Supabase user if Prisma creation fails
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        console.log('Rolled back: Deleted Supabase user due to Prisma error');
+      } catch (rollbackError) {
+        console.error('Failed to rollback Supabase user:', rollbackError);
+      }
+      return { success: false, error: 'Kullanıcı kaydı oluşturma hatası: ' + (error instanceof Error ? error.message : String(error)) };
     }
 
     // Revalidate the advisor dashboard to show the new student

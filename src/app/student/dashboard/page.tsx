@@ -51,6 +51,7 @@ export default async function StudentDashboard() {
   // Get student profile with security check
   let studentProfile = null;
   try {
+    console.log('Fetching student profile for user ID:', user.id);
     studentProfile = await prisma.studentProfile.findUnique({
       where: {
         userId: user.id
@@ -99,6 +100,7 @@ export default async function StudentDashboard() {
         }
       }
     });
+    console.log('Student profile found:', studentProfile ? 'YES' : 'NO');
   } catch (error) {
     console.error('Error fetching student profile:', error);
     return (
@@ -106,17 +108,20 @@ export default async function StudentDashboard() {
         <div className="max-w-md mx-auto text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Veri Yükleme Hatası</h2>
           <p className="text-gray-600">Öğrenci bilgileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
+          <p className="text-sm text-gray-500 mt-2">Hata detayı: {error instanceof Error ? error.message : String(error)}</p>
         </div>
       </div>
     );
   }
 
   if (!studentProfile) {
+    console.error('Student profile not found for user ID:', user.id);
     return (
       <div className="p-8">
         <div className="max-w-md mx-auto text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Profil Bulunamadı</h2>
           <p className="text-gray-600">Öğrenci profiliniz bulunamadı. Lütfen sistem yöneticisi ile iletişime geçin.</p>
+          <p className="text-sm text-gray-500 mt-2">Supabase User ID: {user.id}</p>
         </div>
       </div>
     );
