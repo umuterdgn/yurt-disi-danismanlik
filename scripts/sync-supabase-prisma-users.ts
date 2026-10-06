@@ -10,8 +10,8 @@ async function syncSupabasePrismaUsers() {
   try {
     console.log('Starting Supabase-Prisma user sync...')
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Supabase credentials not found')
@@ -21,8 +21,7 @@ async function syncSupabasePrismaUsers() {
       auth: {
         autoRefreshToken: false,
         persistSession: false
-      }
-    }, {
+      },
       db: { schema: 'public' },
       global: { headers: {} }
     })
@@ -60,7 +59,7 @@ async function syncSupabasePrismaUsers() {
             data: {
               id: supabaseUser.id,
               email: supabaseUser.email,
-              name: supabaseUser.user_metadata?.name || supabaseUser.email,
+              name: (supabaseUser.user_metadata?.name as string) || supabaseUser.email,
               password: '', // Password managed by Supabase
               role: (supabaseUser.user_metadata?.role as any) || 'STUDENT',
               isApproved: true
