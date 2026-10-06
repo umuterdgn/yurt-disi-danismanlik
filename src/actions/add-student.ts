@@ -116,7 +116,7 @@ export async function addStudent(formData: FormData) {
       }
     }
 
-    // Check if email already exists
+    // Check if email already exists in Prisma
     let existingUser = null;
     try {
       existingUser = await prisma.user.findUnique({
@@ -151,49 +151,41 @@ export async function addStudent(formData: FormData) {
       return { success: false, error: 'Kullanıcı oluşturma hatası: ' + authError.message };
     }
 
-    // Create user in Prisma with hashed password
-    // Use upsert to handle edge cases where user might already exist
+    // Create user in Prisma with hashed password AND student profile in one transaction
+    // Using nested create to ensure both records are created together
     let newUser = null;
     try {
-      newUser = await prisma.user.upsert({
-        where: { id: authData.user.id },
-        update: { isApproved: true }, // Ensure approval is set even in update case
-        create: {
+      newUser = await prisma.user.create({
+        data: {
           id: authData.user.id,
           email,
           password: hashedPassword, // Store hashed password in Prisma
           name,
           role: 'STUDENT',
-          isApproved: true // Auto-approve students added by advisors
+          isApproved: true, // Auto-approve students added by advisors
+          studentProfile: {
+            create: {
+              advisorId: advisor.id,
+              grade,
+              domain: domain as any,
+              targetUniversities: targetUniversities,
+              targetScore: targetScore ? parseFloat(targetScore) : 0,
+              currentScore: 0,
+              school: '',
+              studentSymbol: studentSymbol || '🎓',
+              xp: 0,
+              streak: 0,
+              serviceType: serviceType as any
+            }
+          }
+        },
+        include: {
+          studentProfile: true
         }
       });
     } catch (error) {
-      console.error('Prisma error upserting student user:', error);
+      console.error('Prisma error creating user with student profile:', error);
       return { success: false, error: 'Kullanıcı kaydı oluşturma hatası' };
-    }
-
-    // Create student profile
-    let studentProfile = null;
-    try {
-      studentProfile = await prisma.studentProfile.create({
-        data: {
-          userId: newUser.id,
-          advisorId: advisor.id,
-          grade,
-          domain: domain as any,
-          targetUniversities: targetUniversities,
-          targetScore: targetScore ? parseFloat(targetScore) : 0,
-          currentScore: 0,
-          school: '',
-          studentSymbol: studentSymbol || '🎓',
-          xp: 0,
-          streak: 0,
-          serviceType: serviceType as any
-        }
-      });
-    } catch (error) {
-      console.error('Prisma error creating student profile:', error);
-      return { success: false, error: 'Öğrenci profili oluşturma hatası' };
     }
 
     // Revalidate the advisor dashboard to show the new student
@@ -203,12 +195,12 @@ export async function addStudent(formData: FormData) {
     return {
       success: true,
       student: {
-        id: studentProfile.id,
+        id: newUser.studentProfile!.id,
         name: newUser.name,
         email: newUser.email,
-        grade: studentProfile.grade,
-        domain: studentProfile.domain,
-        targetUniversities: studentProfile.targetUniversities
+        grade: newUser.studentProfile!.grade,
+        domain: newUser.studentProfile!.domain,
+        targetUniversities: newUser.studentProfile!.targetUniversities
       },
       generatedPassword: plainPassword // Return the plain password for display
     };

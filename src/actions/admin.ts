@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import { UserRole, NotificationType } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -27,10 +28,22 @@ export async function createUser(data: {
   profileData?: any
 }) {
   try {
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email }
+    })
+
+    if (existingUser) {
+      return { success: false, error: 'Bu e-posta adresi zaten kullanımda' }
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+
     // Önce Supabase Auth'da kullanıcı oluştur
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: data.email,
-      password: data.password,
+      password: data.password, // Use plain password for Supabase
       email_confirm: true,
       user_metadata: {
         name: data.name,
@@ -43,40 +56,33 @@ export async function createUser(data: {
       return { success: false, error: authError.message }
     }
 
-    // Prisma'da kullanıcı oluştur
+    // Prisma'da kullanıcı oluştur with nested profile creation
     const prismaUser = await prisma.user.create({
       data: {
+        id: authUser.user.id,
         email: data.email,
-        password: data.password,
+        password: hashedPassword, // Store hashed password
         name: data.name,
         role: data.role,
-        ...(data.profileData && data.profileData)
+        isApproved: true,
+        // Nested profile creation
+        ...(data.role === UserRole.ADVISOR && data.profileData?.advisorProfile ? {
+          advisorProfile: {
+            create: data.profileData.advisorProfile
+          }
+        } : {}),
+        ...(data.role === UserRole.STUDENT && data.profileData?.studentProfile ? {
+          studentProfile: {
+            create: data.profileData.studentProfile
+          }
+        } : {}),
+        ...(data.role === UserRole.PARENT && data.profileData?.parentProfile ? {
+          parentProfile: {
+            create: data.profileData.parentProfile
+          }
+        } : {})
       }
     })
-
-    // Role göre profil oluştur
-    if (data.role === UserRole.ADVISOR && data.profileData?.advisorProfile) {
-      await prisma.advisorProfile.create({
-        data: {
-          userId: prismaUser.id,
-          ...data.profileData.advisorProfile
-        }
-      })
-    } else if (data.role === UserRole.STUDENT && data.profileData?.studentProfile) {
-      await prisma.studentProfile.create({
-        data: {
-          userId: prismaUser.id,
-          ...data.profileData.studentProfile
-        }
-      })
-    } else if (data.role === UserRole.PARENT && data.profileData?.parentProfile) {
-      await prisma.parentProfile.create({
-        data: {
-          userId: prismaUser.id,
-          ...data.profileData.parentProfile
-        }
-      })
-    }
 
     revalidatePath('/admin/users')
 
@@ -143,7 +149,7 @@ export async function createStudent(data: {
 
   return createUser({
     email: data.email,
-    password: data.password,
+    password: data.password, // Pass plain password, createUser will hash it
     name: data.name,
     role: UserRole.STUDENT,
     profileData: {
