@@ -25,10 +25,12 @@ interface StudentSidebarProps {
   userId: string;
   initialNotifications?: any[];
   serviceType?: string;
+  institutionName?: string | null;
 }
 
-export default function StudentSidebar({ userId, initialNotifications = [], serviceType = 'BOTH' }: StudentSidebarProps) {
+export default function StudentSidebar({ userId, initialNotifications = [], serviceType = 'BOTH', institutionName }: StudentSidebarProps) {
   const pathname = usePathname();
+  const displayName = institutionName || 'Nexa Edu';
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
@@ -112,12 +114,9 @@ export default function StudentSidebar({ userId, initialNotifications = [], serv
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <div>
-          <div className="flex flex-col">
-            <div className="flex items-baseline gap-1">
-              <span className="font-serif font-extrabold text-3xl tracking-wide text-[#0f2042]">ATA</span>
-              <span className="font-light text-2xl tracking-widest text-[#0f2042]/80 ml-1">VISION</span>
-            </div>
-            <span className="text-[10px] tracking-widest text-[#c89f65] uppercase mt-1">Eğitim Danışmanlığı</span>
+          <div className="flex items-center space-x-2">
+            <GraduationCap className="w-8 h-8 text-[#0f2042]" />
+            <div className="font-bold text-2xl text-[#0f2042]">{displayName}</div>
           </div>
           <p className="text-sm text-gray-500 mt-2">Öğrenci Paneli</p>
         </div>

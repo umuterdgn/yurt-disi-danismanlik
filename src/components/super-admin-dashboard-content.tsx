@@ -53,6 +53,7 @@ export function SuperAdminDashboardContent({ stats, advisors, showAll = false }:
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [institutionName, setInstitutionName] = useState('');
   const [studentQuota, setStudentQuota] = useState('30');
   const [subscriptionDuration, setSubscriptionDuration] = useState('1');
 
@@ -76,6 +77,7 @@ export function SuperAdminDashboardContent({ stats, advisors, showAll = false }:
           email,
           password,
           phone,
+          institutionName,
           studentQuota: parseInt(studentQuota),
           subscriptionDuration: parseInt(subscriptionDuration)
         })
@@ -329,6 +331,16 @@ export function SuperAdminDashboardContent({ stats, advisors, showAll = false }:
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+90 555 123 4567"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="institutionName">Kurum/Firma Adı (Branding)</Label>
+                  <Input
+                    id="institutionName"
+                    value={institutionName}
+                    onChange={(e) => setInstitutionName(e.target.value)}
+                    placeholder="Örn: Boğaziçi VIP Kurs"
+                  />
+                  <p className="text-xs text-gray-500">Bu isim arayüzde logonun yanında görünecek</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="studentQuota">Öğrenci Kotası</Label>

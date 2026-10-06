@@ -27,7 +27,7 @@ export default async function AdminLayout({
     try {
       dbUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { role: true, email: true, name: true }
+        select: { role: true, email: true, name: true, institutionName: true }
       });
     } catch (error) {
       console.error('Prisma error in admin layout:', error);
@@ -38,7 +38,7 @@ export default async function AdminLayout({
       redirect('/login');
     }
 
-    return <AdminLayoutClient>{children}</AdminLayoutClient>;
+    return <AdminLayoutClient institutionName={dbUser.institutionName}>{children}</AdminLayoutClient>;
   } catch (error) {
     // Allow NEXT_REDIRECT errors to pass through
     if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {

@@ -28,10 +28,12 @@ import { LogoutButton } from '@/components/logout-button';
 interface SidebarProps {
   userRole: 'SUPER_ADMIN' | 'ADVISOR' | 'COACH';
   advisorType?: 'COACH' | 'CONSULTANT' | 'BOTH';
+  institutionName?: string | null;
 }
 
-export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
+export function Sidebar({ userRole, advisorType = 'BOTH', institutionName }: SidebarProps) {
   const pathname = usePathname();
+  const displayName = institutionName || 'Nexa Edu';
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
@@ -134,11 +136,10 @@ export function Sidebar({ userRole, advisorType = 'BOTH' }: SidebarProps) {
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col">
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif font-extrabold text-3xl tracking-wide text-[#0f2042]">ATA</span>
-            <span className="font-light text-2xl tracking-widest text-[#0f2042]/80 ml-1">VISION</span>
+          <div className="flex items-center space-x-2">
+            <GraduationCap className="w-8 h-8 text-[#0f2042]" />
+            <div className="font-bold text-2xl text-[#0f2042]">{displayName}</div>
           </div>
-          <span className="text-[10px] tracking-widest text-[#c89f65] uppercase mt-1">Eğitim Danışmanlığı</span>
         </div>
         <p className="text-sm text-gray-500 mt-2">
           {advisorType === 'COACH' ? 'Eğitim Koçluğu' : advisorType === 'CONSULTANT' ? 'Yurt Dışı Danışmanlık' : 'Danışman Paneli'}

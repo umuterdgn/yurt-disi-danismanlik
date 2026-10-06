@@ -27,7 +27,7 @@ export default async function AdvisorLayout({
     try {
       dbUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { role: true, email: true, name: true }
+        select: { role: true, email: true, name: true, institutionName: true, organization: { select: { name: true } } }
       });
     } catch (error) {
       console.error('Prisma error in advisor layout:', error);
@@ -38,7 +38,8 @@ export default async function AdvisorLayout({
       redirect('/login');
     }
 
-    return <AdvisorLayoutClient>{children}</AdvisorLayoutClient>;
+    const institutionName = dbUser.institutionName || dbUser.organization?.name || null;
+    return <AdvisorLayoutClient institutionName={institutionName}>{children}</AdvisorLayoutClient>;
   } catch (error) {
     // Allow NEXT_REDIRECT errors to pass through
     if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {

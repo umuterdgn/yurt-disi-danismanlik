@@ -27,8 +27,9 @@ import {
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ institutionName }: { institutionName?: string }) {
   const pathname = usePathname();
+  const displayName = institutionName || 'Nexa Edu';
   
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
@@ -97,10 +98,7 @@ export default function AdminSidebar() {
     <div className="flex flex-col h-full">
       <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col">
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif font-extrabold text-3xl tracking-wide text-[#0f2042]">ATA</span>
-            <span className="font-light text-2xl tracking-widest text-[#0f2042]/80 ml-1">VISION</span>
-          </div>
+          <div className="font-bold text-2xl text-[#0f2042]">{displayName}</div>
           <span className="text-[10px] tracking-widest text-[#c89f65] uppercase mt-1">Eğitim Danışmanlığı</span>
         </div>
         <p className="text-sm text-gray-500 mt-2">Yönetici Paneli</p>

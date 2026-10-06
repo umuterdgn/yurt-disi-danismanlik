@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, phone, studentQuota, subscriptionDuration } = await request.json()
+    const { name, email, password, phone, institutionName, studentQuota, subscriptionDuration } = await request.json()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       email_confirm: true,
       user_metadata: {
         name,
-        role: 'ADVISOR'
+        role: 'ADMIN'
       }
     })
 
@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
         email,
         password: '', // Managed by Supabase
         name,
-        role: 'ADVISOR',
+        role: 'ADMIN',
+        institutionName,
         isApproved: true,
         isActive: true,
         studentQuota,

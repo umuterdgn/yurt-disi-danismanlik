@@ -157,6 +157,13 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7 // 7 days
     })
+    cookieStore.set('institution_name', user.institutionName || '', {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
 
     // Kullanıcı bilgilerini hazırla (şifre hariç)
     const { password: _, ...userWithoutPassword } = user

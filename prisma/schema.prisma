@@ -17,6 +17,7 @@ model User {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   organizationId          String?
+  institutionName         String?
   subscriptionEndsAt      DateTime?
   studentQuota            Int                      @default(30)
   isSubscriptionActive     Boolean                  @default(true)

@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string
   name: string
   role: UserRole
+  institutionName?: string
 }
 
 export function getAuthUser(): AuthUser | null {
