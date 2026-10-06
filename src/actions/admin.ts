@@ -131,10 +131,20 @@ export async function createStudent(data: {
   examDate?: Date
   advisorId?: string
 }) {
-  // Check student quota if advisorId is provided
+  // Get advisorProfileId from advisorId (User ID)
+  let advisorProfileId: string | undefined = undefined
   if (data.advisorId) {
+    const advisorProfile = await prisma.advisorProfile.findUnique({
+      where: { userId: data.advisorId }
+    })
+
+    if (advisorProfile) {
+      advisorProfileId = advisorProfile.id
+    }
+
+    // Check student quota
     const currentStudentCount = await prisma.studentProfile.count({
-      where: { advisorId: data.advisorId }
+      where: { advisorId: advisorProfileId }
     });
 
     const advisorUser = await prisma.user.findUnique({
@@ -161,7 +171,7 @@ export async function createStudent(data: {
         currentScore: data.currentScore,
         targetExam: data.targetExam,
         examDate: data.examDate,
-        advisorId: data.advisorId
+        advisorId: advisorProfileId // Use AdvisorProfile ID, not User ID
       }
     }
   })
