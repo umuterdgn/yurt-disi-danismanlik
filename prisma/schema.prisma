@@ -63,6 +63,7 @@ model StudentProfile {
   targetUniversities   String[]
   targetMajor          String?
   targetUniversity     String?
+  targetDepartment     String?
   learningDNA          Json?
   aiRecommendations    AIRecommendation[]
   applications         Application[]

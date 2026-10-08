@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { cookies } from 'next/headers';
-import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar, Flame, Globe, Plane } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertCircle, TrendingUp, BookOpen, Upload, Trophy, Target, Calendar, Flame, Globe, Plane, GraduationCap } from 'lucide-react';
 import { StudentDailyTasks } from "@/components/student-daily-tasks";
 import { FileUploadButton } from "@/components/file-upload-button";
 import { AIMotivationCard } from "@/components/ai-motivation-card";
@@ -26,6 +26,7 @@ import { MyJourney } from "@/components/my-journey";
 import { WeeklyQuests } from "@/components/weekly-quests";
 import { WeeklyCheckInDialog } from "@/components/weekly-check-in-dialog";
 import { WorksheetUploadDialog } from "@/components/worksheet-upload-dialog";
+import { TargetUniversityCard } from "@/components/target-university-card";
 
 export default async function StudentDashboard() {
   const cookieStore = await cookies();
@@ -232,9 +233,20 @@ export default async function StudentDashboard() {
         
         {/* Countdown Timer */}
         <div className="mb-6">
-          <CountdownTimer 
+          <CountdownTimer
             examDate={studentProfile.examDate || undefined}
             examName={studentProfile.targetExam || undefined}
+          />
+        </div>
+
+        {/* Target University Card */}
+        <div className="mb-6">
+          <TargetUniversityCard
+            targetUniversity={studentProfile.targetUniversity || null}
+            targetDepartment={studentProfile.targetDepartment || null}
+            targetScore={studentProfile.targetScore || null}
+            currentScore={studentProfile.currentScore || 0}
+            studentId={studentProfile.id}
           />
         </div>
 
