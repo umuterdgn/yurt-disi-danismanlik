@@ -1,5 +1,71 @@
 import { NextResponse } from "next/server";
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
+
+async function getStudentContextForAbroad(userId: string) {
+  try {
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId },
+      include: {
+        user: true,
+        applications: {
+          include: {
+            university: {
+              include: { country: true }
+            },
+            documents: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5
+        },
+        subjectAnalysis: {
+          orderBy: { progressPercent: 'desc' },
+          take: 5
+        }
+      }
+    });
+
+    if (!studentProfile) {
+      return null;
+    }
+
+    // Get language test scores from applications
+    const languageTests = studentProfile.applications
+      .map(app => ({
+        type: app.languageTest,
+        score: app.languageScore
+      }))
+      .filter(test => test.type && test.score);
+
+    // Get target countries from applications
+    const targetCountries = [...new Set(
+      studentProfile.applications
+        .map(app => app.university?.country?.name)
+        .filter(Boolean)
+    )];
+
+    // Get active applications
+    const activeApplications = studentProfile.applications.filter(app =>
+      ['INITIAL_INTERVIEW', 'DOCUMENT_COLLECTION', 'SUBMITTED'].includes(app.status)
+    );
+
+    return {
+      name: studentProfile.user.name,
+      grade: studentProfile.grade,
+      targetMajor: studentProfile.targetMajor,
+      targetScore: studentProfile.targetScore,
+      currentScore: studentProfile.currentScore,
+      languageTests,
+      targetCountries,
+      activeApplications: activeApplications.length,
+      subjectAnalysis: studentProfile.subjectAnalysis,
+      school: studentProfile.school
+    };
+  } catch (error) {
+    console.error('Error fetching student context for abroad:', error);
+    return null;
+  }
+}
 
 interface AcademicPerformance {
   subject: string;
@@ -59,6 +125,9 @@ export async function POST(req: Request) {
       targetCountry
     } = body;
 
+    // Fetch student context from database
+    const studentContext = await getStudentContextForAbroad(userId);
+
     // Generate comprehensive performance summary
     const performanceSummary = academicPerformance.map(perf => 
       `${perf.subject}: %${perf.successRate} başarı (${perf.proficiency})`
@@ -76,14 +145,21 @@ export async function POST(req: Request) {
 Analyze the following student profile and recommend the 3 best universities for their academic goals:
 
 STUDENT PROFILE:
-- Target Major/Program: ${targetMajor}
+- Name: ${studentContext?.name || 'Unknown'}
+- Grade: ${studentContext?.grade || 'Unknown'}
+- School: ${studentContext?.school || 'Unknown'}
+- Target Major/Program: ${targetMajor || studentContext?.targetMajor || 'Not specified'}
 - Academic Performance: ${performanceSummary}
-- Target Score: ${targetScore}
-- Current Score: ${currentScore}
+- Target Score: ${targetScore || studentContext?.targetScore || 'Not specified'}
+- Current Score: ${currentScore || studentContext?.currentScore || 0}
 - Score Analysis: ${scoreGapText}
 - Budget: ${budget}
 - Language Level: ${languageLevel}
-${targetCountry ? `- Preferred Country: ${targetCountry}` : '- No country preference'}
+${studentContext?.languageTests && studentContext.languageTests.length > 0 ? `- Language Tests: ${studentContext.languageTests.map(t => `${t.type}: ${t.score}`).join(', ')}` : ''}
+${studentContext?.targetCountries && studentContext.targetCountries.length > 0 ? `- Target Countries from Applications: ${studentContext.targetCountries.join(', ')}` : ''}
+${studentContext?.activeApplications > 0 ? `- Active Applications: ${studentContext.activeApplications} (already in process)` : ''}
+${targetCountry ? `- Preferred Country (from request): ${targetCountry}` : '- No country preference from request'}
+${studentContext?.subjectAnalysis && studentContext.subjectAnalysis.length > 0 ? `- Strong Subjects: ${studentContext.subjectAnalysis.slice(0, 3).map(s => `${s.subject} (%${s.progressPercent})`).join(', ')}` : ''}
 
 Your task is to recommend the 3 most suitable universities that match this student's profile. Consider:
 1. Academic reputation and ranking for the target major

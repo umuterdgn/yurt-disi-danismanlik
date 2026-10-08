@@ -7,6 +7,40 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
+async function getStudentContextForAnalysis(userId: string) {
+  try {
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId },
+      include: {
+        user: true,
+        subjectAnalysis: {
+          orderBy: { progressPercent: 'asc' },
+          take: 10
+        }
+      }
+    });
+
+    if (!studentProfile) {
+      return null;
+    }
+
+    return {
+      name: studentProfile.user.name,
+      grade: studentProfile.grade,
+      targetUniversity: studentProfile.targetUniversity,
+      targetDepartment: studentProfile.targetDepartment,
+      targetScore: studentProfile.targetScore,
+      currentScore: studentProfile.currentScore,
+      targetExam: studentProfile.targetExam,
+      examDate: studentProfile.examDate ? new Date(studentProfile.examDate).toLocaleDateString('tr-TR') : null,
+      school: studentProfile.school
+    };
+  } catch (error) {
+    console.error('Error fetching student context for analysis:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user using custom cookie-based auth
@@ -36,6 +70,17 @@ export async function POST(request: NextRequest) {
     // Build the prompt for AI analysis
     const prompt = `
 Sen bir deneyimli eğitim koçusun. Aşağıdaki öğrenci verilerine dayanarak kapsamlı bir çalışma analizi ve öneri raporu hazırla:
+
+ÖĞRENCİ PROFİLİ:
+- Adı: ${studentContext?.name || 'Bilinmiyor'}
+- Sınıf: ${studentContext?.grade || 'Bilinmiyor'}
+- Okul: ${studentContext?.school || 'Bilinmiyor'}
+- Hedef Üniversite: ${studentContext?.targetUniversity || 'Belirlemedi'}
+- Hedef Bölüm: ${studentContext?.targetDepartment || 'Belirlemedi'}
+- Hedef Puan: ${studentContext?.targetScore || 'Belirlemedi'}
+- Mevcut Puan: ${studentContext?.currentScore || 0}
+- Hedef Sınav: ${studentContext?.targetExam || 'Belirlemedi'}
+- Sınav Tarihi: ${studentContext?.examDate || 'Belirlemedi'}
 
 Öğrenci Son Netleri:
 - Türkçe: ${scores?.turkish || 0}

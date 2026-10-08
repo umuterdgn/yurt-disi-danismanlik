@@ -1,10 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
+
+async function getStudentContext(userId: string) {
+  try {
+    const studentProfile = await prisma.studentProfile.findUnique({
+      where: { userId },
+      include: {
+        user: true,
+        dailyTasks: {
+          where: {
+            taskDate: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)),
+              lt: new Date(new Date().setHours(23, 59, 59, 999))
+            }
+          }
+        },
+        studySessions: {
+          where: {
+            startTime: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+            }
+          }
+        },
+        examResults: {
+          orderBy: { examDate: 'desc' },
+          take: 3
+        },
+        applications: {
+          include: {
+            university: {
+              include: { country: true }
+            }
+          },
+          take: 3
+        }
+      }
+    });
+
+    if (!studentProfile) {
+      return null;
+    }
+
+    // Calculate context data
+    const todayTasks = studentProfile.dailyTasks || [];
+    const completedTasks = todayTasks.filter(t => t.isCompleted).length;
+    const pendingTasks = todayTasks.filter(t => !t.isCompleted).length;
+
+    const studySessions = studentProfile.studySessions || [];
+    const totalStudyMinutes = studySessions.reduce((sum, session) => sum + (session.actualDuration || 0), 0);
+    const totalStudyHours = (totalStudyMinutes / 60).toFixed(1);
+
+    const recentExams = studentProfile.examResults || [];
+    const latestExam = recentExams[0];
+    const examContext = latestExam
+      ? `Son deneme: ${latestExam.examName} (${new Date(latestExam.examDate).toLocaleDateString('tr-TR')}) - Hedef: ${latestExam.targetScore}, Gerçekleşen: ${latestExam.actualScore || 'Henüz yok'}`
+      : 'Henüz deneme sonucu yok';
+
+    const applications = studentProfile.applications || [];
+    const activeApplication = applications.find(app => ['INITIAL_INTERVIEW', 'DOCUMENT_COLLECTION', 'SUBMITTED'].includes(app.status));
+    const abroadContext = activeApplication
+      ? `Yurt dışı başvurusu aktif: ${activeApplication.university.name} (${activeApplication.university.country.name}) - ${activeApplication.program} - Durum: ${activeApplication.status}`
+      : 'Yurt dışı başvurusu yok';
+
+    return {
+      name: studentProfile.user.name,
+      grade: studentProfile.grade,
+      targetUniversity: studentProfile.targetUniversity,
+      targetDepartment: studentProfile.targetDepartment,
+      targetScore: studentProfile.targetScore,
+      currentScore: studentProfile.currentScore,
+      completedTasks,
+      pendingTasks,
+      totalStudyHours,
+      examContext,
+      abroadContext,
+      targetExam: studentProfile.targetExam,
+      examDate: studentProfile.examDate ? new Date(studentProfile.examDate).toLocaleDateString('tr-TR') : null
+    };
+  } catch (error) {
+    console.error('Error fetching student context:', error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,11 +115,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { message, conversationHistory = [] } = body;
 
-    // Build conversation context
-    const messages = [
-      {
-        role: 'system' as const,
-        content: `Sen Türk öğrenciler için profesyonel bir eğitim koçusun. Öğrencilere ders çalışma taktikleri, soru çözüm stratejileri, zaman yönetimi ve motivasyon konusunda yardım ediyorsun.
+    // Fetch student context from database
+    const studentContext = await getStudentContext(userId);
+
+    // Build dynamic system prompt with student context
+    let systemPrompt = `Sen Nexa Edu'nun profesyonel AI eğitim koçusun. Türk öğrencilere ders çalışma taktikleri, soru çözüm stratejileri, zaman yönetimi ve motivasyon konusunda yardım ediyorsun.
 
 Kurallar:
 1. Her zaman Türkçe cevap ver
@@ -45,12 +128,40 @@ Kurallar:
 4. Motivasyonu yüksek tut ama gerçekçi ol
 5. Maksimum 2-3 paragraf cevap ver
 6. Emoji kullan ama abartma
-7. Somut örnekler ver
+7. Somut örnekler ver`;
 
-Örnek sorular ve cevaplar:
-- "Matematik nasıl çalışmalıyım?" → "Matematik için önce temel kavramları pekiştir. Her gün en az 20 soru çöz, hatalı soruları tekrar et. Konu bitince deneme çöz, eksikleri belirle."
-- "Motivasyonum düştü" → "Bu normal! Küçük hedefler koy, her gün bir adım ilerle. Başarılarını not al, kendini ödüllendir. Unutma, her büyük başarı küçük adımlarla başlar."
-- "Sınav stresimi nasıl yenerim?" → "Stresi yönetmek için planlı çalış. Son hafta tekrar değil, deneme çöz. Nefes egzersizleri yap, uykuna dikkat et. Güvendiğin en iyi arkadaşınla konuş."`
+    if (studentContext) {
+      systemPrompt += `
+
+---
+ÖĞRENCİ BİLGİLERİ:
+Adı: ${studentContext.name}
+Sınıf: ${studentContext.grade}
+Hedef Üniversite: ${studentContext.targetUniversity || 'Belirlemedi'}
+Hedef Bölüm: ${studentContext.targetDepartment || 'Belirlemedi'}
+Hedef Puan: ${studentContext.targetScore || 'Belirlemedi'}
+Mevcut Puan: ${studentContext.currentScore || 0}
+Hedef Sınav: ${studentContext.targetExam || 'Belirlemedi'}
+Sınav Tarihi: ${studentContext.examDate || 'Belirlemedi'}
+
+BUGÜNKÜ İLERLEME:
+Tamamlanan Görevler: ${studentContext.completedTasks}
+Bekleyen Görevler: ${studentContext.pendingTasks}
+Son 7 Gün Çalışma Süresi: ${studentContext.totalStudyHours} saat
+
+${studentContext.examContext}
+
+${studentContext.abroadContext}
+---
+
+Bu öğrencinin verilerini kullanarak, hedefine uygun, spesifik ve analitik tavsiyeler ver. Mevcut durumunu ve ilerlemesini dikkate alarak kişiselleştirilmiş destek sağla.`;
+    }
+
+    // Build conversation context
+    const messages = [
+      {
+        role: 'system' as const,
+        content: systemPrompt
       },
       ...conversationHistory.map((msg: any) => ({
         role: msg.role as 'user' | 'assistant',
