@@ -14,14 +14,20 @@ import { toast } from "sonner";
 
 interface AddMeetingDialogProps {
   students: { id: string; name: string }[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  selectedStudentId?: string;
 }
 
-export function AddMeetingDialog({ students }: AddMeetingDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddMeetingDialog({ students, open: controlledOpen, onOpenChange, selectedStudentId }: AddMeetingDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [zoomLoading, setZoomLoading] = useState(false);
   const [error, setError] = useState("");
   const [zoomLink, setZoomLink] = useState("");
+
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
 
   async function handleCreateZoom(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
@@ -77,12 +83,14 @@ export function AddMeetingDialog({ students }: AddMeetingDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-green-600 hover:bg-green-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Yeni Görüşme Planla
-        </Button>
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button className="bg-green-600 hover:bg-green-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Yeni Görüşme Planla
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Yeni Görüşme Planla</DialogTitle>
@@ -96,7 +104,7 @@ export function AddMeetingDialog({ students }: AddMeetingDialogProps) {
               <Label htmlFor="studentProfileId" className="text-right">
                 Öğrenci
               </Label>
-              <Select name="studentProfileId" required>
+              <Select name="studentProfileId" required defaultValue={selectedStudentId}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Öğrenci seçin" />
                 </SelectTrigger>

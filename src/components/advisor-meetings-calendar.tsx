@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { RescheduleMeetingDialog } from "@/components/reschedule-meeting-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Calendar, List } from "lucide-react";
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface Meeting {
   id: string;
@@ -35,9 +36,11 @@ interface AdvisorMeetingsCalendarProps {
 }
 
 export function AdvisorMeetingsCalendar({ meetings, students, userName }: AdvisorMeetingsCalendarProps) {
+  const searchParams = useSearchParams();
   const [localMeetings, setLocalMeetings] = useState<Meeting[]>(meetings);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const now = new Date();
     const day = now.getDay();
@@ -46,6 +49,15 @@ export function AdvisorMeetingsCalendar({ meetings, students, userName }: Adviso
     monday.setHours(0, 0, 0, 0);
     return monday;
   });
+
+  // Handle URL parameter for pre-selecting student and opening dialog
+  useEffect(() => {
+    const studentParam = searchParams.get('student');
+    if (studentParam) {
+      setSelectedStudent(studentParam);
+      setShowAddDialog(true);
+    }
+  }, [searchParams]);
 
   const getMotivationColor = (level: string) => {
     const colors: Record<string, string> = {
@@ -257,7 +269,12 @@ export function AdvisorMeetingsCalendar({ meetings, students, userName }: Adviso
                   </SelectContent>
                 </Select>
               </div>
-              <AddMeetingDialog students={students} />
+              <AddMeetingDialog
+                students={students}
+                open={showAddDialog}
+                onOpenChange={setShowAddDialog}
+                selectedStudentId={selectedStudent !== 'all' ? selectedStudent : undefined}
+              />
             </div>
           </CardHeader>
           <CardContent>

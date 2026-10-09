@@ -63,10 +63,10 @@ export async function GET(request: NextRequest) {
       if (last7DaysTasks.length > 0) {
         const completedTasks = last7DaysTasks.filter(t => t.isCompleted).length;
         const completionRate = completedTasks / last7DaysTasks.length;
-        
+
         if (completionRate < 0.5) {
           riskScore += 1;
-          riskFactors.push(`Son 7 günde görevlerin %${Math.round(completionRate * 100)}'ü tamamlanmış (hedef: %50+)`);
+          riskFactors.push(`Son 7 günde görevlerinin %${Math.round(completionRate * 100)}'ını tamamladı`);
         }
       }
 
@@ -74,10 +74,10 @@ export async function GET(request: NextRequest) {
       if (student.examResults.length >= 2) {
         const latest = student.examResults[0].actualScore || 0;
         const previous = student.examResults[1].actualScore || 0;
-        
+
         if (latest < previous) {
           riskScore += 1;
-          riskFactors.push(`Son 2 deneme sınavında net düşüşü (${previous} → ${latest})`);
+          riskFactors.push(`Son 2 deneme sınavında netleri düşüşte (${previous} → ${latest})`);
         }
       }
 
@@ -96,6 +96,18 @@ export async function GET(request: NextRequest) {
         riskLevel = 'MEDIUM';
       }
 
+      // Generate a single natural language reason
+      let riskReason = '';
+      if (riskFactors.length === 0) {
+        riskReason = 'Her şey yolunda';
+      } else if (riskFactors.length === 1) {
+        riskReason = riskFactors[0];
+      } else if (riskFactors.length === 2) {
+        riskReason = `${riskFactors[0]} ve ${riskFactors[1].toLowerCase()}`;
+      } else {
+        riskReason = `${riskFactors[0]}, ${riskFactors[1].toLowerCase()} ve ${riskFactors[2].toLowerCase()}`;
+      }
+
       return {
         id: student.id,
         name: student.user.name,
@@ -104,6 +116,7 @@ export async function GET(request: NextRequest) {
         riskLevel,
         riskScore,
         riskFactors,
+        riskReason,
         healthScore: student.healthScore
       };
     });

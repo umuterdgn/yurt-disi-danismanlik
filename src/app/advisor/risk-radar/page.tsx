@@ -15,6 +15,7 @@ interface StudentRisk {
   riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
   riskScore: number;
   riskFactors: string[];
+  riskReason: string;
   healthScore: number;
 }
 
@@ -103,61 +104,63 @@ export default function AdvisorRiskRadar() {
 
         {/* Summary Stats - Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-red-200 bg-red-50 hover:shadow-md transition-shadow">
+          <Card className="border-2 border-red-200 bg-gradient-to-br from-red-50 to-red-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-red-900 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
+              <CardTitle className="text-sm font-semibold text-red-900 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
                 Kritik Riskli Öğrenciler
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-red-600">
+              <div className="text-5xl font-bold text-red-600">
                 {summary.critical}
               </div>
-              <p className="text-xs text-red-700 mt-1">Acil müdahale gerekli</p>
+              <p className="text-sm text-red-700 mt-2 font-medium">Acil müdahale gerekli</p>
             </CardContent>
           </Card>
 
-          <Card className="border-yellow-200 bg-yellow-50 hover:shadow-md transition-shadow">
+          <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-yellow-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-yellow-900 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
+              <CardTitle className="text-sm font-semibold text-yellow-900 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
                 Takip Gerektirenler
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-yellow-600">
+              <div className="text-5xl font-bold text-yellow-600">
                 {summary.warning}
               </div>
-              <p className="text-xs text-yellow-700 mt-1">Yakın takip önerilir</p>
+              <p className="text-sm text-yellow-700 mt-2 font-medium">Yakın takip önerilir</p>
             </CardContent>
           </Card>
 
-          <Card className="border-green-200 bg-green-50 hover:shadow-md transition-shadow">
+          <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-green-900 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
+              <CardTitle className="text-sm font-semibold text-green-900 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
                 Güvende Olanlar
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-green-600">
+              <div className="text-5xl font-bold text-green-600">
                 {summary.safe}
               </div>
-              <p className="text-xs text-green-700 mt-1">İyi gidiyor</p>
+              <p className="text-sm text-green-700 mt-2 font-medium">İyi gidiyor</p>
             </CardContent>
           </Card>
         </div>
 
         {/* At Risk Students - Grid Layout */}
         {students.length === 0 ? (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="py-16">
+          <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+            <CardContent className="py-20">
               <div className="text-center">
-                <CheckCircle className="w-20 h-20 mx-auto text-green-500 mb-4" />
-                <h3 className="text-2xl font-semibold text-gray-900 mb-2">Harika iş çıkarıyorsunuz!</h3>
-                <p className="text-gray-600 text-lg">
-                  Şu an risk radarında hiçbir öğrenci bulunmuyor.
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-100 mb-6">
+                  <CheckCircle className="w-12 h-12 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Harika iş çıkarıyorsunuz!</h3>
+                <p className="text-gray-600 text-lg max-w-md mx-auto">
+                  Şu an risk radarında hiçbir öğrenci bulunmuyor. Tüm öğrencileriniz iyi gidiyor.
                 </p>
               </div>
             </CardContent>
@@ -165,17 +168,17 @@ export default function AdvisorRiskRadar() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {students.map((student) => (
-              <Card key={student.id} className={`border-2 ${getRiskBorderColor(student.riskLevel)} hover:shadow-lg transition-shadow`}>
+              <Card key={student.id} className={`border-2 ${getRiskBorderColor(student.riskLevel)} hover:shadow-xl hover:scale-105 transition-all duration-300`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-bold text-gray-900 mb-2">
+                      <CardTitle className="text-xl font-bold text-gray-900 mb-2">
                         {student.name}
                       </CardTitle>
                       <div className="flex items-center gap-2 mb-2">
                         {getRiskBadge(student.riskLevel)}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 font-medium">
                         {student.grade}. Sınıf
                       </p>
                     </div>
@@ -183,24 +186,22 @@ export default function AdvisorRiskRadar() {
                 </CardHeader>
                 <CardContent>
                   {/* Auto-generated Risk Reason */}
-                  <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {student.riskFactors.length > 0 
-                        ? student.riskFactors.join('. ')
-                        : 'Risk faktörü belirtilmemiş'}
+                  <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                    <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                      {student.riskReason}
                     </p>
                   </div>
 
                   {/* Call to Action Buttons */}
                   <div className="space-y-3">
                     <Link href={`/advisor/meetings?student=${student.id}`} className="block">
-                      <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
+                      <Button className="w-full bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-shadow">
                         <Calendar className="w-4 h-4 mr-2" />
                         Hemen Görüşme Planla
                       </Button>
                     </Link>
                     <Link href={`/advisor/students/${student.id}`} className="block">
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full hover:bg-gray-50 transition-colors">
                         <User className="w-4 h-4 mr-2" />
                         Detaylara Git
                       </Button>
