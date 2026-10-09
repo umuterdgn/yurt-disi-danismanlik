@@ -112,12 +112,10 @@ export default async function TasksPage() {
           {students.length > 0 && (
             <div className="flex items-center gap-2">
               <SimulationProfileDialog
-                studentId={students[0].id}
-                studentName={students[0].name}
+                students={students}
               />
               <AIWeeklySchedulerDialog
-                studentId={students[0].id}
-                studentName={students[0].name}
+                students={students}
               />
             </div>
           )}

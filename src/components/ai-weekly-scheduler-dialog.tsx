@@ -28,17 +28,26 @@ interface ScheduleDay {
 }
 
 interface AIWeeklySchedulerDialogProps {
-  studentId: string;
-  studentName: string;
+  students: { id: string; name: string; grade: string }[];
+  selectedStudentId?: string;
 }
 
-export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySchedulerDialogProps) {
+export function AIWeeklySchedulerDialog({ students, selectedStudentId: initialSelectedStudentId }: AIWeeklySchedulerDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(initialSelectedStudentId || '');
+
+  // Reset selected student when dialog opens if no initial selection
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && !initialSelectedStudentId) {
+      setSelectedStudentId('');
+    }
+  };
+
   // Form state
   const [level, setLevel] = useState<'Zero' | 'Medium' | 'Advanced'>('Medium');
   const [dailyTargetHours, setDailyTargetHours] = useState('6');
@@ -50,24 +59,29 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
   const [editingTask, setEditingTask] = useState<{ dayIndex: number; taskIndex: number } | null>(null);
 
   const generateSchedule = async () => {
+    if (!selectedStudentId) {
+      toast.error('Lütfen bir öğrenci seçin');
+      return;
+    }
+
     setGenerating(true);
     try {
       // Get student data for subject analysis and recent tasks
-      const studentResponse = await fetch(`/api/advisor/students/${studentId}`);
+      const studentResponse = await fetch(`/api/advisor/students/${selectedStudentId}`);
       const studentData = await studentResponse.json();
 
       // Get recent tasks (last 2 weeks)
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-      const tasksResponse = await fetch(`/api/advisor/students/${studentId}/tasks?since=${twoWeeksAgo.toISOString()}`);
+      const tasksResponse = await fetch(`/api/advisor/students/${selectedStudentId}/tasks?since=${twoWeeksAgo.toISOString()}`);
       const tasksData = await tasksResponse.json();
 
       const response = await fetch('/api/ai/weekly-scheduler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentId,
+          studentId: selectedStudentId,
           level,
           dailyTargetHours: parseInt(dailyTargetHours),
           subjectAnalysis: studentData.subjectAnalysis || [],
@@ -148,14 +162,14 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
   };
 
   const handleSaveSchedule = async () => {
-    if (!schedule) return;
-    
+    if (!schedule || !selectedStudentId) return;
+
     setSaving(true);
     try {
       // Convert schedule to DailyTask format and bulk create
-      const tasksToCreate = schedule.days.flatMap((day, dayIndex) => 
+      const tasksToCreate = schedule.days.flatMap((day, dayIndex) =>
         day.tasks.map((task, taskIndex) => ({
-          studentProfileId: studentId,
+          studentProfileId: selectedStudentId,
           title: `${task.subject} - ${task.topic}`,
           description: `${task.studyMethod} yöntemiyle çalışma`,
           subject: task.subject,
@@ -216,7 +230,7 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
           <Sparkles className="w-4 h-4 mr-2" />
@@ -230,12 +244,32 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
             AI Haftalık Program Oluşturucu
           </DialogTitle>
           <DialogDescription>
-            {studentName} için optimize edilmiş çalışma programı
+            {selectedStudentId ? students.find(s => s.id === selectedStudentId)?.name + ' için' : 'Öğrenci seçin'} optimize edilmiş çalışma programı
           </DialogDescription>
         </DialogHeader>
         
         {!generated ? (
           <div className="space-y-4 py-4">
+            {/* Student Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="student" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Öğrenci
+              </Label>
+              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                <SelectTrigger id="student">
+                  <SelectValue placeholder="Öğrenci seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name} ({student.grade}. Sınıf)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="level">Öğrenci Seviyesi</Label>
@@ -292,9 +326,9 @@ export function AIWeeklySchedulerDialog({ studentId, studentName }: AIWeeklySche
               </div>
             </div>
             
-            <Button 
-              onClick={generateSchedule} 
-              disabled={generating}
+            <Button
+              onClick={generateSchedule}
+              disabled={generating || !selectedStudentId}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
             >
               {generating ? 'Oluşturuluyor...' : 'Program Oluştur'}

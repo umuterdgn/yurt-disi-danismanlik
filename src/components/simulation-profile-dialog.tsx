@@ -6,18 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Activity, Target, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
 interface SimulationProfileDialogProps {
-  studentId: string;
-  studentName: string;
+  students: { id: string; name: string; grade: string }[];
+  selectedStudentId?: string;
 }
 
-export function SimulationProfileDialog({ studentId, studentName }: SimulationProfileDialogProps) {
+export function SimulationProfileDialog({ students, selectedStudentId: initialSelectedStudentId }: SimulationProfileDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(initialSelectedStudentId || '');
+
+  // Reset selected student when dialog opens if no initial selection
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && !initialSelectedStudentId) {
+      setSelectedStudentId('');
+    }
+  };
 
   const [targetUniversity, setTargetUniversity] = useState('');
   const [burnoutRiskScore, setBurnoutRiskScore] = useState([0]);
@@ -27,18 +37,25 @@ export function SimulationProfileDialog({ studentId, studentName }: SimulationPr
     if (open) {
       loadSimulationProfile();
     }
-  }, [open]);
+  }, [open, selectedStudentId]);
 
   const loadSimulationProfile = async () => {
+    if (!selectedStudentId) return;
+
     setLoading(true);
     try {
-      const response = await fetch(`/api/advisor/students/${studentId}/simulation`);
+      const response = await fetch(`/api/advisor/students/${selectedStudentId}/simulation`);
       const data = await response.json();
 
       if (data.success && data.simulationProfile) {
         setTargetUniversity(data.simulationProfile.targetUniversity || '');
         setBurnoutRiskScore([data.simulationProfile.burnoutRiskScore || 0]);
         setGhostCompetitorGap(data.simulationProfile.ghostCompetitorGap?.toString() || '');
+      } else {
+        // Reset if no profile exists
+        setTargetUniversity('');
+        setBurnoutRiskScore([0]);
+        setGhostCompetitorGap('');
       }
     } catch (error) {
       console.error('Error loading simulation profile:', error);
@@ -48,9 +65,14 @@ export function SimulationProfileDialog({ studentId, studentName }: SimulationPr
   };
 
   const handleSave = async () => {
+    if (!selectedStudentId) {
+      toast.error('Lütfen bir öğrenci seçin');
+      return;
+    }
+
     setSaving(true);
     try {
-      const response = await fetch(`/api/advisor/students/${studentId}/simulation`, {
+      const response = await fetch(`/api/advisor/students/${selectedStudentId}/simulation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +111,7 @@ export function SimulationProfileDialog({ studentId, studentName }: SimulationPr
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Activity className="w-4 h-4 mr-2" />
@@ -103,7 +125,7 @@ export function SimulationProfileDialog({ studentId, studentName }: SimulationPr
             Gelecek Simülatörü
           </DialogTitle>
           <DialogDescription>
-            {studentName} için tükenmişlik skoru ve hedef üniversite ayarları
+            {selectedStudentId ? students.find(s => s.id === selectedStudentId)?.name + ' için' : 'Öğrenci seçin'} tükenmişlik skoru ve hedef üniversite ayarları
           </DialogDescription>
         </DialogHeader>
 
@@ -111,6 +133,26 @@ export function SimulationProfileDialog({ studentId, studentName }: SimulationPr
           <div className="py-8 text-center text-gray-500">Yükleniyor...</div>
         ) : (
           <div className="space-y-6 py-4">
+            {/* Student Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="student" className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Öğrenci
+              </Label>
+              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                <SelectTrigger id="student">
+                  <SelectValue placeholder="Öğrenci seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name} ({student.grade}. Sınıf)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Burnout Risk Score */}
             <Card className={burnoutRiskScore[0] >= 80 ? 'border-red-300 bg-red-50' : ''}>
               <CardHeader className="pb-3">
@@ -192,7 +234,7 @@ export function SimulationProfileDialog({ studentId, studentName }: SimulationPr
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !selectedStudentId}
                 className="flex-1"
               >
                 {saving ? 'Kaydediliyor...' : 'Kaydet'}
