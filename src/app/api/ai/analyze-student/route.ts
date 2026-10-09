@@ -28,7 +28,7 @@ async function getStudentContextForAnalysis(userId: string) {
       name: studentProfile.user.name,
       grade: studentProfile.grade,
       targetUniversity: studentProfile.targetUniversity,
-      targetDepartment: studentProfile.targetDepartment,
+      targetDepartment: studentProfile.targetMajor,
       targetScore: studentProfile.targetScore,
       currentScore: studentProfile.currentScore,
       targetExam: studentProfile.targetExam,
@@ -66,6 +66,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { studentId, examResults, subjectAnalysis, scores, notes } = body;
+
+    // Get student context for analysis
+    const studentContext = await getStudentContextForAnalysis(userId);
 
     // Build the prompt for AI analysis
     const prompt = `

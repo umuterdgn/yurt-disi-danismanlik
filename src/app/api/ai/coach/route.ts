@@ -72,7 +72,7 @@ async function getStudentContext(userId: string) {
       name: studentProfile.user.name,
       grade: studentProfile.grade,
       targetUniversity: studentProfile.targetUniversity,
-      targetDepartment: studentProfile.targetDepartment,
+      targetDepartment: studentProfile.targetMajor,
       targetScore: studentProfile.targetScore,
       currentScore: studentProfile.currentScore,
       completedTasks,

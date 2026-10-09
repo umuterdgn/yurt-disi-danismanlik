@@ -157,7 +157,7 @@ STUDENT PROFILE:
 - Language Level: ${languageLevel}
 ${studentContext?.languageTests && studentContext.languageTests.length > 0 ? `- Language Tests: ${studentContext.languageTests.map(t => `${t.type}: ${t.score}`).join(', ')}` : ''}
 ${studentContext?.targetCountries && studentContext.targetCountries.length > 0 ? `- Target Countries from Applications: ${studentContext.targetCountries.join(', ')}` : ''}
-${studentContext?.activeApplications > 0 ? `- Active Applications: ${studentContext.activeApplications} (already in process)` : ''}
+${(studentContext?.activeApplications || 0) > 0 ? `- Active Applications: ${studentContext?.activeApplications || 0} (already in process)` : ''}
 ${targetCountry ? `- Preferred Country (from request): ${targetCountry}` : '- No country preference from request'}
 ${studentContext?.subjectAnalysis && studentContext.subjectAnalysis.length > 0 ? `- Strong Subjects: ${studentContext.subjectAnalysis.slice(0, 3).map(s => `${s.subject} (%${s.progressPercent})`).join(', ')}` : ''}
 

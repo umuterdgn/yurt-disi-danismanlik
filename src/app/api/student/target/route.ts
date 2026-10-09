@@ -13,10 +13,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { targetUniversity, targetDepartment, targetScore } = body;
+    const { targetUniversity, targetMajor, targetScore } = body;
 
     // Validation
-    if (!targetUniversity || !targetDepartment || !targetScore) {
+    if (!targetUniversity || !targetMajor || !targetScore) {
       return NextResponse.json({ success: false, error: 'Tüm alanları doldurunuz' }, { status: 400 });
     }
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       where: { id: studentProfile.id },
       data: {
         targetUniversity,
-        targetDepartment,
+        targetMajor,
         targetScore: parseFloat(targetScore)
       }
     });

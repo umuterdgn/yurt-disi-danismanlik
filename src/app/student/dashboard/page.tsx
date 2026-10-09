@@ -243,7 +243,7 @@ export default async function StudentDashboard() {
         <div className="mb-6">
           <TargetUniversityCard
             targetUniversity={studentProfile.targetUniversity || null}
-            targetDepartment={studentProfile.targetDepartment || null}
+            targetDepartment={studentProfile.targetMajor || null}
             targetScore={studentProfile.targetScore || null}
             currentScore={studentProfile.currentScore || 0}
             studentId={studentProfile.id}
